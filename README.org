@@ -1,2 +1,11 @@
-# nexus
-Flexible cross platform mind-mapper
+#+TITLE: Nexus
+
+A flexible cross platform mind-mapper written in python and qt5.
+
+* Installation
+
+Nexus requires ~python3~, install ~apsw~  and use ~pip~ to install ~bs4~ and ~bleach~.
+
+* Detailed docs
+
+See [[./doc/nexus.org]].
