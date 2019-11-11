@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="15px" height="15px" viewBox="0 0 15 15" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>view-add</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-757.000000, -799.000000)">
+            <g id="view-add" transform="translate(754.000000, 797.000000)">
+                <rect id="Rectangle-path" x="0" y="0" width="20" height="20"></rect>
+                <path d="M11.7931034,8.20689655 L11.7931034,2.77586207 C11.7931034,2.06138976 11.2144723,2 10.5,2 C9.78552769,2 9.20689655,2.06138976 9.20689655,2.77586207 L9.20689655,8.20689655 L3.77586207,8.20689655 C3.06138976,8.20689655 3,8.78552769 3,9.5 C3,10.2144723 3.06138976,10.7931034 3.77586207,10.7931034 L9.20689655,10.7931034 L9.20689655,16.2241379 C9.20689655,16.9386102 9.78552769,17 10.5,17 C11.2144723,17 11.7931034,16.9386102 11.7931034,16.2241379 L11.7931034,10.7931034 L17.2241379,10.7931034 C17.9386102,10.7931034 18,10.2144723 18,9.5 C18,8.78552769 17.9386102,8.20689655 17.2241379,8.20689655 L11.7931034,8.20689655 Z" id="Shape" fill="#666666"></path>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="13px" height="13px" viewBox="0 0 13 13" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>raise-top</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-844.000000, -609.000000)">
+            <g id="raise-top" transform="translate(841.000000, 605.000000)">
+                <rect id="Rectangle-path" x="0" y="0" width="20" height="20"></rect>
+                <path d="M11.836,9.91 L4.633,5.387 C4.101,5.037 3.665,5.294 3.665,5.957 L3.665,14.739 C3.665,15.402 4.101,15.659 4.633,15.31 L11.836,10.786 C11.836,10.786 12.096,10.603 12.096,10.348 C12.096,10.093 11.836,9.91 11.836,9.91 L11.836,9.91 Z M14.061,4.602 C13.182,4.602 12.577,4.873 12.577,5.751 L12.577,14.945 C12.577,15.824 13.182,16.094 14.061,16.094 C14.941,16.094 15.546,15.823 15.546,14.945 L15.546,5.751 C15.546,4.872 14.94,4.602 14.061,4.602 L14.061,4.602 Z" id="Shape" fill="#666666" transform="translate(9.605500, 10.348000) rotate(-90.000000) translate(-9.605500, -10.348000) "></path>
+            </g>
+        </g>
+    </g>
+</svg>

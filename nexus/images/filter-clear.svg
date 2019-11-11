@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="21px" height="15px" viewBox="0 0 21 15" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>filter-clear</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-743.000000, -499.000000)">
+            <g id="filter-clear" transform="translate(743.000000, 497.000000)">
+                <rect id="Rectangle-path" x="1" y="0" width="20" height="20"></rect>
+                <path d="M18.696,2.605 L9.237,2.605 C8.801,2.605 8.177,2.84 7.849,3.126 L1.12,9.014 C0.792,9.301 0.792,9.77 1.12,10.057 L7.849,15.945 C8.177,16.232 8.802,16.466 9.237,16.466 L18.696,16.466 C19.785,16.466 20.676,15.575 20.676,14.486 L20.676,4.586 C20.677,3.497 19.786,2.605 18.696,2.605 L18.696,2.605 Z M15.916,13.496 L13.385,10.965 L10.854,13.496 L9.425,12.067 L11.956,9.536 L9.425,7.006 L10.854,5.576 L13.385,8.107 L15.916,5.577 L17.346,7.006 L14.815,9.537 L17.346,12.068 L15.916,13.496 L15.916,13.496 Z" id="Shape" fill="#666666"></path>
+            </g>
+        </g>
+    </g>
+</svg>

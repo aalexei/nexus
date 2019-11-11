@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="17px" height="17px" viewBox="0 0 17 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>view-fullscreen</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-733.000000, -758.000000)">
+            <g id="view-fullscreen" transform="translate(731.000000, 756.000000)">
+                <rect id="Rectangle-path" x="0" y="0" width="20" height="20"></rect>
+                <path d="M11.808,2.539 L14.189,4.465 L11.19,7.365 L13.169,9.345 L16.072,6.343 L18.045,8.776 L18.045,2.539 L11.808,2.539 L11.808,2.539 Z M7.229,11.326 L4.328,14.326 L2.378,11.92 L2.378,18.158 L8.616,18.158 L6.209,16.208 L9.21,13.307 L7.229,11.326 L7.229,11.326 Z" id="Shape" fill="#666666"></path>
+                <path d="M11.808,2.539 L14.189,4.465 L11.19,7.365 L13.169,9.345 L16.072,6.343 L18.045,8.776 L18.045,2.539 L11.808,2.539 L11.808,2.539 Z M7.229,11.326 L4.328,14.326 L2.378,11.92 L2.378,18.158 L8.616,18.158 L6.209,16.208 L9.21,13.307 L7.229,11.326 L7.229,11.326 Z" id="Shape-3" fill="#666666" transform="translate(10.211500, 10.348500) scale(-1, 1) translate(-10.211500, -10.348500) "></path>
+            </g>
+        </g>
+    </g>
+</svg>

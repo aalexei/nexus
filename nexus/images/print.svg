@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="20px" height="18px" viewBox="0 0 20 18" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>print</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-832.000000, -557.000000)">
+            <g id="entypo/printer" transform="translate(832.000000, 556.000000)">
+                <rect id="Rectangle-path" x="0" y="0" width="20" height="20"></rect>
+                <path d="M1.795,6.843 L18.627,6.843 C19.192,6.843 19.1,6.241 18.818,6.143 C18.536,6.045 15.409,4.863 14.865,4.863 L13.973,4.863 L13.973,1.893 L6.449,1.893 L6.449,4.863 L5.557,4.863 C5.013,4.863 1.885,6.045 1.604,6.143 C1.323,6.241 1.23,6.843 1.795,6.843 L1.795,6.843 Z M18.825,7.932 L1.597,7.932 C1.052,7.932 0.507,8.576 0.507,9.12 L0.507,12.586 C0.507,13.13 1.052,13.774 1.597,13.774 L3.56,13.774 L2.686,18.725 L17.736,18.725 L16.862,13.774 L18.825,13.774 C19.369,13.774 19.914,13.13 19.914,12.586 L19.914,9.12 C19.914,8.576 19.369,7.932 18.825,7.932 L18.825,7.932 Z M4.667,16.744 L6.053,10.308 L14.369,10.308 L15.756,16.744 L4.667,16.744 L4.667,16.744 Z" id="Shape" fill="#000000" fill-rule="evenodd"></path>
+            </g>
+        </g>
+    </g>
+</svg>

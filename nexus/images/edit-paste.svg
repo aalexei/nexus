@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="15px" height="21px" viewBox="0 0 15 21" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>edit-paste</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-747.000000, -447.000000)">
+            <g id="edit-paste" transform="translate(745.000000, 447.000000)">
+                <rect id="Rectangle-path" x="0" y="0" width="20" height="20"></rect>
+                <path d="M15.112,2.407 L13.924,5.378 L5.211,5.378 L4.023,2.407 C3.261,2.407 2.637,3.031 2.637,3.793 L2.637,18.842 C2.637,19.605 3.261,20.229 4.023,20.229 L15.112,20.229 C15.874,20.229 16.498,19.605 16.498,18.842 L16.498,3.793 C16.498,3.031 15.874,2.407 15.112,2.407 L15.112,2.407 Z M13.132,4.388 L14.023,2.408 L11.864,2.408 L11.151,0.428 L7.983,0.428 L7.27,2.408 L5.112,2.408 L6.003,4.388 L13.132,4.388 L13.132,4.388 Z" id="Shape" fill="#666666"></path>
+            </g>
+        </g>
+    </g>
+</svg>

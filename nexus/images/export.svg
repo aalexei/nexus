@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="21px" height="16px" viewBox="0 0 21 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>export</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-695.000000, -254.000000)">
+            <g id="export" transform="translate(695.000000, 252.000000)">
+                <rect id="Rectangle-path" x="0" y="0" width="20" height="20"></rect>
+                <path d="M15.122,15.447 L2.251,15.447 L2.251,6.536 L4.82,6.536 C4.82,6.536 5.503,5.648 6.968,4.556 L1.26,4.556 C0.713,4.556 0.27,4.999 0.27,5.546 L0.27,16.437 C0.27,16.984 0.713,17.427 1.26,17.427 L16.112,17.427 C16.659,17.427 17.102,16.984 17.102,16.437 L17.102,12.728 L15.122,14.357 L15.122,15.447 L15.122,15.447 Z M13.5,8.565 L13.5,12.081 L20.072,6.932 L13.5,1.982 L13.5,5.082 C5.518,5.082 5.518,12.973 5.518,12.973 C7.777,9.261 9.168,8.565 13.5,8.565 L13.5,8.565 Z" id="Shape" fill="#666666"></path>
+            </g>
+        </g>
+    </g>
+</svg>

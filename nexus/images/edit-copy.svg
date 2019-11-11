@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="21px" height="21px" viewBox="0 0 21 21" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>edit-copy</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-715.000000, -449.000000)">
+            <g id="edit-copy" transform="translate(716.000000, 450.000000)">
+                <rect id="Rectangle-path" x="0" y="0" width="20" height="20"></rect>
+                <path d="M18.873,7.184 L11.502,5.209 L10.212,0.395 C10.104,-0.007 9.673,-0.242 9.25,-0.128 L0.264,2.28 C-0.159,2.393 -0.415,2.811 -0.307,3.214 L2.89,15.147 C2.998,15.549 3.429,15.784 3.852,15.67 L7.429,14.711 L6.941,16.531 C6.833,16.934 7.089,17.352 7.512,17.466 L15.542,19.617 C15.966,19.73 16.396,19.497 16.504,19.095 L19.445,8.118 C19.552,7.715 19.296,7.297 18.873,7.184 L18.873,7.184 Z M1.284,3.438 L9.036,1.363 L11.906,12.075 L4.154,14.149 L1.284,3.438 L1.284,3.438 Z M15.19,18.124 L8.441,16.279 L8.973,14.296 L12.836,13.261 C13.259,13.148 13.516,12.729 13.408,12.326 L11.915,6.755 L17.803,8.369 L15.19,18.124 L15.19,18.124 Z" id="Shape" fill="#666666"></path>
+            </g>
+        </g>
+    </g>
+</svg>

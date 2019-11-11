@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="60px" height="60px" viewBox="0 0 60 60" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>highlighter</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <polygon id="path-1" points="58.4433603 4.88785212 58.4049572 26.0397585 54.7266158 29.1510342 19.3098815 28.6995561 19.3863679 0.639088742 55.2839017 0.575798126"></polygon>
+        <polygon id="path-2" points="18.3008706 0.581818182 21.7435077 0.728347355 21.6782494 28.6500895 18.1943471 28.6430719 11.2352941 25.3509133 11.2352941 4.13648997"></polygon>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-907.000000, -101.000000)">
+            <g id="hilighter" transform="translate(905.000000, 101.000000)">
+                <g id="Group-3" transform="translate(31.917261, 31.721296) rotate(-45.000000) translate(-31.917261, -31.721296) translate(2.417261, 16.721296)">
+                    <g id="Rectangle-2-Copy">
+                        <use fill="#D8D8D8" fill-rule="evenodd" xlink:href="#path-1"></use>
+                        <path stroke="#666666" stroke-width="3.4913077" d="M56.6966693,5.45751648 L54.4000065,2.32301308 L21.1272783,2.38167592 L21.0602396,26.9760733 L54.0970087,27.3972126 L56.6607731,25.2286868 L56.6966693,5.45751648 Z"></path>
+                    </g>
+                    <polyline id="Path-7" stroke="#666666" stroke-width="3.4913077" fill="#D8D8D8" points="12.0720025 5.81818182 0.933802193 5.81274734 7.99953466 22.6836672 11.486004 22.9061026"></polyline>
+                    <g id="Rectangle-2">
+                        <use fill="#666666" fill-rule="evenodd" xlink:href="#path-2"></use>
+                        <path stroke="#666666" stroke-width="3.4913077" d="M18.6800257,2.34519054 L12.980948,5.21238064 L12.980948,24.245601 L18.5880989,26.8982076 L19.9366789,26.9009241 L19.9939395,2.40111474 L18.6800257,2.34519054 Z"></path>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

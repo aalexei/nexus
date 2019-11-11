@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="18px" height="17px" viewBox="0 0 18 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>edit-delete</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-773.000000, -449.000000)">
+            <g id="edit-delete" transform="translate(772.000000, 448.000000)">
+                <rect id="Rectangle-path" x="0" y="0" width="20" height="20"></rect>
+                <path d="M9.963,1.219 C5.369,1.219 1.646,4.943 1.646,9.536 C1.646,14.13 5.369,17.853 9.963,17.853 C14.556,17.853 18.28,14.13 18.28,9.536 C18.28,4.943 14.556,1.219 9.963,1.219 L9.963,1.219 Z M11.675,9.536 L14.705,12.566 L12.994,14.277 L9.964,11.247 L6.934,14.277 L5.223,12.566 L8.253,9.536 L5.223,6.507 L6.934,4.795 L9.964,7.825 L12.994,4.796 L14.705,6.507 L11.675,9.536 L11.675,9.536 Z" id="Shape" fill="#666666"></path>
+            </g>
+        </g>
+    </g>
+</svg>

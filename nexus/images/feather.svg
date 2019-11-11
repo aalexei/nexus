@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="15px" height="20px" viewBox="0 0 15 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>feather</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-934.000000, -326.000000)">
+            <g id="entypo/feather" transform="translate(931.000000, 326.000000)">
+                <rect id="Rectangle-path" x="0" y="0" width="20" height="20"></rect>
+                <path d="M4.502,19.766 C4.805,18.775 5.264,17.378 5.879,15.359 C8.559,14.926 9.668,15.703 11.369,12.602 C9.988,13.034 8.322,11.801 8.412,11.268 C8.502,10.734 12.286,11.653 14.765,8.062 C11.641,8.765 10.642,7.218 11.044,6.984 C11.975,6.444 14.733,6.759 16.205,5.297 C16.964,4.545 17.318,2.715 17.011,2.062 C16.64,1.273 14.38,0.097 13.135,0.208 C11.89,0.319 9.936,5.048 9.357,5.011 C8.777,4.974 8.661,2.893 9.671,0.958 C8.605,1.438 6.651,2.937 6.038,4.217 C4.896,6.599 6.145,12.062 5.745,12.257 C5.344,12.451 3.996,9.749 3.595,8.525 C3.046,10.403 3.033,12.284 4.638,14.783 C4.032,16.423 3.701,18.31 3.651,19.269 C3.629,20.035 4.369,20.2 4.502,19.766 L4.502,19.766 Z" id="Shape" fill="#000000" fill-rule="evenodd"></path>
+            </g>
+        </g>
+    </g>
+</svg>

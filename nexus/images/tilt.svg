@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="18px" height="19px" viewBox="0 0 18 19" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>tilt</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-786.000000, -210.000000)">
+            <g id="tilt" transform="translate(785.000000, 210.000000)">
+                <rect id="Rectangle-path" x="0" y="0" width="20" height="20"></rect>
+                <path d="M14.2858373,2 L5.71416193,2 C4.77137287,2 4,2.75084175 4,3.66666667 L4,15.3341751 C4,16.2508418 4.77137287,17 5.71416193,17 L14.2858373,17 C15.2286264,17 15.9999993,16.25 15.9999993,15.3341751 L15.9999993,3.66666667 C16.000865,2.75084175 15.2286264,2 14.2858373,2 L14.2858373,2 Z M14.2858373,15.3350168 L5.71416193,15.3350168 L5.71416193,3.66750842 L14.2858373,3.66750842 L14.2858373,15.3350168 L14.2858373,15.3350168 Z" id="Shape" fill="#000000" transform="translate(10.000000, 9.500000) rotate(-25.000000) translate(-10.000000, -9.500000) "></path>
+            </g>
+        </g>
+    </g>
+</svg>
