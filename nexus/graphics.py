@@ -483,6 +483,11 @@ class InputDialog(QtWidgets.QDialog):
 
     def saveClose(self):
 
+        # If a text item has been entered but has not lost focus it will not have been saved yet
+        for item in self.scene.getItems():
+            if isinstance(item, TextItem):
+                item.deleteOrSave()
+       
         # Check for empty text items, delete them if they exist
         for n in self.scene.node.outN('n.kind="Text"'):
             # XXX this will not work for qt source
@@ -3951,8 +3956,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         scene.focusedTextItem = self
         self.positionChanged.emit(self.textCursor())
 
-    def focusOutEvent(self,  event):
-        QtWidgets.QGraphicsTextItem.focusOutEvent(self, event)
+    def deleteOrSave(self):
         src = self.getSrc()
         scene = self.scene()
 
@@ -3964,6 +3968,10 @@ class TextItem(QtWidgets.QGraphicsTextItem):
             self.node['source'] = src
             self.node.save(setchange=True)
             scene.refreshStem()
+
+    def focusOutEvent(self,  event):
+        QtWidgets.QGraphicsTextItem.focusOutEvent(self, event)
+        self.deleteOrSave()
 
     def mouseDoubleClickEvent(self, event):
         if self.isSelected() and self.mode in [SelectMode]:
