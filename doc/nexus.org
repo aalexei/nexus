@@ -42,4 +42,79 @@ Longpress then select edit
 * File format
 
 The file format for /Nexus/ is an sqlite database structured as a graph database
-using ~graphydb~. 
+using ~graphydb~.
+
+** Graph structure
+
+*** Root
+
+Each graph has a single root (assumed) node of kind ~Root~ from which everything
+else is linked
+
+Links: ~Root-Child->Stem~
+
+*** Stem
+
+Stems hold the basic structure of the map as a DAG.
+
+| key           | description      |
+|---------------+------------------|
+| [iconified]   | True,False       |
+| scale         | scaling factor   |
+| z             |                  |
+| flip          | 0,1              |
+| pos           | [x,y]            |
+| tags          | List of strings  |
+| [branchcolor] | hex color string |
+| styleclauses  | ?                |
+|               |                  |
+
+Links: ~Stem-Child->Stem~ and ~Root-Child->Stem~
+
+**** TODO styleclauses? 
+
+*** Stroke
+
+| key     | description    |
+|---------+----------------|
+| color   | hex string     |
+| opacity | 0-1            |
+| type    | XYZ            |
+| width   |                |
+| stroke  | list of tuples |
+| frame   |                |
+| z       |                |
+
+Links: ~Stem-In->Stroke~
+
+*** Text
+
+| key      | description |
+|----------+-------------|
+| source   |             |
+| maxwidth |             |
+| frame    |             |
+| z        |             |
+
+Links: ~Stem-In->Text~
+
+*** Image
+
+| key   | description |
+|-------+-------------|
+| frame |             |
+| sha1  |             |
+| z     |             |
+
+Links: ~Stem-In->Image~
+
+**** TODO sha1 redundant here
+
+*** ImageData
+
+| key  | description |
+|------+-------------|
+| data |             |
+| sha1 |             |
+
+Links: ~Image-With->ImageData~
