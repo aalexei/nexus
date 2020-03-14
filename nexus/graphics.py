@@ -4456,7 +4456,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         self.selectpath.hide()
 
         ##
-        ## widget to show stem as edited
+        ## widget to show stem as being edited
         ##
         self.editedpath = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(), self)
         self.editedpath.setPen(QtGui.QPen(QtCore.Qt.red, 2, QtCore.Qt.SolidLine))
