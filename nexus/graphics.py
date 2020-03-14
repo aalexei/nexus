@@ -2238,7 +2238,7 @@ class InkView(QtWidgets.QGraphicsView):
 
         # XXX Following not working on mac?
         dist = sqrt(dv.x()**2+dv.y()**2)
-        logging.debug('Pinch dist %f', dist)
+        # logging.debug('Pinch dist %f', dist)
 
         # base movement stickiness on view coordinates (finger motion)
         if not ( CONFIG['pinch_no_scale_threshold'][0]<Stot<CONFIG['pinch_no_scale_threshold'][1] \

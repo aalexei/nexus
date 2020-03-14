@@ -59,7 +59,7 @@ default_config = {
 
     # Bundling ETBembo with Nexus
     "text_item_font_family": "ETBembo",
-    "text_item_font_size": 12,
+    "text_item_font_size": 9,
     "text_item_color": "#000000",
 }
 
