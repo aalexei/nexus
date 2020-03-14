@@ -2245,13 +2245,12 @@ class MainWindow(QtWidgets.QMainWindow):
             center=self.view.mapToScene(self.view.viewport().rect().center())
 
             self.showNormal()
+            self.scene.presentation = False
 
             self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
             self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
             self.viewToolBar.setVisible(True)
             self.statusBar().setVisible(True)
-
-            self.scene.presentation = False
 
             self.menuBar().setVisible(True)
 
