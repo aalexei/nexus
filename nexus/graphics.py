@@ -2147,7 +2147,6 @@ class InkView(QtWidgets.QGraphicsView):
         self.scene().refreshStem()
 
 
-
     def event(self, event):
 
         if event.type() == QtCore.QEvent.Gesture:
@@ -2573,6 +2572,10 @@ class NexusView(QtWidgets.QGraphicsView):
     # seems different trackpads/mice have different zoom factors
     _scrollwheelfactor = 0.5
 
+    # on iw3 no key presses are received by action when in full screen
+    # Do alternative pathway here
+    presentationEscape = QtCore.pyqtSignal()
+
     def __init__(self, scene, parent = None):
 
         super().__init__(scene, parent)
@@ -2599,7 +2602,7 @@ class NexusView(QtWidgets.QGraphicsView):
         self.grabGesture(QtCore.Qt.PinchGesture)
         #self.grabGesture(QtCore.Qt.SwipeGesture)
 
-        self.pointertrail = collections.deque(maxlen=30)
+        self.pointertrail = collections.deque(maxlen=40)
         self.pointertrailitem = None
 
         # track when pinch events occur
@@ -2700,7 +2703,10 @@ class NexusView(QtWidgets.QGraphicsView):
 
         # logging.debug('N mousePressEvent')
 
-        if event.button() in [QtCore.Qt.RightButton, QtCore.Qt.MiddleButton] and (self.itemAt(event.pos()) is None):
+        if self.scene().presentation:
+            self._dragmode = self.PREDRAGPAN
+
+        elif event.button() in [QtCore.Qt.RightButton, QtCore.Qt.MiddleButton] and (self.itemAt(event.pos()) is None):
             self._dragmode = self.DRAGZOOM
             self._dragy = event.pos().y()
             self.viewport().setCursor(QtCore.Qt.SizeVerCursor)
@@ -2724,22 +2730,7 @@ class NexusView(QtWidgets.QGraphicsView):
         #     return
 
         # logging.debug('N mouseMoveEvent')
-
-        if self._dragmode == self.PREDRAGPAN:
-            self._dragmode=self.DRAGPAN
-
-        if self._dragmode == self.DRAGZOOM:
-            dy = event.pos().y() - self._dragy
-            scale = max(min(-dy/400.0 + 1,1.5),0.5)
-
-            self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
-            self.scaleView(scale)
-
-            self._dragy = event.pos().y()
-
-            event.accept()
-
-        elif self._dragmode == self.DRAGPAN and self.scene().presentation:
+        if self._dragmode == self.DRAGPAN and self.scene().presentation:
 
             s = self.transform().m11()
             pn = self.mapToScene(event.pos())*s
@@ -2761,6 +2752,21 @@ class NexusView(QtWidgets.QGraphicsView):
                 path.lineTo(p)
             self.pointertrailitem.setPath(path)
 
+        elif self._dragmode == self.PREDRAGPAN:
+            self._dragmode=self.DRAGPAN
+
+        elif self._dragmode == self.DRAGZOOM:
+            dy = event.pos().y() - self._dragy
+            scale = max(min(-dy/400.0 + 1,1.5),0.5)
+
+            self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
+            self.scaleView(scale)
+
+            self._dragy = event.pos().y()
+
+            event.accept()
+
+
         elif self._dragmode == self.DRAGPAN:
             hbar = self.horizontalScrollBar()
             vbar = self.verticalScrollBar()
@@ -2779,7 +2785,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
             event.accept()
 
-        else:
+        if not self.scene().presentation:
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
 
@@ -2802,8 +2808,16 @@ class NexusView(QtWidgets.QGraphicsView):
             self.scene().removeItem(self.pointertrailitem )
             self.pointertrailitem = None
 
-        self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
-        QtWidgets.QGraphicsView.mouseReleaseEvent(self, event)
+        if not self.scene().presentation:
+            self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
+            QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
+
+    def keyPressEvent(self, event):
+        if self.scene().presentation and event.key() == QtCore.Qt.Key_Escape:
+            self.presentationEscape.emit()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
 
 
     def event(self, event):
@@ -2892,7 +2906,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
         # XXX Following not working on mac?
         dist = sqrt(dv.x()**2+dv.y()**2)
-        logging.debug('Pinch dist %f', dist)
+        #logging.debug('Pinch dist %f', dist)
  
         # base movement stickiness on view coordinates (finger motion)
         if not ( CONFIG['pinch_no_scale_threshold'][0]<Stot<CONFIG['pinch_no_scale_threshold'][1] \
@@ -5018,6 +5032,8 @@ class StemItem(QtWidgets.QGraphicsItem):
         copylink_action=cmenu.addAction("Copy Link")
         cmenu.addSeparator()
         delete_action=cmenu.addAction("Delete")
+        cmenu.addSeparator()
+        #presentation_action=cmenu.addAction("Presentation")
 
         action = cmenu.exec_(global_pos)
 
@@ -5033,6 +5049,8 @@ class StemItem(QtWidgets.QGraphicsItem):
             self.scene().paste(stem=self)
         elif action==copylink_action:
             self.scene().copyStemLink(stem=self)
+        #elif action==presentation_action:
+        #    print('presentation')
 
 
     def mouseDoubleClickEvent(self, event):

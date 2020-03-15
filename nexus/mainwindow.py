@@ -1390,6 +1390,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.presentationModeAct.setStatusTip(self.tr("Set Toggle Presentation Mode"))
         self.presentationModeAct.triggered.connect(self.setPresentationMode)
 
+        self.view.presentationEscape.connect(self.setPresentationMode)
         self.presentationModeAct.setCheckable(True)
         self.presentationModeAct.setChecked(False)
 
@@ -2196,7 +2197,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def setPresentationMode(self):
 
-        if self.presentationModeAct.isChecked():
+        if not self.scene.presentation:
+            self.scene.presentation = True
+            self.presentationModeAct.setChecked(True)
+            print("switching on presentation")
 
             # point on scene where the view is centred on
             center=self.view.mapToScene(self.view.viewport().rect().center())
@@ -2224,7 +2228,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
             self.showFullScreen()
-            self.scene.presentation = True
 
             self.view.centerOn(center)
             self.hidePointerAct.setEnabled(True)
@@ -2241,11 +2244,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         else:
 
+            self.scene.presentation = False
+            self.presentationModeAct.setChecked(False)
+
             # point on scene where the view is centred on
             center=self.view.mapToScene(self.view.viewport().rect().center())
 
-            self.showNormal()
-            self.scene.presentation = False
+            #self.showNormal()
+            self.showMaximized()
 
             self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
             self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
