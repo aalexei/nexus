@@ -2200,7 +2200,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.scene.presentation:
             self.scene.presentation = True
             self.presentationModeAct.setChecked(True)
-            print("switching on presentation")
+            logging.debug("Switching on presentation mode")
 
             # point on scene where the view is centred on
             center=self.view.mapToScene(self.view.viewport().rect().center())
@@ -2246,6 +2246,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.scene.presentation = False
             self.presentationModeAct.setChecked(False)
+            logging.debug("Switching off presentation mode")
 
             # point on scene where the view is centred on
             center=self.view.mapToScene(self.view.viewport().rect().center())
@@ -2291,7 +2292,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.hidePointerAct.isChecked():
             QtWidgets.QApplication.instance().restoreOverrideCursor()
             QtWidgets.QApplication.instance().setOverrideCursor(QtCore.Qt.BlankCursor)
-            self.view.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
+            #self.view.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
         else:
             QtWidgets.QApplication.instance().restoreOverrideCursor() # restore first so default in in the stack
             s=26
@@ -2306,7 +2307,7 @@ class MainWindow(QtWidgets.QMainWindow):
             painter.drawEllipse(0,0,s,s)
             painter.end()
             QtWidgets.QApplication.instance().setOverrideCursor(QtGui.QCursor(pix, -s/2,-s/2))
-            self.view.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+            #self.view.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
 
 
     def viewsNext(self):
