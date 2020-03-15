@@ -2730,7 +2730,21 @@ class NexusView(QtWidgets.QGraphicsView):
         #     return
 
         # logging.debug('N mouseMoveEvent')
-        if self._dragmode == self.DRAGPAN and self.scene().presentation:
+        if self._dragmode == self.PREDRAGPAN:
+            self._dragmode=self.DRAGPAN
+
+        if self._dragmode == self.DRAGZOOM:
+            dy = event.pos().y() - self._dragy
+            scale = max(min(-dy/400.0 + 1,1.5),0.5)
+
+            self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
+            self.scaleView(scale)
+
+            self._dragy = event.pos().y()
+
+            event.accept()
+
+        elif self._dragmode == self.DRAGPAN and self.scene().presentation:
 
             s = self.transform().m11()
             pn = self.mapToScene(event.pos())*s
@@ -2752,20 +2766,6 @@ class NexusView(QtWidgets.QGraphicsView):
                 path.lineTo(p)
             self.pointertrailitem.setPath(path)
 
-        elif self._dragmode == self.PREDRAGPAN:
-            self._dragmode=self.DRAGPAN
-
-        elif self._dragmode == self.DRAGZOOM:
-            dy = event.pos().y() - self._dragy
-            scale = max(min(-dy/400.0 + 1,1.5),0.5)
-
-            self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
-            self.scaleView(scale)
-
-            self._dragy = event.pos().y()
-
-            event.accept()
-
 
         elif self._dragmode == self.DRAGPAN:
             hbar = self.horizontalScrollBar()
@@ -2785,7 +2785,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
             event.accept()
 
-        if not self.scene().presentation:
+        elif not self.scene().presentation:
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
 
@@ -2811,6 +2811,14 @@ class NexusView(QtWidgets.QGraphicsView):
         if not self.scene().presentation:
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
+
+    def mouseDoubleClickEvent(self, event):
+
+        # The dounble click gets through the view in presentation mode
+        if self.scene().presentation:
+            event.ignore()
+        else:
+            super().mouseDoubleClickEvent(event)
 
     def keyPressEvent(self, event):
         if self.scene().presentation and event.key() == QtCore.Qt.Key_Escape:
@@ -5057,7 +5065,6 @@ class StemItem(QtWidgets.QGraphicsItem):
         # logging.debug('[{}] Double Click ->[4]'.format(self._m_state))
         self._m_state = MDOUBLE
         # double click action handled in mouseReleaseEvent
-
         event.accept()
 
     def drawBud(self, p):
