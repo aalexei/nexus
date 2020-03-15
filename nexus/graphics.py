@@ -2810,7 +2810,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
         if not self.scene().presentation:
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
-            QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
+            QtWidgets.QGraphicsView.mouseReleaseEvent(self, event)
 
     def mouseDoubleClickEvent(self, event):
 
