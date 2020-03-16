@@ -2822,6 +2822,9 @@ class NexusView(QtWidgets.QGraphicsView):
 
         # The dounble click gets through the view in presentation mode
         if self.scene().presentation:
+            item = self.itemAt(event.pos())
+            if isinstance( item, OpenCloseWidget):
+                item.mousePressEvent(event)
             event.ignore()
         else:
             super().mouseDoubleClickEvent(event)
@@ -4421,13 +4424,19 @@ class OpenCloseWidget(QtWidgets.QGraphicsPathItem):
     def toggleVisibilities(self):
 
         childnodes = self.stem.node.outN('e.kind="Child"')
+        presentation = self.scene().presentation
+
         batch = graphydb.generateUUID()
         if self.open:
             for child in childnodes:
+                if presentation and 'hide' in child.get('tags',set()):
+                    continue
                 child['hide'] = True
                 child.save(batch=batch, setchange=True)
         else:
             for child in childnodes:
+                if presentation and 'hide' in child.get('tags',set()):
+                    continue
                 child.discard('hide')
                 child.save(batch=batch, setchange=True)
 
