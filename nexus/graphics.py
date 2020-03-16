@@ -362,6 +362,10 @@ class InputDialog(QtWidgets.QDialog):
         # default mode on creation
         self.selectmode.setChecked(True)
 
+        # Full screen
+        self.fullscreenwidget = QtWidgets.QCheckBox()
+        self.fullscreenwidget.setCheckState(False)
+        dlayout.addRow("Fullscreen", self.fullscreenwidget)
 
     def setDialog(self, stem):
 
@@ -477,7 +481,9 @@ class InputDialog(QtWidgets.QDialog):
             self.setTextMode()
 
         # If the dialog is already visible don't move it
-        if hasattr(self, 'inputgeometry') and not self.isVisible():
+        if self.fullscreenwidget.isChecked():
+            self.showMaximized()
+        elif hasattr(self, 'inputgeometry') and not self.isVisible():
             self.setGeometry(self.inputgeometry)
         self.show()
 
