@@ -365,7 +365,7 @@ class InputDialog(QtWidgets.QDialog):
         # Full screen
         self.fullscreenwidget = QtWidgets.QCheckBox()
         self.fullscreenwidget.setCheckState(False)
-        dlayout.addRow("Fullscreen", self.fullscreenwidget)
+        dlayout.addRow("Maximize dialog", self.fullscreenwidget)
 
     def setDialog(self, stem):
 
