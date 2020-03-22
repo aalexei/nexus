@@ -480,10 +480,12 @@ class InputDialog(QtWidgets.QDialog):
         elif self.textmode.isChecked():
             self.setTextMode()
 
-        # If the dialog is already visible don't move it
-        if self.fullscreenwidget.isChecked():
+        if  self.stem.scene().presentation:
+            self.showFullScreen()
+        elif self.fullscreenwidget.isChecked():
             self.showMaximized()
         elif hasattr(self, 'inputgeometry') and not self.isVisible():
+            # If the dialog is already visible don't move it
             self.setGeometry(self.inputgeometry)
         self.show()
 
@@ -2820,11 +2822,26 @@ class NexusView(QtWidgets.QGraphicsView):
 
     def mouseDoubleClickEvent(self, event):
 
-        # The dounble click gets through the view in presentation mode
         if self.scene().presentation:
             item = self.itemAt(event.pos())
             if isinstance( item, OpenCloseWidget):
+                # pass through event for open-close widget as a single click
                 item.mousePressEvent(event)
+            else:
+                # the item could be any of the individual scene items
+                # if it's an item in a stem get the stem
+                stem = None
+                try:
+                    parent = item.parentItem()
+                    if isinstance( parent, StemItem ):
+                        stem = parent
+                    elif isinstance( parent, Leaf ):
+                        stem = parent.parentItem()
+                except:
+                    pass
+                if stem is not None:
+                    stem.editStem()
+
             event.ignore()
         else:
             super().mouseDoubleClickEvent(event)
