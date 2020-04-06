@@ -2756,7 +2756,16 @@ class NexusView(QtWidgets.QGraphicsView):
 
             s = self.transform().m11()
             pn = self.mapToScene(event.pos())*s
-            self.pointertrail.appendleft(pn)
+            if len(self.pointertrail)==0:
+                # if there's nothing in the queue add the point
+                self.pointertrail.appendleft(pn)
+            else:
+                # only add the point if it's moved, this way the trail
+                # hangs around if the pen is paused
+                po = self.pointertrail[0]
+                dist2 = (pn.x()-po.x())**2+(pn.y()-po.y())**2
+                if dist2 > 10:
+                    self.pointertrail.appendleft(pn)
             if self.pointertrailitem is None:
 
                 self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
