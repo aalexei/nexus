@@ -2610,7 +2610,7 @@ class NexusView(QtWidgets.QGraphicsView):
         self.grabGesture(QtCore.Qt.PinchGesture)
         #self.grabGesture(QtCore.Qt.SwipeGesture)
 
-        self.pointertrail = collections.deque(maxlen=40)
+        self.pointertrail = collections.deque(maxlen=100)
         self.pointertrailitem = None
 
         # track when pinch events occur
