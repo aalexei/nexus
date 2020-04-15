@@ -2770,7 +2770,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
                 self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
                 self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
-                pen = QtGui.QPen(QtGui.QColor(0,255,0,100))
+                pen = QtGui.QPen(QtGui.QColor(0,200,0,80))
                 pen.setWidthF(12)
                 pen.setCapStyle(QtCore.Qt.RoundCap)
                 self.pointertrailitem.setPen(pen)
