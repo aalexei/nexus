@@ -1397,34 +1397,34 @@ class MainWindow(QtWidgets.QMainWindow):
         # ----------------------------------------------------------------------------------
         self.viewsAct.setIcon(QtGui.QIcon(":/images/view-index.svg"))
         self.viewsAct.setShortcut("Ctrl+I")
-        self.viewsAct.setDisabled(True)
+        #self.viewsAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
         self.viewsNextAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-forward.svg"),self.tr("Forward"), self)
         self.viewsNextAct.triggered.connect(self.viewsNext)
-        self.viewsNextAct.setDisabled(True)
+        #self.viewsNextAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
         self.viewsPreviousAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-back.svg"),self.tr("Back"), self)
         self.viewsPreviousAct.triggered.connect(self.viewsPrevious)
-        self.viewsPreviousAct.setDisabled(True)
+        #self.viewsPreviousAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
         self.viewsHomeAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-home.svg"),self.tr("Home"), self)
         self.viewsHomeAct.triggered.connect(self.viewsHome)
-        self.viewsHomeAct.setDisabled(True)
+        #self.viewsHomeAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
         self.viewsFirstAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-first.svg"),self.tr("First"), self)
         self.viewsFirstAct.triggered.connect(self.viewsFirst)
-        self.viewsFirstAct.setDisabled(True)
+        #self.viewsFirstAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
         self.viewsFramesAct = QtWidgets.QAction(self.tr("Show Frames"), self)
         self.viewsFramesAct.triggered.connect(self.viewsFrames)
         self.viewsFramesAct.setCheckable(True)
         self.viewsFramesAct.setChecked(False)
-        self.viewsFramesAct.setDisabled(True)
+        #self.viewsFramesAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
         self.viewRotateAct = QtWidgets.QAction(self.tr("Allow Rotations"), self)
@@ -2191,8 +2191,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.viewtimer.stop()
         else:
             center,matrix = self.viewsteps[self.viewcurrentstep]
-            self.view.centerOn(center)
             self.view.setTransform(matrix)
+            self.view.centerOn(center)
             self.viewcurrentstep += 1
 
     def setPresentationMode(self):
@@ -2636,32 +2636,32 @@ class ViewsItem(QtGui.QStandardItem):
         ## convenience function (point contained in sceneTransform())
         return self.viewRectItem.scenePos()
 
-    def toxml(self):
+    # def toxml(self):
 
-        xml=et.Element('view')
-        t = self.viewTransform()
-        T = [t.m11(), t.m12(), t.m13() ,t.m21(), t.m22(), t.m23(),t.m31(), t.m32(), t.m33()]
-        xml.set('transform', str(T))
+    #     xml=et.Element('view')
+    #     t = self.viewTransform()
+    #     T = [t.m11(), t.m12(), t.m13() ,t.m21(), t.m22(), t.m23(),t.m31(), t.m32(), t.m33()]
+    #     xml.set('transform', str(T))
 
-        return xml
+    #     return xml
 
-    def fromxml(self, xml, view):
-        tmp=xml.get('transform', '[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]')
-        # XXX check for malicious code
-        matrix = graphics.Transform.fromxml(tmp)
-        #tmp = eval(tmp)
+    # def fromxml(self, xml, view):
+    #     tmp=xml.get('transform', '[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]')
+    #     # XXX check for malicious code
+    #     matrix = graphics.Transform.fromxml(tmp)
+    #     #tmp = eval(tmp)
 
-        # grab the centre point as a separate element
-        #centrePoint = QtCore.QPointF(tmp[2], tmp[7])
-        #tmp[2] = 0
-        #tmp[7] = 0
+    #     # grab the centre point as a separate element
+    #     #centrePoint = QtCore.QPointF(tmp[2], tmp[7])
+    #     #tmp[2] = 0
+    #     #tmp[7] = 0
 
-        #T = QtGui.QTransform(*tmp)
+    #     #T = QtGui.QTransform(*tmp)
 
-        #matrixinv, dummy = T.inverted()
+    #     #matrixinv, dummy = T.inverted()
 
-        #self.setView(view, None, matrixinv, centrePoint)
-        self.setView(view, None, matrix)
+    #     #self.setView(view, None, matrixinv, centrePoint)
+    #     self.setView(view, None, matrix)
 
 #----------------------------------------------------------------------
 class ViewRectangle(QtWidgets.QGraphicsPathItem):
@@ -2690,6 +2690,8 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem):
         ViewRectangleHandle("tSW", self)
         ViewRectangleHandle("tNW", self)
 
+        ViewRectangleDirection(self)
+        
     def mousePressEvent(self, event):
 
         QtWidgets.QGraphicsItem.mousePressEvent(self, event)
@@ -2780,6 +2782,7 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem):
         QtWidgets.QGraphicsItem.mouseReleaseEvent(self, event)
 
         self.viewitem.createPreview()
+        # TODO @views save here
 
 
 #----------------------------------------------------------------------
@@ -2815,6 +2818,26 @@ class ViewRectangleHandle(QtWidgets.QGraphicsRectItem):
     def mouseReleaseEvent(self, event):
         event.sourceId = self.id
         self.parentItem().mouseReleaseEvent(event)
+
+
+class ViewRectangleDirection(QtWidgets.QGraphicsPathItem):
+    def __init__(self, parent):
+        apath=QtGui.QPainterPath()
+        apath.moveTo(0, -40)
+        apath.lineTo(40, 0)
+        apath.lineTo(20, 0)
+        apath.lineTo(20, 40)
+        apath.lineTo(-20, 40)
+        apath.lineTo(-20, 0)
+        apath.lineTo(-40, 0)
+        apath.lineTo(0, -40)
+
+        super().__init__(apath, parent)
+        self.setPen(QtGui.QPen(QtCore.Qt.black, 0))
+        self.setBrush(QtGui.QBrush(QtGui.QColor(100,100,100,50)))
+
+        self.setScale(5)
+
 
 #----------------------------------------------------------------------
 # Experiment to see if editing window can be a dockwidget
@@ -2944,26 +2967,25 @@ class ViewsWidget(QtWidgets.QWidget):
                 self.viewsListView.scrollTo(index)
                 self.viewsListView.setCurrentIndex(index)
 
-    def toxml(self):
+    # def toxml(self):
 
-        xml=et.Element('views')
+    #     xml=et.Element('views')
 
-        rows = self.viewsModel.rowCount()
-        for row in range(rows):
-            item = self.viewsModel.item(row)
+    #     rows = self.viewsModel.rowCount()
+    #     for row in range(rows):
+    #         item = self.viewsModel.item(row)
 
-            xml.append(item.toxml())
+    #         xml.append(item.toxml())
 
-        return xml
+    #     return xml
 
-    def fromxml(self, xml):
+    # def fromxml(self, xml):
 
-        for viewxml in xml.findall('view'):
+    #     for viewxml in xml.findall('view'):
 
-            item = ViewsItem()
+    #         item = ViewsItem()
 
-            item.fromxml(viewxml, self.view)
-            item.viewRectItem.setVisible(False)
+    #         item.fromxml(viewxml, self.view)
+    #         item.viewRectItem.setVisible(False)
 
-            self.viewsModel.appendRow(item)
-
+    #         self.viewsModel.appendRow(item)
