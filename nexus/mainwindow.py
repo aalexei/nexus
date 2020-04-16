@@ -26,11 +26,12 @@ from functools import reduce
 import webbrowser
 
 import webbrowser, urllib.parse, logging
-from . import graphics, resources, interpreter, graphydb, nexusgraph
+from . import graphics, resources, interpreter, graphydb, nexusgraph, config
 from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi
 import re
 import apsw
 
+CONFIG = config.get_config()
 
 # used to preserve links in svg generation
 # choose narrow symbols
@@ -2295,11 +2296,11 @@ class MainWindow(QtWidgets.QMainWindow):
             #self.view.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
         else:
             QtWidgets.QApplication.instance().restoreOverrideCursor() # restore first so default in in the stack
-            s=26
+            s=CONFIG['trail_outer_width']*CONFIG['trail_pointer_factor']
             pix = QtGui.QPixmap(s, s)
-            rg = QtGui.QRadialGradient(s/2,s/2,s/2)
-            rg.setColorAt(0, QtGui.QColor(0,255,0,255))
-            rg.setColorAt(1, QtGui.QColor(0,50,0,0))
+            rg = QtGui.QRadialGradient(s/2,s/2,s/2, s/2, s/2, CONFIG['trail_inner_width']/2)
+            rg.setColorAt(0, QtGui.QColor(CONFIG['trail_inner_color']))
+            rg.setColorAt(1, QtGui.QColor(CONFIG['trail_outer_color']))
             pix.fill(QtCore.Qt.transparent)
             painter = QtGui.QPainter(pix)
             painter.setBrush(QtGui.QBrush(rg))

@@ -62,6 +62,16 @@ default_config = {
     "text_item_font_size": 12,
     # TODO retina screen halves the size? Get more consistent sizing across platforms
     "text_item_color": "#000000",
+
+    #
+    # laser trail
+    #
+    "trail_outer_color": "#8000A000",
+    "trail_inner_color": "#80FFFFFF",
+    "trail_outer_width": 12,
+    "trail_inner_width": 4,
+    "trail_length": 200,
+    "trail_pointer_factor": 1.5, # factor to increase pointer size by
 }
 
 

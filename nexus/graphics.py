@@ -2610,8 +2610,9 @@ class NexusView(QtWidgets.QGraphicsView):
         self.grabGesture(QtCore.Qt.PinchGesture)
         #self.grabGesture(QtCore.Qt.SwipeGesture)
 
-        self.pointertrail = collections.deque(maxlen=100)
+        self.pointertrail = collections.deque(maxlen=CONFIG['trail_length'])
         self.pointertrailitem = None
+        self.pointertrailitem2 = None
 
         # track when pinch events occur
         self.pinchtime = 0
@@ -2770,18 +2771,32 @@ class NexusView(QtWidgets.QGraphicsView):
 
                 self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
                 self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
-                pen = QtGui.QPen(QtGui.QColor(0,200,0,80))
-                pen.setWidthF(12)
+                pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
+                pen.setWidthF(CONFIG['trail_outer_width'])
                 pen.setCapStyle(QtCore.Qt.RoundCap)
                 self.pointertrailitem.setPen(pen)
                 self.pointertrailitem.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
                 self.scene().addItem(self.pointertrailitem)
+            if self.pointertrailitem2 is None:
+                # inner collor
+                self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
+                self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+                pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
+                pen.setWidthF(CONFIG['trail_inner_width'])
+                pen.setCapStyle(QtCore.Qt.RoundCap)
+                self.pointertrailitem2.setPen(pen)
+                self.pointertrailitem2.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
+                self.scene().addItem(self.pointertrailitem2)
 
             path = QtGui.QPainterPath()
+            path2 = QtGui.QPainterPath()
             path.moveTo(self.pointertrail[0])
+            path2.moveTo(self.pointertrail[0])
             for p in self.pointertrail:
                 path.lineTo(p)
+                path2.lineTo(p)
             self.pointertrailitem.setPath(path)
+            self.pointertrailitem2.setPath(path)
 
 
         elif self._dragmode == self.DRAGPAN:
@@ -2824,6 +2839,9 @@ class NexusView(QtWidgets.QGraphicsView):
         if self.pointertrailitem is not None:
             self.scene().removeItem(self.pointertrailitem )
             self.pointertrailitem = None
+        if self.pointertrailitem2 is not None:
+            self.scene().removeItem(self.pointertrailitem2 )
+            self.pointertrailitem2 = None
 
         if not self.scene().presentation:
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
