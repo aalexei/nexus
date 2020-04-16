@@ -70,8 +70,9 @@ default_config = {
     "trail_inner_color": "#80FFFFFF",
     "trail_outer_width": 12,
     "trail_inner_width": 4,
-    "trail_length": 200,
     "trail_pointer_factor": 1.5, # factor to increase pointer size by
+
+    "trail_hold_time": 2.0, # how long to keep the trail after pointer-up [in seconds]
 }
 
 

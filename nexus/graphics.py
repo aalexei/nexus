@@ -2610,9 +2610,15 @@ class NexusView(QtWidgets.QGraphicsView):
         self.grabGesture(QtCore.Qt.PinchGesture)
         #self.grabGesture(QtCore.Qt.SwipeGesture)
 
-        self.pointertrail = collections.deque(maxlen=CONFIG['trail_length'])
+        # some data structures to hold the pointer trail
+        # the points are in a list of lists in reverse order
+        self.pointertrail = []
         self.pointertrailitem = None
         self.pointertrailitem2 = None
+        self._trailTimer = QtCore.QTimer()
+        self._trailTimer.setSingleShot(True)
+        self._trailTimer.timeout.connect(self.trailTimerExpire)
+        self._trailTimer.setInterval(CONFIG['trail_hold_time']*1000)
 
         # track when pinch events occur
         self.pinchtime = 0
@@ -2756,17 +2762,16 @@ class NexusView(QtWidgets.QGraphicsView):
         elif self._dragmode == self.DRAGPAN and self.scene().presentation:
 
             s = self.transform().m11()
+            self._trailTimer.stop()
             pn = self.mapToScene(event.pos())*s
             if len(self.pointertrail)==0:
-                # if there's nothing in the queue add the point
-                self.pointertrail.appendleft(pn)
+                # if there's nothing in the queue add the point within a stroke list
+                self.pointertrail.append([pn])
             else:
-                # only add the point if it's moved, this way the trail
-                # hangs around if the pen is paused
-                po = self.pointertrail[0]
-                dist2 = (pn.x()-po.x())**2+(pn.y()-po.y())**2
-                if dist2 > 10:
-                    self.pointertrail.appendleft(pn)
+                # Append to last strokelist
+                self.pointertrail[-1].append(pn)
+
+            # create the graphics items for the pointer trail
             if self.pointertrailitem is None:
 
                 self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
@@ -2790,11 +2795,14 @@ class NexusView(QtWidgets.QGraphicsView):
 
             path = QtGui.QPainterPath()
             path2 = QtGui.QPainterPath()
-            path.moveTo(self.pointertrail[0])
-            path2.moveTo(self.pointertrail[0])
-            for p in self.pointertrail:
-                path.lineTo(p)
-                path2.lineTo(p)
+            for stroke in reversed(self.pointertrail):
+                if len(stroke)==0:
+                    continue
+                path.moveTo(stroke[-1])
+                path2.moveTo(stroke[-1])
+                for p in reversed(stroke[:-1]):
+                    path.lineTo(p)
+                    path2.lineTo(p)
             self.pointertrailitem.setPath(path)
             self.pointertrailitem2.setPath(path)
 
@@ -2835,13 +2843,10 @@ class NexusView(QtWidgets.QGraphicsView):
                 stem.setSelected(False)
         self._dragmode = self.DRAGOFF
 
-        self.pointertrail.clear()
-        if self.pointertrailitem is not None:
-            self.scene().removeItem(self.pointertrailitem )
-            self.pointertrailitem = None
-        if self.pointertrailitem2 is not None:
-            self.scene().removeItem(self.pointertrailitem2 )
-            self.pointertrailitem2 = None
+        # start a new stroke
+        self.pointertrail.append([])
+        self._trailTimer.start()
+       
 
         if not self.scene().presentation:
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
@@ -2872,6 +2877,17 @@ class NexusView(QtWidgets.QGraphicsView):
             event.ignore()
         else:
             super().mouseDoubleClickEvent(event)
+
+
+    def trailTimerExpire(self):
+        self.pointertrail.clear()
+        if self.pointertrailitem is not None:
+            self.scene().removeItem(self.pointertrailitem )
+            self.pointertrailitem = None
+        if self.pointertrailitem2 is not None:
+            self.scene().removeItem(self.pointertrailitem2 )
+            self.pointertrailitem2 = None
+
 
     def keyPressEvent(self, event):
         if self.scene().presentation and event.key() == QtCore.Qt.Key_Escape:
