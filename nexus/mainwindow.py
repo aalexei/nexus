@@ -629,16 +629,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowIcon(QtGui.QIcon(":/images/nexusicon.png"))
 
-        self.scene = self.loadMap(fileName)
-
-        self.editDialog = graphics.InputDialog()
-        self.scene.showEditDialog.connect(self.editDialog.setDialog)
-
+        #
+        # Views widget
+        #
         self.viewsModel = ViewsModel(0,1)
-
-        self.view = graphics.NexusView(self.scene)
-        self.setCentralWidget(self.view)
-
         viewstoolbar = QtWidgets.QToolBar()
         self.views = ViewsWidget(self, viewstoolbar)
 
@@ -650,6 +644,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
         dock.dockLocationChanged.connect(self.views.locationChanged)
         dock.close()
+        self.editDialog = graphics.InputDialog()
+
+        #
+        # scene and view
+        #
+        self.scene = self.loadMap(fileName)
+
+        self.scene.showEditDialog.connect(self.editDialog.setDialog)
+
+        self.view = graphics.NexusView(self.scene)
+        self.setCentralWidget(self.view)
+
 
         # dock = QtWidgets.QDockWidget(self.tr("Edit"), self)
         # self.editwidget = EditWidget(self)
@@ -2857,8 +2863,8 @@ class ViewsWidget(QtWidgets.QWidget):
     def __init__(self, parent, toolbar):
         super().__init__(parent)
 
-        self.view = parent.view
-        self.scene = parent.scene
+        # self.view = parent.view
+        # self.scene = parent.scene
         self.viewsModel = parent.viewsModel
         self.toolbar = toolbar
 
