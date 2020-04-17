@@ -2894,6 +2894,42 @@ class ViewsWidget(QtWidgets.QWidget):
         self.viewsListView.doubleClicked.connect(self.doubleClicked)
         layout.addWidget(self.viewsListView)
 
+    def reload(self, scene, view):
+
+        self.scene = scene
+        self.view = view
+        g = self.scene.g
+
+        # clear any existing views
+        rows = self.viewsModel.rowCount()
+        for r in range(rows):
+            item = self.item(r)
+            print(item)
+
+        # load the chain of views from the graphdb
+        views = g.fetch('[n:View]')
+
+        # first view found without an incomming transition is the rootview
+        rootview = None
+        for view in views:
+            if len(view.inE('e.kind = "Transition"')) == 0:
+                rootview = view
+                break
+
+
+        # TODO check for orphaned views
+
+    #     for viewxml in xml.findall('view'):
+
+    #         item = ViewsItem()
+
+    #         item.fromxml(viewxml, self.view)
+    #         item.viewRectItem.setVisible(False)
+
+    #         self.viewsModel.appendRow(item)
+        # create the view items
+
+
     def locationChanged(self, loc):
         '''
         Where this widget is docked has changed ... adjust flow accordingly
