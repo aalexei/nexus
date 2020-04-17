@@ -73,6 +73,13 @@ default_config = {
     "trail_pointer_factor": 1.5, # factor to increase pointer size by
 
     "trail_hold_time": 2.0, # how long to keep the trail after pointer-up [in seconds]
+
+    #
+    # Views
+    #
+
+    "view_rect_size": (1024, 768), # match to your screen size. Only for reference.
+    #"view_rect_size": (2560/2, 1440/2), # match to your screen size. Only for reference.
 }
 
 

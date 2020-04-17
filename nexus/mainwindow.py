@@ -2666,14 +2666,14 @@ class ViewsItem(QtGui.QStandardItem):
 
 #----------------------------------------------------------------------
 class ViewRectangle(QtWidgets.QGraphicsPathItem):
-    VIEWW = 1024
-    VIEWH = 768
 
     # viewChanged = QtCore.pyqtSignal()
 
     def __init__(self, viewItem):
 
         self.viewitem = viewItem
+
+        self.VIEWW, self.VIEWH = CONFIG['view_rect_size']
 
         path = QtGui.QPainterPath()
         rect = QtCore.QRectF(-self.VIEWW/2.0,-self.VIEWH/2.0,self.VIEWW,self.VIEWH)
