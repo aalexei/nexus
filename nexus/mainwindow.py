@@ -2525,6 +2525,9 @@ class ViewsListView(QtWidgets.QListView):
     def resizeEvent(self, event):
 
         super(ViewsListView, self).resizeEvent(event)
+        self.setViewIconSize()
+
+    def setViewIconSize(self):
         if self.orientation == self.Vertical:
             size = self.size().width()
         else:
@@ -2537,6 +2540,8 @@ class ViewsListView(QtWidgets.QListView):
             self.setFlow(self.TopToBottom)
         else:
             self.setFlow(self.LeftToRight)
+
+        self.setViewIconSize()
 
     def selectionChanged(self,  selected,  deselected):
         QtWidgets.QListView.selectionChanged(self, selected, deselected)
@@ -2910,7 +2915,7 @@ class ViewsWidget(QtWidgets.QWidget):
         self.deleteViewAct.triggered.connect(self.deleteView)
 
         ## create toolbar
-        self.toolbar.setIconSize(QtCore.QSize(28,28))
+        self.toolbar.setIconSize(QtCore.QSize(20,20))
         self.toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
 
         self.toolbar.addAction(self.addViewAct)
@@ -3013,18 +3018,6 @@ class ViewsWidget(QtWidgets.QWidget):
         if rows == 0:
             # Nothing to do
             return
-
-        # # first item should not have any incoming Transition delete any offending nodes
-        # item = self.viewsModel.item(0)
-        # edges = item.node.inE('e.kind="Transition"')
-        # for e in edges:
-        #     e.start.delete(disconnect=True, setchange=False)
-
-        # # last item should not have outgoing Transition delete any offending nodes
-        # item = self.viewsModel.item(rows-1)
-        # edges = item.node.outE('e.kind="Transition"')
-        # for e in edges:
-        #     e.end.delete(disconnect=True, setchange=False)
 
         # delete all Transition edges and relink
         for r in range(rows):
