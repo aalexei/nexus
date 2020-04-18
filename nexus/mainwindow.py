@@ -2401,6 +2401,8 @@ class ViewsModel(QtGui.QStandardItemModel):
     home = 0 # home is the first view by default
     athome = None  # the location of the previous view will be stored here on switch
 
+    reordered = QtCore.pyqtSignal()
+
     def _cleanlimits(self,  viewnumber):
         '''
         clean up limits for requested view number
@@ -2447,7 +2449,7 @@ class ViewsModel(QtGui.QStandardItemModel):
     def setHomeView(self,  viewnumber):
         self.home = self._cleanlimits(viewnumber)
 
-    def dropMimeData (self, data, action, targetrow, targetcolumn, parent ):
+    def dropMimeData(self, data, action, targetrow, targetcolumn, parent ):
 
         if data.hasFormat('application/x-qabstractitemmodeldatalist'):
             bytearray = data.data('application/x-qabstractitemmodeldatalist')
@@ -2476,7 +2478,8 @@ class ViewsModel(QtGui.QStandardItemModel):
             ## insert marker so we keep track of where to add items
             if targetrow == -1:
                 targetrow = self.rowCount()
-            target = ViewsItem(scene=self.scene)
+            #target = ViewsItem(scene=self.scene)
+            target = QtGui.QStandardItem()
             self.insertRow(targetrow, target)
 
             ## move items to new home
@@ -2486,6 +2489,7 @@ class ViewsModel(QtGui.QStandardItemModel):
 
             ## remove marker
             self.takeRow( target.row() )
+            self.reordered.emit()
 
             return True
 
@@ -2514,7 +2518,7 @@ class ViewsListView(QtWidgets.QListView):
         self.setVerticalScrollMode(self.ScrollPerPixel)
         self.setHorizontalScrollMode(self.ScrollPerPixel)
 
-        # // NOTE: the dragDropMode must be set AFTER the viewMode!!!
+        # NOTE: the dragDropMode must be set AFTER the viewMode!!!
         self.setDragDropMode( self.InternalMove )
 
 
@@ -2883,6 +2887,8 @@ class ViewsWidget(QtWidgets.QWidget):
         self.view = parent.view
         self.scene = parent.scene
         self.viewsModel = parent.viewsModel
+        self.viewsModel.reordered.connect(self.relinkViews)
+
         self.toolbar = toolbar
 
         ## create main layout
@@ -3008,24 +3014,25 @@ class ViewsWidget(QtWidgets.QWidget):
             # Nothing to do
             return
 
-        # first item should not have any incoming Transition delete any offending nodes
-        item = self.viewsModel.item(0)
-        edges = item.node.inE('e.kind="Transition"')
-        for e in edges:
-            e.start.delete(disconnect=True, setchange=False)
+        # # first item should not have any incoming Transition delete any offending nodes
+        # item = self.viewsModel.item(0)
+        # edges = item.node.inE('e.kind="Transition"')
+        # for e in edges:
+        #     e.start.delete(disconnect=True, setchange=False)
 
-        # last item should not have outgoing Transition delete any offending nodes
-        item = self.viewsModel.item(rows-1)
-        edges = item.node.outE('e.kind="Transition"')
-        for e in edges:
-            e.end.delete(disconnect=True, setchange=False)
+        # # last item should not have outgoing Transition delete any offending nodes
+        # item = self.viewsModel.item(rows-1)
+        # edges = item.node.outE('e.kind="Transition"')
+        # for e in edges:
+        #     e.end.delete(disconnect=True, setchange=False)
 
         # delete all Transition edges and relink
+        for r in range(rows):
+            item = self.viewsModel.item(r)
+            item.node.bothE('e.kind="Transition"').delete(setchange=False)
         for r in range(1,rows):
             item0 = self.viewsModel.item(r-1)
             item1 = self.viewsModel.item(r)
-            item0.node.outE('e.kind="Transition"').delete(setchange=False)
-            item1.node.inE('e.kind="Transition"').delete(setchange=False)
             self.scene.graph.Edge(item0.node, "Transition", item1.node).save(setchange=False)
    
     def resetView(self):
