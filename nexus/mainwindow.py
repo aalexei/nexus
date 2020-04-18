@@ -629,21 +629,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowIcon(QtGui.QIcon(":/images/nexusicon.png"))
 
-        #
-        # Views widget
-        #
-        self.viewsModel = ViewsModel(0,1)
-        viewstoolbar = QtWidgets.QToolBar()
-        self.views = ViewsWidget(self, viewstoolbar)
-
-        self.views.viewsListView.selectionChange.connect(self.viewsFrames)
-        dock = QtWidgets.QDockWidget(self.tr("Views"), self)
-        self.viewsAct = dock.toggleViewAction()
-        dock.setWidget(self.views)
-        dock.setTitleBarWidget(viewstoolbar)
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
-        dock.dockLocationChanged.connect(self.views.locationChanged)
-        dock.close()
         self.editDialog = graphics.InputDialog()
 
         #
@@ -662,6 +647,22 @@ class MainWindow(QtWidgets.QMainWindow):
         # dock.setWidget(self.editwidget)
         # self.addDockWidget(QtCore.Qt.TopDockWidgetArea, dock)
 
+        #
+        # Views widget
+        #
+        self.viewsModel = ViewsModel(0,1)
+        viewstoolbar = QtWidgets.QToolBar()
+        self.views = ViewsWidget(self, viewstoolbar)
+
+        self.views.viewsListView.selectionChange.connect(self.viewsFrames)
+        dock = QtWidgets.QDockWidget(self.tr("Views"), self)
+        self.viewsAct = dock.toggleViewAction()
+        dock.setWidget(self.views)
+        dock.setTitleBarWidget(viewstoolbar)
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+        dock.dockLocationChanged.connect(self.views.locationChanged)
+        dock.close()
+
         self.createActions()
 
         self.createMenus()
@@ -671,6 +672,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.scene.statusMessage.connect(self.showMessage)
         self.scene.linkClicked.connect(self.linkClicked)
+
 
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
 
@@ -1693,6 +1695,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 root = graphics.StemItem(node=n, scene=scene)
                 root.renew(reload=False)
 
+
         except ValueError as e:
             error = 'Failed to open file "%s": %s' % (filename, e)
             raise Exception(error)
@@ -2473,7 +2476,7 @@ class ViewsModel(QtGui.QStandardItemModel):
             ## insert marker so we keep track of where to add items
             if targetrow == -1:
                 targetrow = self.rowCount()
-            target = ViewsItem()
+            target = ViewsItem(scene=self.scene)
             self.insertRow(targetrow, target)
 
             ## move items to new home
@@ -2540,18 +2543,27 @@ class ViewsItem(QtGui.QStandardItem):
 
     ICONMAXSIZE = 300
 
-    def __init__(self, matrix=None, centrePoint=None, scene=None):
+    def __init__(self, node, scene=None):
         super().__init__()
+        self.node = node
 
         self.setDropEnabled(False)
-        self.viewRectItem = None
+        # self.viewRectItem = None
+        rectitem = ViewRectangle(self)
+        scene.addItem(rectitem)
+        self.viewRectItem = rectitem
+
+        # set the transformation on the viewRectItem
+        T = graphics.Transform(*self.node['transform'])
+        self.viewRectItem.setTransform(T)
+        self.viewRectItem.setVisible(False)
 
     def setView(self, view, icon=None, matrix=None):
 
-        if self.viewRectItem is None:
-            rectitem = ViewRectangle(self)
-            view.scene().addItem(rectitem)
-            self.viewRectItem = rectitem
+        # if self.viewRectItem is None:
+        #     rectitem = ViewRectangle(self)
+        #     view.scene().addItem(rectitem)
+        #     self.viewRectItem = rectitem
 
         if matrix is None:
             invmatrix = view.transform()
@@ -2562,7 +2574,12 @@ class ViewsItem(QtGui.QStandardItem):
         else:
             self.viewRectItem.setTransform(matrix)
 
+        self.saveView()
         self.createPreview(view, icon=icon)
+
+    def saveView(self):
+        self.node['transform'] = graphics.Transform(self.viewTransform()).tolist()
+        self.node.save(setchange=False)
 
     def createPreview(self, view=None, icon=None):
 
@@ -2788,8 +2805,8 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem):
 
         QtWidgets.QGraphicsItem.mouseReleaseEvent(self, event)
 
+        self.viewitem.saveView()
         self.viewitem.createPreview()
-        # TODO @views save here
 
 
 #----------------------------------------------------------------------
@@ -2863,8 +2880,8 @@ class ViewsWidget(QtWidgets.QWidget):
     def __init__(self, parent, toolbar):
         super().__init__(parent)
 
-        # self.view = parent.view
-        # self.scene = parent.scene
+        self.view = parent.view
+        self.scene = parent.scene
         self.viewsModel = parent.viewsModel
         self.toolbar = toolbar
 
@@ -2900,40 +2917,42 @@ class ViewsWidget(QtWidgets.QWidget):
         self.viewsListView.doubleClicked.connect(self.doubleClicked)
         layout.addWidget(self.viewsListView)
 
-    def reload(self, scene, view):
-
-        self.scene = scene
-        self.view = view
-        g = self.scene.g
-
-        # clear any existing views
-        rows = self.viewsModel.rowCount()
-        for r in range(rows):
-            item = self.item(r)
-            print(item)
+        g = self.scene.graph
 
         # load the chain of views from the graphdb
         views = g.fetch('[n:View]')
 
         # first view found without an incomming transition is the rootview
-        rootview = None
+        rootviews = []
         for view in views:
             if len(view.inE('e.kind = "Transition"')) == 0:
-                rootview = view
-                break
+                rootviews.append(view)
 
 
-        # TODO check for orphaned views
+        # check for orphaned views
+        if len(rootviews) == 0:
+            viewnode = None
+        else:
+            logging.warn("Found multiple root views, choosing one, deleting rest.")
+            # find first with outgoing Transition or take last
+            for view in rootviews:
+                if len(view.outE('e.kind = "Transition"'))>0:
+                    viewnode = view
+                    break
+                else:
+                    viewnode = view
+            # remove unused ones
+            for view in rootviews:
+                if view != viewnode:
+                    view.delete(setchange=False)
 
-    #     for viewxml in xml.findall('view'):
+        while viewnode is not None:
+            item = ViewsItem(viewnode, scene=self.scene)
+            #item.fromxml(viewxml, self.view)
+            self.viewsModel.appendRow(item)
+            item.createPreview(view=self.view)
 
-    #         item = ViewsItem()
-
-    #         item.fromxml(viewxml, self.view)
-    #         item.viewRectItem.setVisible(False)
-
-    #         self.viewsModel.appendRow(item)
-        # create the view items
+            viewnode = viewnode.outN('e.kind = "Transition"').one
 
 
     def locationChanged(self, loc):
@@ -2959,9 +2978,11 @@ class ViewsWidget(QtWidgets.QWidget):
         self.viewsModel.current = itemindex.row()
 
     def addView(self):
-        item = ViewsItem()
-        item.setView(self.view)
 
+        node = self.scene.graph.Node('View', transform=graphics.Transform().tolist())
+        item = ViewsItem(node, scene=self.scene)
+        item.setView(self.view)
+       
         if not self.window().viewsFramesAct.isChecked():
             item.viewRectItem.setVisible(False)
 
@@ -2974,10 +2995,39 @@ class ViewsWidget(QtWidgets.QWidget):
                 row = max(row, itemindex.row())
 
             self.viewsModel.insertRow(row+1,item)
+            
+        self.relinkViews()
 
         self.viewsListView.clearSelection()
         self.viewsListView.setCurrentIndex(item.index())
 
+    def relinkViews(self):
+        # ensure all views are daisy chained correctly
+        rows = self.viewsModel.rowCount()
+        if rows == 0:
+            # Nothing to do
+            return
+
+        # first item should not have any incoming Transition delete any offending nodes
+        item = self.viewsModel.item(0)
+        edges = item.node.inE('e.kind="Transition"')
+        for e in edges:
+            e.start.delete(disconnect=True, setchange=False)
+
+        # last item should not have outgoing Transition delete any offending nodes
+        item = self.viewsModel.item(rows-1)
+        edges = item.node.outE('e.kind="Transition"')
+        for e in edges:
+            e.end.delete(disconnect=True, setchange=False)
+
+        # delete all Transition edges and relink
+        for r in range(1,rows):
+            item0 = self.viewsModel.item(r-1)
+            item1 = self.viewsModel.item(r)
+            item0.node.outE('e.kind="Transition"').delete(setchange=False)
+            item1.node.inE('e.kind="Transition"').delete(setchange=False)
+            self.scene.graph.Edge(item0.node, "Transition", item1.node).save(setchange=False)
+   
     def resetView(self):
 
         # XXX this should be in NexusView .. only raise a signal here
@@ -3000,8 +3050,11 @@ class ViewsWidget(QtWidgets.QWidget):
             minindex = max
 
         for item in itemstodelete:
+            item.node.delete(disconnect=True, setchange=False)
             self.scene.removeItem(item.viewRectItem)
             self.viewsModel.removeRow(item.row())
+
+        self.relinkViews()
 
         if len(rows)>0:
             row = rows[0]-1
@@ -3009,6 +3062,7 @@ class ViewsWidget(QtWidgets.QWidget):
                 index = self.viewsModel.item(row).index()
                 self.viewsListView.scrollTo(index)
                 self.viewsListView.setCurrentIndex(index)
+
 
     # def toxml(self):
 
