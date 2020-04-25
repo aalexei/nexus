@@ -2101,7 +2101,7 @@ class MainWindow(QtWidgets.QMainWindow):
         ## "Smooth and Efficient Zooming and Panning" J.J. van Wijk and W.A.A. Nuij
 
         ## Effective velocity .. this will determine the number of steps
-        V = 0.002
+        V = 0.003
         ## rho is a tradeoff between zooming and panning
         ## higher values jump more
         rho = 1.6
@@ -2151,9 +2151,10 @@ class MainWindow(QtWidgets.QMainWindow):
         tottime = S/V
 
         ## how often to call the frame update in ms
-        dt = 20
+        dt = 33  # 33 = 30 frames/s
 
         totalsteps = int(round(tottime/dt))
+        logging.debug("Transition: tot time: %f,  steps:%d",tottime, totalsteps)
 
         if totalsteps > 0:
             angle1 = rot1-rot0
@@ -2245,12 +2246,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.hidePointerAct.trigger()
 
             # (Use shift to actually move canvas)
-            self.viewsNextAct.setShortcuts(["PgDown","Right", "Down", " "])
-            self.viewsPreviousAct.setShortcuts(["PgUp","Left", "Up"])
+            self.viewsNextAct.setShortcuts(CONFIG['view_next_keys'])
+            self.viewsPreviousAct.setShortcuts(CONFIG['view_prev_keys'])
+            self.viewsHomeAct.setShortcuts(CONFIG['view_home_keys'])
+            self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
+            self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
+
             self.presentationModeAct.setShortcut("Esc")
-            self.viewsHomeAct.setShortcuts([".", "H"])
-            self.viewsFirstAct.setShortcuts(["0", "S"])
-            self.hidePointerAct.setShortcuts(["P"])
 
         else:
 
