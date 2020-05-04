@@ -2569,27 +2569,31 @@ class ViewsItem(QtGui.QStandardItem):
         self.viewRectItem.setTransform(T)
         self.viewRectItem.setVisible(False)
 
-    def setView(self, view, icon=None, matrix=None):
+    #def setView(self, view, icon=None, matrix=None):
+    def setView(self, view):
 
         # if self.viewRectItem is None:
         #     rectitem = ViewRectangle(self)
         #     view.scene().addItem(rectitem)
         #     self.viewRectItem = rectitem
 
-        if matrix is None:
-            invmatrix = view.transform()
-            matrix = invmatrix.inverted()[0]
-            centrePoint = view.mapToScene(view.viewport().rect().center())
-            self.viewRectItem.setTransform(matrix)
-            self.viewRectItem.setPos(centrePoint-self.viewRectItem.scenePos())
-        else:
-            self.viewRectItem.setTransform(matrix)
+        # if matrix is None:
+        invmatrix = view.transform()
+        matrix = invmatrix.inverted()[0]
+        centrePoint = view.mapToScene(view.viewport().rect().center())
+        #print(graphics.Transform(matrix).tolist())
+        self.viewRectItem.setTransform(matrix)
+        #self.viewRectItem.setPos(centrePoint)
+        self.viewRectItem.setPos(centrePoint-self.viewRectItem.scenePos())
+
+        # else:
+        #     self.viewRectItem.setTransform(matrix)
 
         self.saveView()
-        self.createPreview(view, icon=icon)
+        self.createPreview(view)
 
     def saveView(self):
-        self.node['transform'] = graphics.Transform(self.viewTransform()).tolist()
+        self.node['transform'] = self.viewTransform().tolist()
         self.node.save(setchange=False)
 
     def createPreview(self, view=None, icon=None):
