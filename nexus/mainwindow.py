@@ -2569,25 +2569,16 @@ class ViewsItem(QtGui.QStandardItem):
         self.viewRectItem.setTransform(T)
         self.viewRectItem.setVisible(False)
 
-    #def setView(self, view, icon=None, matrix=None):
     def setView(self, view):
 
-        # if self.viewRectItem is None:
-        #     rectitem = ViewRectangle(self)
-        #     view.scene().addItem(rectitem)
-        #     self.viewRectItem = rectitem
-
-        # if matrix is None:
         invmatrix = view.transform()
         matrix = invmatrix.inverted()[0]
         centrePoint = view.mapToScene(view.viewport().rect().center())
-        #print(graphics.Transform(matrix).tolist())
-        self.viewRectItem.setTransform(matrix)
-        #self.viewRectItem.setPos(centrePoint)
-        self.viewRectItem.setPos(centrePoint-self.viewRectItem.scenePos())
 
-        # else:
-        #     self.viewRectItem.setTransform(matrix)
+        # XXX store centre, scale, and rotation
+        dx,dy,r,s = graphics.Transform(matrix).getTRS()
+        matrix = graphics.Transform().setTRS(centrePoint.x(),centrePoint.y(),r,s)
+        self.viewRectItem.setTransform(matrix)
 
         self.saveView()
         self.createPreview(view)
