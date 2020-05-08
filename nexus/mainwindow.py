@@ -2323,14 +2323,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def viewsNext(self):
+        """
+        Go to next view in the list
+        """
         self.viewsModel.athome = None
         self.showView(self.viewsModel.nextView())
 
     def viewsPrevious(self):
+        """
+        Go to previous view in the list
+        """
         self.viewsModel.athome = None
         self.showView(self.viewsModel.previousView())
 
     def viewsHome(self):
+        """
+        Toggle the home view
+        """
 
         if self.viewsModel.athome is None:
             # store where we are and switch to homeview
@@ -2343,10 +2352,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.viewsModel.athome = None
 
     def viewsFirst(self):
-        'Go to first view'
+        """
+        Go to first view
+        """
         self.showView(self.viewsModel.firstView())
 
     def viewsFrames(self):
+        """
+        Toggle showing view frames
+        """
 
         if self.viewsFramesAct.isChecked():
             vis = True
@@ -2498,58 +2512,6 @@ class ViewsModel(QtGui.QStandardItemModel):
         else:
             return False
 
-class ViewsListView(QtWidgets.QListView):
-
-    Horizontal = 0
-    Vertical = 1
-    orientation = Vertical
-
-    selectionChange = QtCore.pyqtSignal()
-
-    def __init__(self):
-        super().__init__()
-
-        self.setViewMode(self.ListMode)
-        self.setWrapping(False)
-        self.setFlow(QtWidgets.QListView.TopToBottom)
-        self.setMovement(self.Snap)
-        self.setResizeMode( self.Adjust )
-        self.setSelectionRectVisible( True )
-        self.setSelectionMode( self.ExtendedSelection )
-        self.setSpacing(0)
-        self.setVerticalScrollMode(self.ScrollPerPixel)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
-
-        # NOTE: the dragDropMode must be set AFTER the viewMode!!!
-        self.setDragDropMode( self.InternalMove )
-
-
-    def resizeEvent(self, event):
-
-        super(ViewsListView, self).resizeEvent(event)
-        self.setViewIconSize()
-
-    def setViewIconSize(self):
-        if self.orientation == self.Vertical:
-            size = self.size().width()
-        else:
-            size = self.size().height()
-        self.setIconSize(QtCore.QSize(size-12,size-12))
-
-    def resetOrientation(self):
-
-        if self.orientation == self.Vertical:
-            self.setFlow(self.TopToBottom)
-        else:
-            self.setFlow(self.LeftToRight)
-
-        self.setViewIconSize()
-
-    def selectionChanged(self,  selected,  deselected):
-        QtWidgets.QListView.selectionChanged(self, selected, deselected)
-        self.selectionChange.emit()
-
-
 class ViewsItem(QtGui.QStandardItem):
 
     ICONMAXSIZE = 300
@@ -2626,24 +2588,6 @@ class ViewsItem(QtGui.QStandardItem):
             view.setTransform(matrix0)
             view.centerOn(center0)
 
-
-            ## make snapshot the same proportions as viewRectItem
-            #F = self.ICONMAXSIZE/float(self.viewRectItem.VIEWW)
-            #H = int(F*self.viewRectItem.VIEWH)
-
-            ##source = QtCore.QRectF(0,0,self.ICONMAXSIZE,H)
-            ##source = self.viewRectItem.mapToScene(source)
-            #source = self.viewRectItem.mapToScene(self.viewRectItem.boundingRect()).boundingRect()
-
-
-            #target = QtCore.QRectF(0,0,self.ICONMAXSIZE,H)
-            #pixmap = QtGui.QPixmap(target.width(), target.height())
-            ##pixmap.fill(QtCore.Qt.transparent)
-            #pixmap.fill(QtCore.Qt.white)
-            #painter = QtGui.QPainter(pixmap)
-            #self.viewRectItem.scene().render(painter, target, source)
-            #painter.end()
-
             icon = QtGui.QIcon(pixmap)
 
             # restore visibility
@@ -2666,35 +2610,12 @@ class ViewsItem(QtGui.QStandardItem):
         ## convenience function (point contained in sceneTransform())
         return self.viewRectItem.scenePos()
 
-    # def toxml(self):
-
-    #     xml=et.Element('view')
-    #     t = self.viewTransform()
-    #     T = [t.m11(), t.m12(), t.m13() ,t.m21(), t.m22(), t.m23(),t.m31(), t.m32(), t.m33()]
-    #     xml.set('transform', str(T))
-
-    #     return xml
-
-    # def fromxml(self, xml, view):
-    #     tmp=xml.get('transform', '[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]')
-    #     # XXX check for malicious code
-    #     matrix = graphics.Transform.fromxml(tmp)
-    #     #tmp = eval(tmp)
-
-    #     # grab the centre point as a separate element
-    #     #centrePoint = QtCore.QPointF(tmp[2], tmp[7])
-    #     #tmp[2] = 0
-    #     #tmp[7] = 0
-
-    #     #T = QtGui.QTransform(*tmp)
-
-    #     #matrixinv, dummy = T.inverted()
-
-    #     #self.setView(view, None, matrixinv, centrePoint)
-    #     self.setView(view, None, matrix)
 
 #----------------------------------------------------------------------
 class ViewRectangle(QtWidgets.QGraphicsPathItem):
+    '''
+    Scene widget to indicate a View
+    '''
 
     # viewChanged = QtCore.pyqtSignal()
 
@@ -2764,18 +2685,12 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem):
             super().mouseMoveEvent(event)
             return
 
-        #p0 = event.lastScenePos()
         p0 = self.mapFromScene(self.mousePressPos)
         p1 = self.mapFromScene(event.scenePos())
 
-        #pivot = rect.center()
-        #pv = QtCore.QPointF(0,0)
-        #pv = self.mapToScene(self.boundingRect().center())
         pv = self.pivot
 
         transform = QtGui.QTransform(self.originalTransform)
-        #scale = self.transform()
-        #scale = self.originalTransform
         if p0.x()-pv.x() == 0:
             kx = 0.0
         else:
@@ -2788,22 +2703,10 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem):
 
         k = min(kx,ky)
 
-        #transform.translate(-pv.x(),-pv.y())
-
-        # best approach but view is off in use
-        #transform.translate(-1024/2.0,-768/2.0)
-        #pv = self.pivot
         transform.translate(pv.x(),pv.y())
         transform.scale(k,k)
         transform.translate(-pv.x(),-pv.y())
-        #transform.translate(1024/2.0,768/2.0)
-
-        #transform.translate(pv.x(),pv.y())
-
-        #self.setTransform(self.originalTransform*transform)
         self.setTransform(transform)
-        #self.setTransform(self.originalTransform*translate*scale*translateback)
-
 
         event.accept()
 
@@ -2817,6 +2720,11 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem):
 
 #----------------------------------------------------------------------
 class ViewRectangleHandle(QtWidgets.QGraphicsRectItem):
+    '''
+    Widget to control size of view rectangle
+
+    Just delegates action to parent (ViewRectangle)
+    '''
 
     def __init__(self, id, parent):
 
@@ -2851,6 +2759,9 @@ class ViewRectangleHandle(QtWidgets.QGraphicsRectItem):
 
 
 class ViewRectangleDirection(QtWidgets.QGraphicsPathItem):
+    """
+    Graphic to indicate up direction on a view frame
+    """
     def __init__(self, parent):
         apath=QtGui.QPainterPath()
         apath.moveTo(0, -40)
@@ -2869,16 +2780,57 @@ class ViewRectangleDirection(QtWidgets.QGraphicsPathItem):
         self.setScale(5)
 
 
-#----------------------------------------------------------------------
-# Experiment to see if editing window can be a dockwidget
-class EditWidget(QtWidgets.QWidget):
+class ViewsListView(QtWidgets.QListView):
 
-    def __init__(self, parent):
-        super().__init__(parent)
+    Horizontal = 0
+    Vertical = 1
+    orientation = Vertical
+
+    selectionChange = QtCore.pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+
+        self.setViewMode(self.ListMode)
+        self.setWrapping(False)
+        self.setFlow(QtWidgets.QListView.TopToBottom)
+        self.setMovement(self.Snap)
+        self.setResizeMode( self.Adjust )
+        self.setSelectionRectVisible( True )
+        self.setSelectionMode( self.ExtendedSelection )
+        self.setSpacing(0)
+        self.setVerticalScrollMode(self.ScrollPerPixel)
+        self.setHorizontalScrollMode(self.ScrollPerPixel)
+
+        # NOTE: the dragDropMode must be set AFTER the viewMode!!!
+        self.setDragDropMode( self.InternalMove )
 
 
-    def editStem(self, node):
-        pass
+    def resizeEvent(self, event):
+
+        super(ViewsListView, self).resizeEvent(event)
+        self.setViewIconSize()
+
+    def setViewIconSize(self):
+        if self.orientation == self.Vertical:
+            size = self.size().width()
+        else:
+            size = self.size().height()
+        self.setIconSize(QtCore.QSize(size-12,size-12))
+
+    def resetOrientation(self):
+
+        if self.orientation == self.Vertical:
+            self.setFlow(self.TopToBottom)
+        else:
+            self.setFlow(self.LeftToRight)
+
+        self.setViewIconSize()
+
+    def selectionChanged(self,  selected,  deselected):
+        QtWidgets.QListView.selectionChanged(self, selected, deselected)
+        self.selectionChange.emit()
+
 
 #----------------------------------------------------------------------
 class ViewsWidget(QtWidgets.QWidget):
@@ -3061,25 +3013,13 @@ class ViewsWidget(QtWidgets.QWidget):
                 self.viewsListView.setCurrentIndex(index)
 
 
-    # def toxml(self):
+#----------------------------------------------------------------------
+# Experiment to see if editing window can be a dockwidget
+class EditWidget(QtWidgets.QWidget):
 
-    #     xml=et.Element('views')
+    def __init__(self, parent):
+        super().__init__(parent)
 
-    #     rows = self.viewsModel.rowCount()
-    #     for row in range(rows):
-    #         item = self.viewsModel.item(row)
 
-    #         xml.append(item.toxml())
-
-    #     return xml
-
-    # def fromxml(self, xml):
-
-    #     for viewxml in xml.findall('view'):
-
-    #         item = ViewsItem()
-
-    #         item.fromxml(viewxml, self.view)
-    #         item.viewRectItem.setVisible(False)
-
-    #         self.viewsModel.appendRow(item)
+    def editStem(self, node):
+        pass
