@@ -1411,7 +1411,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.presentationModeAct.setCheckable(True)
         self.presentationModeAct.triggered.connect(self.setMode)
 
-        self.recordModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/move-mode.svg"), self.tr("Record Mode"), self)
+        self.recordModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/record.svg"), self.tr("Record Mode"), self)
         self.recordModeAct.setCheckable(True)
         self.recordModeAct.triggered.connect(self.setMode)
 
