@@ -1395,14 +1395,34 @@ class MainWindow(QtWidgets.QMainWindow):
         self.filterClearAct.setStatusTip(self.tr("Clear filters"))
 
         # ----------------------------------------------------------------------------------
-        self.presentationModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-presentation.svg"), self.tr("Presentation"), self)
-        self.presentationModeAct.setStatusTip(self.tr("Set Toggle Presentation Mode"))
-        self.presentationModeAct.triggered.connect(self.setPresentationMode)
+        # Modes
+        #
+        # self.presentationModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-presentation.svg"), self.tr("Presentation"), self)
+        # self.presentationModeAct.setStatusTip(self.tr("Set Toggle Presentation Mode"))
+        # self.presentationModeAct.triggered.connect(self.setPresentationMode)
+        # self.presentationModeAct.setCheckable(True)
+        # self.presentationModeAct.setChecked(False)
 
-        self.view.presentationEscape.connect(self.setPresentationMode)
+        self.editModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/grab-mode.svg"), self.tr("Edit Mode"), self)
+        self.editModeAct.setCheckable(True)
+        self.editModeAct.triggered.connect(self.setMode)
+
+        self.presentationModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-presentation.svg"), self.tr("Presentation Mode"), self)
         self.presentationModeAct.setCheckable(True)
-        self.presentationModeAct.setChecked(False)
+        self.presentationModeAct.triggered.connect(self.setMode)
 
+        self.recordModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/move-mode.svg"), self.tr("Record Mode"), self)
+        self.recordModeAct.setCheckable(True)
+        self.recordModeAct.triggered.connect(self.setMode)
+
+        modegroup = QtWidgets.QActionGroup(self)
+        modegroup.addAction(self.editModeAct)
+        modegroup.addAction(self.presentationModeAct)
+        modegroup.addAction(self.recordModeAct)
+
+        self.editModeAct.setChecked(True)
+
+        self.view.presentationEscape.connect(self.setMode)
         # ----------------------------------------------------------------------------------
         self.viewsAct.setIcon(QtGui.QIcon(":/images/view-index.svg"))
         self.viewsAct.setShortcut("Ctrl+I")
@@ -1516,6 +1536,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu.addSeparator()
 
         self.viewMenu.addAction(self.presentationModeAct)
+        self.viewMenu.addAction(self.editModeAct)
+        self.viewMenu.addAction(self.presentationModeAct)
+        self.viewMenu.addAction(self.recordModeAct)
         self.viewMenu.addSeparator()
         self.viewMenu.addAction(self.viewsFramesAct)
         self.viewMenu.addAction(self.viewRotateAct)
@@ -1580,12 +1603,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewToolBar.addAction(self.zoomInAct)
         self.viewToolBar.addAction(self.zoomOutAct)
         self.viewToolBar.addAction(self.zoomSelectionAct)
-        self.viewToolBar.addAction(self.presentationModeAct)
+        #self.viewToolBar.addAction(self.presentationModeAct)
         self.viewToolBar.addAction(self.viewsAct)
         self.viewToolBar.addAction(self.viewsFirstAct)
         self.viewToolBar.addAction(self.viewsPreviousAct)
         self.viewToolBar.addAction(self.viewsHomeAct)
         self.viewToolBar.addAction(self.viewsNextAct)
+
+        # self.viewToolBar = self.addToolBar(self.tr("Mode"))
+        self.viewToolBar.addAction(self.editModeAct)
+        self.viewToolBar.addAction(self.presentationModeAct)
+        self.viewToolBar.addAction(self.recordModeAct)
 
         self.viewToolBar.setIconSize(QtCore.QSize(24,24))
 
@@ -2206,11 +2234,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.view.centerOn(center)
             self.viewcurrentstep += 1
 
-    def setPresentationMode(self):
+    def setMode(self):
 
-        if not self.scene.presentation:
-            self.scene.presentation = True
-            self.presentationModeAct.setChecked(True)
+        # The current checked status of the action is the new state after button presses etc
+
+        if self.presentationModeAct.isChecked():
+            #self.scene.presentation = True
+            self.scene.mode = "presentation"
+            #self.presentationModeAct.setChecked(True)
             logging.debug("Switching on presentation mode")
 
             # point on scene where the view is centred on
@@ -2252,19 +2283,52 @@ class MainWindow(QtWidgets.QMainWindow):
             self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
             self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
 
-            self.presentationModeAct.setShortcut("Esc")
+            self.editModeAct.setShortcut("Esc")
 
+        elif self.recordModeAct.isChecked():
+            self.scene.mode = "record"
+            logging.debug("Switching on record mode")
+
+            self.scene.clearSelection()
+
+            if self.viewsFramesAct.isChecked():
+                self.viewsFramesAct.trigger()
+
+            self.presentationhiddenstems = []
+            for child in self.scene.allChildStems(includeroot=False):
+                if 'hide' in child.getTags() and child.isVisible():
+                    child.hide()
+                    self.presentationhiddenstems.append(child)
+
+            self.showMaximized()
+
+            #self.view.centerOn(center)
+            self.hidePointerAct.setEnabled(True)
+            self.hidePointerAct.setChecked(False) # force toggle on
+            self.hidePointerAct.trigger()
+
+            # (Use shift to actually move canvas)
+            self.viewsNextAct.setShortcuts(CONFIG['view_next_keys'])
+            self.viewsPreviousAct.setShortcuts(CONFIG['view_prev_keys'])
+            self.viewsHomeAct.setShortcuts(CONFIG['view_home_keys'])
+            self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
+            self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
+
+            self.editModeAct.setShortcut("Esc")
         else:
 
             self.scene.presentation = False
-            self.presentationModeAct.setChecked(False)
-            logging.debug("Switching off presentation mode")
+            self.scene.mode = "edit"
+            # self.presentationModeAct.setChecked(False)
+            logging.debug("Switching on edit mode")
 
             # point on scene where the view is centred on
             center=self.view.mapToScene(self.view.viewport().rect().center())
 
-            #self.showNormal()
-            self.showMaximized()
+            # show Normal seems too abrupt after full screen
+            # XXX Need to store geometry of window on first use
+            self.showNormal()
+            #self.showMaximized()
 
             self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
             self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)

@@ -480,7 +480,7 @@ class InputDialog(QtWidgets.QDialog):
         elif self.textmode.isChecked():
             self.setTextMode()
 
-        if  self.stem.scene().presentation:
+        if  self.stem.scene().mode == "presentation":
             self.showFullScreen()
         elif self.fullscreenwidget.isChecked():
             self.showMaximized()
@@ -2343,7 +2343,8 @@ class NexusScene(QtWidgets.QGraphicsScene):
     showEditDialog = QtCore.pyqtSignal(object)
 
     ## in presentation mode (changes how items react):
-    presentation = False
+    #presentation = False
+    mode = "edit"
 
     def __init__(self, parent = None):
         super().__init__(parent)
@@ -2718,7 +2719,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
         # logging.debug('N mousePressEvent')
 
-        if self.scene().presentation:
+        if self.scene().mode in ["presentation", "record"]:
             self._dragmode = self.PREDRAGPAN
 
         elif event.button() in [QtCore.Qt.RightButton, QtCore.Qt.MiddleButton] and (self.itemAt(event.pos()) is None):
@@ -2759,7 +2760,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
             event.accept()
 
-        elif self._dragmode == self.DRAGPAN and self.scene().presentation:
+        elif self._dragmode == self.DRAGPAN and self.scene().mode in ["presentation", "record"]:
 
             s = self.transform().m11()
             self._trailTimer.stop()
@@ -2825,7 +2826,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
             event.accept()
 
-        elif not self.scene().presentation:
+        elif not self.scene().mode in ["presentation", "record"]:
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
 
@@ -2848,13 +2849,13 @@ class NexusView(QtWidgets.QGraphicsView):
         self._trailTimer.start()
        
 
-        if not self.scene().presentation:
+        if not self.scene().mode in ["presentation", "record"]:
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseReleaseEvent(self, event)
 
     def mouseDoubleClickEvent(self, event):
 
-        if self.scene().presentation:
+        if self.scene().mode in ["presentation", "record"]:
             item = self.itemAt(event.pos())
             if isinstance( item, OpenCloseWidget):
                 # pass through event for open-close widget as a single click
@@ -2890,7 +2891,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
 
     def keyPressEvent(self, event):
-        if self.scene().presentation and event.key() == QtCore.Qt.Key_Escape:
+        if self.scene().mode in ["presentation", "record"] and event.key() == QtCore.Qt.Key_Escape:
             self.presentationEscape.emit()
             event.accept()
         else:
@@ -4484,18 +4485,18 @@ class OpenCloseWidget(QtWidgets.QGraphicsPathItem):
     def toggleVisibilities(self):
 
         childnodes = self.stem.node.outN('e.kind="Child"')
-        presentation = self.scene().presentation
+        dohide = self.scene().mode in ["presentation", "record"]
 
         batch = graphydb.generateUUID()
         if self.open:
             for child in childnodes:
-                if presentation and 'hide' in child.get('tags',set()):
+                if dohide and 'hide' in child.get('tags',set()):
                     continue
                 child['hide'] = True
                 child.save(batch=batch, setchange=True)
         else:
             for child in childnodes:
-                if presentation and 'hide' in child.get('tags',set()):
+                if dohide and 'hide' in child.get('tags',set()):
                     continue
                 child.discard('hide')
                 child.save(batch=batch, setchange=True)
