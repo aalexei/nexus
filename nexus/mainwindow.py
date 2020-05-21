@@ -719,9 +719,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.updateRecentFilesMenu()
 
-        self.recordingDialog = RecordDialog(self, QtCore.Qt.WindowStaysOnTopHint)
-        self.recordingDialog.hide()
-
+        #self.recordingDialog = RecordDialog(self, QtCore.Qt.WindowStaysOnTopHint)
+        #self.recordingDialog.hide()
+        self.setMode()
 
     def setDefaultSettings(self):
         '''
@@ -1415,7 +1415,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.presentationModeAct.setCheckable(True)
         self.presentationModeAct.triggered.connect(self.setMode)
 
-        self.recordModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/record.svg"), self.tr("Record Mode"), self)
+        self.recordModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/microphone.svg"), self.tr("Record Mode"), self)
         self.recordModeAct.setCheckable(True)
         self.recordModeAct.triggered.connect(self.setMode)
 
@@ -1427,6 +1427,33 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editModeAct.setChecked(True)
 
         self.view.presentationEscape.connect(self.setMode)
+        # ----------------------------------------------------------------------------------
+        # Recording
+        #
+        self.recStartAct = QtWidgets.QAction(QtGui.QIcon(":/images/record.svg"), self.tr("Start Recording"), self)
+        self.recStartAct.setCheckable(True)
+        self.recStartAct.triggered.connect(self.recordStart)
+
+        self.recPauseAct = QtWidgets.QAction(QtGui.QIcon(":/images/pause.svg"), self.tr("Pause Recording"), self)
+        self.recPauseAct.setCheckable(True)
+        self.recPauseAct.triggered.connect(self.recordPause)
+
+        self.recEndAct = QtWidgets.QAction(QtGui.QIcon(":/images/stop.svg"), self.tr("End Recording"), self)
+        self.recEndAct.setCheckable(True)
+        self.recEndAct.triggered.connect(self.recordEnd)
+
+        self.recSourceAct = QtWidgets.QAction(QtGui.QIcon(":/images/sound.svg"), self.tr("Microphone Source"), self)
+        self.recSourceAct.triggered.connect(self.recordSetSource)
+
+        self.recFileAct = QtWidgets.QAction(QtGui.QIcon(":/images/video.svg"), self.tr("Set Output File"), self)
+        self.recFileAct.triggered.connect(self.recordSetFile)
+
+        modegroup = QtWidgets.QActionGroup(self)
+        modegroup.addAction(self.recStartAct)
+        modegroup.addAction(self.recPauseAct)
+        modegroup.addAction(self.recEndAct)
+
+        self.recEndAct.setChecked(True)
         # ----------------------------------------------------------------------------------
         self.viewsAct.setIcon(QtGui.QIcon(":/images/view-index.svg"))
         self.viewsAct.setShortcut("Ctrl+I")
@@ -1555,6 +1582,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu.addAction(self.viewsNextAct)
         self.viewMenu.addAction(self.viewsPreviousAct)
 
+        self.recMenu = self.menuBar().addMenu(self.tr("&Recording"))
+        self.recMenu.addAction(self.recStartAct)
+        self.recMenu.addAction(self.recPauseAct)
+        self.recMenu.addAction(self.recEndAct)
+        self.viewMenu.addSeparator()
+        self.recMenu.addAction(self.recSourceAct)
+        self.recMenu.addAction(self.recFileAct)
+
         # grab the window menu maintained from the application
         app = QtWidgets.QApplication.instance()
         self.menuBar().addMenu(app.windowMenu)
@@ -1585,10 +1620,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def createToolBars(self):
         self.fileToolBar = self.addToolBar(self.tr("File"))
+        self.fileToolBar.setIconSize(QtCore.QSize(24,24))
         self.fileToolBar.addAction(self.newAct)
         self.fileToolBar.addAction(self.openAct)
         #self.fileToolBar.addAction(self.saveAct)
-        self.fileToolBar.setIconSize(QtCore.QSize(24,24))
 
         # self.modeToolBar = self.addToolBar(self.tr("Mode"))
         # self.modeToolBar.addAction(self.grabModeAct)
@@ -1596,14 +1631,15 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.modeToolBar.addAction(self.moveModeAct)
 
         self.editToolBar = self.addToolBar(self.tr("Edit"))
+        self.editToolBar.setIconSize(QtCore.QSize(24,24))
         self.editToolBar.addAction(self.undoAct)
         self.editToolBar.addAction(self.cutAct)
         self.editToolBar.addAction(self.copyAct)
         self.editToolBar.addAction(self.pasteAct)
         self.editToolBar.addAction(self.deleteAct)
-        self.editToolBar.setIconSize(QtCore.QSize(24,24))
 
         self.viewToolBar = self.addToolBar(self.tr("View"))
+        self.viewToolBar.setIconSize(QtCore.QSize(24,24))
         self.viewToolBar.addAction(self.zoomInAct)
         self.viewToolBar.addAction(self.zoomOutAct)
         self.viewToolBar.addAction(self.zoomSelectionAct)
@@ -1619,7 +1655,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewToolBar.addAction(self.presentationModeAct)
         self.viewToolBar.addAction(self.recordModeAct)
 
-        self.viewToolBar.setIconSize(QtCore.QSize(24,24))
+        self.recToolBar = self.addToolBar(self.tr("Record"))
+        self.recToolBar.setIconSize(QtCore.QSize(24,24))
+        self.recToolBar.addAction(self.recStartAct)
+        self.recToolBar.addAction(self.recPauseAct)
+        self.recToolBar.addAction(self.recEndAct)
+        self.recToolBar.addAction(self.recSourceAct)
+        self.recToolBar.addAction(self.recFileAct)
+        self.recToolBar.addAction(self.recFileAct)
+
 
         self.filterEdit = FilterEdit()
         self.filterToolBar = self.addToolBar(self.tr("Filter"))
@@ -2241,140 +2285,162 @@ class MainWindow(QtWidgets.QMainWindow):
     def setMode(self):
 
         # The current checked status of the action is the new state after button presses etc
-
         if self.presentationModeAct.isChecked():
-            #
-            # Presentation mode
-            #
-            self.scene.mode = "presentation"
-            logging.debug("Switching on presentation mode")
-
-            # point on scene where the view is centred on
-            #center=self.view.mapToScene(self.view.viewport().rect().center())
-
-            self.recordingDialog.hide()
-
-            self.statusBar().setVisible(False)
-            self.menuBar().setVisible(False)
-            self.editToolBar.setVisible(False)
-            self.fileToolBar.setVisible(False)
-            self.filterToolBar.setVisible(False)
-            self.viewToolBar.setVisible(False)
-            # self.modeToolBar.setVisible(False)
-            self.scene.clearSelection()
-
-            if self.viewsFramesAct.isChecked():
-                self.viewsFramesAct.trigger()
-
-            self.presentationhiddenstems = []
-            for child in self.scene.allChildStems(includeroot=False):
-                if 'hide' in child.getTags() and child.isVisible():
-                    child.hide()
-                    self.presentationhiddenstems.append(child)
-
-            # this seems to throw off the view snaps:
-            self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-            self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-
-            self.showFullScreen()
-
-            #self.view.centerOn(center)
-            self.hidePointerAct.setEnabled(True)
-            self.hidePointerAct.setChecked(False) # force toggle on
-            self.hidePointerAct.trigger()
-
-            # (Use shift to actually move canvas)
-            self.viewsNextAct.setShortcuts(CONFIG['view_next_keys'])
-            self.viewsPreviousAct.setShortcuts(CONFIG['view_prev_keys'])
-            self.viewsHomeAct.setShortcuts(CONFIG['view_home_keys'])
-            self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
-            self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
-
-            self.editModeAct.setShortcut("Esc")
+            self.setPresentationMode()
 
         elif self.recordModeAct.isChecked():
-            #
-            # Recording mode
-            #
-            self.scene.mode = "record"
-            logging.debug("Switching on record mode")
-
-            self.scene.clearSelection()
-
-            if self.viewsFramesAct.isChecked():
-                self.viewsFramesAct.trigger()
-
-            self.presentationhiddenstems = []
-            for child in self.scene.allChildStems(includeroot=False):
-                if 'hide' in child.getTags() and child.isVisible():
-                    child.hide()
-                    self.presentationhiddenstems.append(child)
-
-            self.showMaximized()
-
-            #self.view.centerOn(center)
-            self.hidePointerAct.setEnabled(True)
-            self.hidePointerAct.setChecked(False) # force toggle on
-            self.hidePointerAct.trigger()
-
-            # (Use shift to actually move canvas)
-            self.viewsNextAct.setShortcuts(CONFIG['view_next_keys'])
-            self.viewsPreviousAct.setShortcuts(CONFIG['view_prev_keys'])
-            self.viewsHomeAct.setShortcuts(CONFIG['view_home_keys'])
-            self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
-            self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
-
-            self.editModeAct.setShortcut("Esc")
-
-            self.recordingDialog.show()
+            self.setRecordingMode()
 
         else:
-            #
-            # Editing mode
-            #
+            self.setEditingMode()
 
-            self.scene.presentation = False
-            self.scene.mode = "edit"
-            # self.presentationModeAct.setChecked(False)
-            logging.debug("Switching on edit mode")
+    def setEditingMode(self):
+        self.scene.presentation = False
+        self.scene.mode = "edit"
+        # self.presentationModeAct.setChecked(False)
+        logging.debug("Switching on edit mode")
 
-            self.recordingDialog.hide()
-            # point on scene where the view is centred on
-            #center=self.view.mapToScene(self.view.viewport().rect().center())
+        #self.recordingDialog.hide()
+        # point on scene where the view is centred on
+        #center=self.view.mapToScene(self.view.viewport().rect().center())
 
-            # show Normal seems too abrupt after full screen
-            # XXX Need to store geometry of window on first use
-            self.showNormal()
-            #self.showMaximized()
+        # show Normal seems too abrupt after full screen
+        # XXX Need to store geometry of window on first use
+        self.showNormal()
+        #self.showMaximized()
 
-            self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-            self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-            self.viewToolBar.setVisible(True)
-            self.statusBar().setVisible(True)
+        self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.viewToolBar.setVisible(True)
+        self.recToolBar.setVisible(False)
+        self.statusBar().setVisible(True)
 
-            self.menuBar().setVisible(True)
+        self.menuBar().setVisible(True)
 
-            self.editToolBar.setVisible(True)
-            self.fileToolBar.setVisible(True)
-            self.filterToolBar.setVisible(True)
-            # self.modeToolBar.setVisible(True)
+        self.editToolBar.setVisible(True)
+        self.fileToolBar.setVisible(True)
+        self.filterToolBar.setVisible(True)
+        # self.modeToolBar.setVisible(True)
 
-            for child in self.presentationhiddenstems:
-                child.show()
-            self.presentationhiddenstems = []
+        for child in self.presentationhiddenstems:
+            child.show()
+        self.presentationhiddenstems = []
 
-            #self.view.centerOn(center)
-            self.hidePointerAct.setChecked(True) # force toggle off
-            self.hidePointerAct.trigger()
-            self.hidePointerAct.setEnabled(False)
-            QtWidgets.QApplication.instance().restoreOverrideCursor()
+        #self.view.centerOn(center)
+        self.hidePointerAct.setChecked(True) # force toggle off
+        self.hidePointerAct.trigger()
+        self.hidePointerAct.setEnabled(False)
+        QtWidgets.QApplication.instance().restoreOverrideCursor()
 
-            self.viewsNextAct.setShortcut(QtGui.QKeySequence())
-            self.viewsPreviousAct.setShortcut(QtGui.QKeySequence())
-            self.viewsHomeAct.setShortcut(QtGui.QKeySequence())
-            self.presentationModeAct.setShortcut(QtGui.QKeySequence())
-            self.viewsFirstAct.setShortcut(QtGui.QKeySequence())
-            self.hidePointerAct.setShortcut(QtGui.QKeySequence())
+        self.viewsNextAct.setShortcut(QtGui.QKeySequence())
+        self.viewsPreviousAct.setShortcut(QtGui.QKeySequence())
+        self.viewsHomeAct.setShortcut(QtGui.QKeySequence())
+        self.presentationModeAct.setShortcut(QtGui.QKeySequence())
+        self.viewsFirstAct.setShortcut(QtGui.QKeySequence())
+        self.hidePointerAct.setShortcut(QtGui.QKeySequence())
+
+    def setPresentationMode(self):
+
+        self.scene.mode = "presentation"
+        logging.debug("Switching on presentation mode")
+
+        # point on scene where the view is centred on
+        #center=self.view.mapToScene(self.view.viewport().rect().center())
+
+        #self.recordingDialog.hide()
+
+        self.statusBar().setVisible(False)
+        self.menuBar().setVisible(False)
+        self.editToolBar.setVisible(False)
+        self.fileToolBar.setVisible(False)
+        self.filterToolBar.setVisible(False)
+        self.viewToolBar.setVisible(False)
+        self.recToolBar.setVisible(False)
+        # self.modeToolBar.setVisible(False)
+        self.scene.clearSelection()
+
+        if self.viewsFramesAct.isChecked():
+            self.viewsFramesAct.trigger()
+
+        self.presentationhiddenstems = []
+        for child in self.scene.allChildStems(includeroot=False):
+            if 'hide' in child.getTags() and child.isVisible():
+                child.hide()
+                self.presentationhiddenstems.append(child)
+
+        # this seems to throw off the view snaps:
+        self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+
+        self.showFullScreen()
+
+        #self.view.centerOn(center)
+        self.hidePointerAct.setEnabled(True)
+        self.hidePointerAct.setChecked(False) # force toggle on
+        self.hidePointerAct.trigger()
+
+        # (Use shift to actually move canvas)
+        self.viewsNextAct.setShortcuts(CONFIG['view_next_keys'])
+        self.viewsPreviousAct.setShortcuts(CONFIG['view_prev_keys'])
+        self.viewsHomeAct.setShortcuts(CONFIG['view_home_keys'])
+        self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
+        self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
+
+        self.editModeAct.setShortcut("Esc")
+
+    def setRecordingMode(self):
+
+        self.scene.mode = "record"
+        logging.debug("Switching on record mode")
+
+        self.recToolBar.setVisible(True)
+        self.editToolBar.setVisible(False)
+        self.fileToolBar.setVisible(False)
+        self.filterToolBar.setVisible(False)
+
+        self.scene.clearSelection()
+
+        if self.viewsFramesAct.isChecked():
+            self.viewsFramesAct.trigger()
+
+        self.presentationhiddenstems = []
+        for child in self.scene.allChildStems(includeroot=False):
+            if 'hide' in child.getTags() and child.isVisible():
+                child.hide()
+                self.presentationhiddenstems.append(child)
+
+        self.showMaximized()
+
+        #self.view.centerOn(center)
+        self.hidePointerAct.setEnabled(True)
+        self.hidePointerAct.setChecked(True) # force toggle on
+        self.hidePointerAct.trigger()
+
+        # (Use shift to actually move canvas)
+        self.viewsNextAct.setShortcuts(CONFIG['view_next_keys'])
+        self.viewsPreviousAct.setShortcuts(CONFIG['view_prev_keys'])
+        self.viewsHomeAct.setShortcuts(CONFIG['view_home_keys'])
+        self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
+        self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
+
+        self.editModeAct.setShortcut("Esc")
+
+        #self.recordingDialog.show()
+    def recordStart(self):
+        pass
+
+    def recordPause(self):
+        pass
+
+    def recordEnd(self):
+        pass
+
+    def recordSetSource(self):
+        pass
+
+    def recordSetFile(self):
+        pass
+
 
     def hidePointer(self):
         '''

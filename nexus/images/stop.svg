@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="13px" height="13px" viewBox="0 0 13 13" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 46.2 (44496) - http://www.bohemiancoding.com/sketch -->
+    <title>stop</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop" transform="translate(-917.000000, -522.000000)">
+            <g id="stop" transform="translate(913.000000, 518.000000)">
+                <rect id="Rectangle-path" x="0" y="0" width="20" height="20"></rect>
+                <path d="M14.646,4.407 L5.735,4.407 C4.751,4.407 4.25,4.71 4.25,5.694 L4.25,15.002 C4.25,15.986 4.751,16.289 5.735,16.289 L14.646,16.289 C15.63,16.289 16.13,15.986 16.13,15.002 L16.13,5.694 C16.131,4.71 15.631,4.407 14.646,4.407 L14.646,4.407 Z" id="Shape" fill="#666666"></path>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -21,7 +21,14 @@
     <file>images/grab-mode.svg</file>
     <file>images/add-mode.svg</file>
     <file>images/move-mode.svg</file>
+    <file>images/microphone.svg</file>
+    <file>images/exit.svg</file>
+
     <file>images/record.svg</file>
+    <file>images/pause.svg</file>
+    <file>images/stop.svg</file>
+    <file>images/sound.svg</file>
+    <file>images/video.svg</file>
     
     <file>images/new.svg</file>
     <file>images/open.svg</file>

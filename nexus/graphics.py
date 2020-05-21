@@ -588,7 +588,7 @@ class InputDialog(QtWidgets.QDialog):
 
     def createActions(self):
 
-        self.closeAct = QtWidgets.QAction(QtGui.QIcon(":/images/close.svg"),self.tr("Close"), self)
+        self.closeAct = QtWidgets.QAction(QtGui.QIcon(":/images/exit.svg"),self.tr("Close"), self)
         self.closeAct.triggered.connect(self.saveClose)
 
         ## ----------------------------------------------------------------------------------
