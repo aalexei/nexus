@@ -2239,13 +2239,14 @@ class MainWindow(QtWidgets.QMainWindow):
         # The current checked status of the action is the new state after button presses etc
 
         if self.presentationModeAct.isChecked():
-            #self.scene.presentation = True
+            #
+            # Presentation mode
+            #
             self.scene.mode = "presentation"
-            #self.presentationModeAct.setChecked(True)
             logging.debug("Switching on presentation mode")
 
             # point on scene where the view is centred on
-            center=self.view.mapToScene(self.view.viewport().rect().center())
+            #center=self.view.mapToScene(self.view.viewport().rect().center())
 
             self.statusBar().setVisible(False)
             self.menuBar().setVisible(False)
@@ -2271,7 +2272,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.showFullScreen()
 
-            self.view.centerOn(center)
+            #self.view.centerOn(center)
             self.hidePointerAct.setEnabled(True)
             self.hidePointerAct.setChecked(False) # force toggle on
             self.hidePointerAct.trigger()
@@ -2286,6 +2287,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.editModeAct.setShortcut("Esc")
 
         elif self.recordModeAct.isChecked():
+            #
+            # Recording mode
+            #
             self.scene.mode = "record"
             logging.debug("Switching on record mode")
 
@@ -2316,6 +2320,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.editModeAct.setShortcut("Esc")
         else:
+            #
+            # Editing mode
+            #
 
             self.scene.presentation = False
             self.scene.mode = "edit"
@@ -2323,7 +2330,7 @@ class MainWindow(QtWidgets.QMainWindow):
             logging.debug("Switching on edit mode")
 
             # point on scene where the view is centred on
-            center=self.view.mapToScene(self.view.viewport().rect().center())
+            #center=self.view.mapToScene(self.view.viewport().rect().center())
 
             # show Normal seems too abrupt after full screen
             # XXX Need to store geometry of window on first use
@@ -2346,7 +2353,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 child.show()
             self.presentationhiddenstems = []
 
-            self.view.centerOn(center)
+            #self.view.centerOn(center)
             self.hidePointerAct.setChecked(True) # force toggle off
             self.hidePointerAct.trigger()
             self.hidePointerAct.setEnabled(False)
