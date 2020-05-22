@@ -24,7 +24,7 @@ from PyQt5 import QtCore, QtGui, QtOpenGL, QtSvg, QtWidgets, QtPrintSupport
 from PyQt5.QtMultimedia import QAudioRecorder, QAudioEncoderSettings, QMultimedia
 import gzip
 from functools import reduce
-import webbrowser
+import webbrowser, tempfile
 
 import webbrowser, urllib.parse, logging
 from . import graphics, resources, interpreter, graphydb, nexusgraph, config
@@ -721,6 +721,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #self.recordingDialog = RecordDialog(self, QtCore.Qt.WindowStaysOnTopHint)
         #self.recordingDialog.hide()
+        self.recordingPath = "~/output.mp4"
         self.setMode()
 
     def setDefaultSettings(self):
@@ -1448,12 +1449,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recFileAct = QtWidgets.QAction(QtGui.QIcon(":/images/video.svg"), self.tr("Set Output File"), self)
         self.recFileAct.triggered.connect(self.recordSetFile)
 
-        modegroup = QtWidgets.QActionGroup(self)
-        modegroup.addAction(self.recStartAct)
-        modegroup.addAction(self.recPauseAct)
-        modegroup.addAction(self.recEndAct)
-
-        self.recEndAct.setChecked(True)
+        # The Start/Pause/End don't form an action group as their state
+        # is set by the audio class in response to actual state changes
+        
         # ----------------------------------------------------------------------------------
         self.viewsAct.setIcon(QtGui.QIcon(":/images/view-index.svg"))
         self.viewsAct.setShortcut("Ctrl+I")
@@ -1660,8 +1658,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recToolBar.addAction(self.recStartAct)
         self.recToolBar.addAction(self.recPauseAct)
         self.recToolBar.addAction(self.recEndAct)
-        self.recToolBar.addAction(self.recSourceAct)
-        self.recToolBar.addAction(self.recFileAct)
+        #self.recToolBar.addAction(self.recSourceAct)
+        self.recSourceCombo = QtWidgets.QComboBox()
+        self.recToolBar.addWidget(self.recSourceCombo)
         self.recToolBar.addAction(self.recFileAct)
 
 
@@ -2425,23 +2424,109 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.editModeAct.setShortcut("Esc")
 
+        #
+        # Recording setup
+        #
+        #self.audio = pyaudio.PyAudio()
+        ## list of input devices
+        # info = self.audio.get_host_api_info_by_index(0)
+        # numdevices = info.get('deviceCount')
+        # devices = []
+        # for i in range(0, numdevices):
+        #     if (self.audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
+        #         devices.append(self.audio.get_device_info_by_host_api_device_index(0, i).get('name'))
+        self.audiorecorder = QAudioRecorder()
+
+        codecs = self.audiorecorder.supportedAudioCodecs()
+        containers = self.audiorecorder.supportedContainers()
+        sample_rates = self.audiorecorder.supportedAudioSampleRates()
+        sources = self.audiorecorder.audioInputs()
+        default_source = self.audiorecorder.defaultAudioInput()
+        sources.remove(default_source)
+        sources.insert(0, default_source)
+        # self.sources = QtWidgets.QComboBox()
+        self.recSourceCombo.clear()
+        self.recSourceCombo.addItems(sources)
+        self.recSourceCombo.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
+        #self.recSourceCombo.setMinimumContentsLength(6)
+
+        settings = QAudioEncoderSettings()
+        settings.setCodec('audio/pcm')
+        settings.setSampleRate(44100)
+        settings.setChannelCount(2)
+
+        self.audiorecorder.setAudioSettings(settings)
+        self.audiorecorder.setContainerFormat('audio/x-wav')
+        #
+        # output file name
+        #
+        # self.outputfilename = QtWidgets.QLineEdit("output.wav")
+
+        #
+        # Record button
+        #
+        # self.recordbutton = QtWidgets.QPushButton("Record")
+        # # self.recordbutton.setCheckable(True)
+        # self.recordbutton.setMinimumSize(100,100)
+        # self.recordbutton.clicked.connect(self.recordPushed)
+
+        # form = QtWidgets.QFormLayout()
+        # form.addRow("Source:", self.sources)
+        # form.addRow("Levels:", self.levels)
+        # form.addRow("Output:", self.outputfilename )
+
+        # self.layout = QtWidgets.QVBoxLayout()
+        # self.layout.addLayout(form)
+        # self.layout.addWidget(self.recordbutton)
+        # self.layout.addWidget(self.buttonBox)
+        # self.setLayout(self.layout)
+
+        # self.audiorecorder.stateChanged.connect(self.onStateChange)
+        # self.onStateChange()
         #self.recordingDialog.show()
     def recordStart(self):
-        pass
+
+        if self.audiorecorder.state()==QAudioRecorder.StoppedState:
+            # create a temporary directory to store files for movie
+            self.tmprecdir = tempfile.mkdtemp(prefix="movie_components_", dir=Path.cwd())
+
+            logging.info("Created temporary directory %s for movie", self.tmprecdir)
+            url = QtCore.QUrl("{}/audio.wav".format(self.tmprecdir))
+            self.audiorecorder.setOutputLocation(url)
+            self.audiorecorder.setAudioInput(self.recSourceCombo.currentText())
+
+        self.audiorecorder.record()
+
+        self.recStartAct.setChecked(True)
+        self.recPauseAct.setChecked(False)
+        self.recEndAct.setChecked(False)
 
     def recordPause(self):
-        pass
+        self.audiorecorder.pause()
+
+        self.recStartAct.setChecked(False)
+        self.recPauseAct.setChecked(True)
+        self.recEndAct.setChecked(False)
 
     def recordEnd(self):
-        pass
+        self.audiorecorder.stop()
+        logging.info("recording ended")
+
+        self.recStartAct.setChecked(False)
+        self.recPauseAct.setChecked(False)
+        self.recEndAct.setChecked(True)
 
     def recordSetSource(self):
         pass
+        # TODO show same combobox as in toolbar?
 
     def recordSetFile(self):
-        pass
+        filename = QtWidgets.QFileDialog.getSaveFileName(self, "Save Movie File", "output.mp4", "*.mp4")
+        if len(filename[0])>0:
+            self.recordingPath = filename[0]
 
-
+        # TODO set default recording path
+        
     def hidePointer(self):
         '''
         Hide and show the pointer in full screen mode

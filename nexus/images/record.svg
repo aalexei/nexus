@@ -5,10 +5,10 @@
     <desc>Created with Sketch.</desc>
     <defs></defs>
     <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-        <g id="Desktop" transform="translate(-721.000000, -648.000000)">
-            <g id="record" transform="translate(719.000000, 645.000000)">
+        <g id="Desktop" transform="translate(-940.000000, -521.000000)">
+            <g id="record" transform="translate(938.000000, 518.000000)">
                 <rect id="Rectangle-path" x="0" y="0" width="20" height="20"></rect>
-                <path d="M9.587,3.418 C5.759,3.418 2.656,6.521 2.656,10.348 C2.656,14.176 5.759,17.28 9.587,17.28 C13.415,17.28 16.518,14.176 16.518,10.348 C16.518,6.521 13.415,3.418 9.587,3.418 L9.587,3.418 Z" id="Shape" fill="#666666"></path>
+                <path d="M9.587,3.418 C5.759,3.418 2.656,6.521 2.656,10.348 C2.656,14.176 5.759,17.28 9.587,17.28 C13.415,17.28 16.518,14.176 16.518,10.348 C16.518,6.521 13.415,3.418 9.587,3.418 L9.587,3.418 Z" id="Shape" fill="#8A4242"></path>
             </g>
         </g>
     </g>
