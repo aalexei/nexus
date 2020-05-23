@@ -29,7 +29,7 @@ import webbrowser, tempfile
 import webbrowser, urllib.parse, logging
 from . import graphics, resources, interpreter, graphydb, nexusgraph, config
 from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi
-import re
+import re, subprocess
 import apsw
 
 CONFIG = config.get_config()
@@ -1445,7 +1445,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recEndAct.triggered.connect(self.recordEnd)
 
         self.recSourceAct = QtWidgets.QAction(QtGui.QIcon(":/images/sound.svg"), self.tr("Microphone Source"), self)
-        self.recSourceAct.triggered.connect(self.recordSetSource)
+        # self.recSourceAct.triggered.connect(self.recordSetSource)
 
         # The Start/Pause/End don't form an action group as their state
         # is set by the audio class in response to actual state changes
@@ -2521,7 +2521,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def recordEnd(self):
         self.audiorecorder.stop()
         self.event_stream.append({'t':time.time(),'cmd':'end'})
-        self.view.recordStateEvent.disconnect(self.storeRecordingEvent)
+        try:
+            self.view.recordStateEvent.disconnect(self.storeRecordingEvent)
+        except TypeError:
+            # may have stopped from pause, in which case not connected
+            pass
         self.recording = False
         logging.info("recording ended")
 
@@ -2532,46 +2536,67 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recPauseAct.setEnabled(False)
         self.recEndAct.setEnabled(False)
 
-        # sort event_stream just to be safe
+        # Sort event_stream just to be safe
         self.event_stream.sort(key = lambda x:x['t'])
 
-        # TODO generate frames
+        # Generate frames
         fp = (self.tmprecdir/"timing.txt").open("w")
         F = 1
-        for i in range(len(self.event_stream)):
+        currentview = ()
+        N = len(self.event_stream)
+        for i in range(N):
             e = self.event_stream[i]
             cmd = e['cmd']
+            self.statusBar().showMessage("Generating frames {}/{}".format(i,N))
+            #self.showMessage("Generating frames {}/{}".format(i,N))
             if cmd=='view':
-                dt = round((self.event_stream[i+1]['t']-e['t'])*60) # 60 fps
-                name = 'frame_{:04d}.png'.format(F)
-                fp.write('file {}\nduration {}\n'.format(name,dt))
+                dt = self.event_stream[i+1]['t']-e['t']
+                framename = 'frame_{:04d}.png'.format(F)
+                fp.write('file {}\nduration {}\n'.format(framename,dt))
 
-                self.view.setViewCSR(e['cx'], e['cy'],e['scale'],e['rot'])
+                currentview = (e['cx'], e['cy'],e['scale'],e['rot'])
+                self.view.setViewCSR(*currentview)
                 pixmap = self.view.grab()
-                pixmap.save((self.tmprecdir/name).as_posix())
+                pixmap.save((self.tmprecdir/framename).as_posix())
 
                 F+=1
+        # last frame must be written again or ffmped ignores the duration
+        fp.write('file {}\n'.format(framename))
         fp.close()
-        for e in self.event_stream:
-            print(e)
 
         # TODO generate video
+        self.showMessage("Generating video from frames")
+        subprocess.run(['ffmpeg', '-f', 'concat',
+                        '-i', 'timing.txt',
+                        '-vf', 'fps=60', # 60fps
+                        '-pix_fmt', 'yuv420p', # so quicktime can play it
+                        'video.mp4' ], cwd=self.tmprecdir)
 
         # TODO combine audio and video
+        self.showMessage("Combining video and audio")
+        subprocess.run(['ffmpeg', '-i', 'video.mp4',
+                        '-itsoffset', '0.5', # delay the audio slightly
+                        '-i', 'audio.wav',
+                        '-c:v', 'copy',
+                        '-c:a', 'aac',
+                        'complete.mp4' ], cwd=self.tmprecdir)
 
-       
+        # TODO figure out where audio too soon is coming from (delay in starting to record?)
 
-    def recordSetSource(self):
-        pass
-        # TODO show same combobox as in toolbar?
-
-    def recordSetFile(self):
         filename = QtWidgets.QFileDialog.getSaveFileName(self, "Save Movie File", "output.mp4", "*.mp4")
         if len(filename[0])>0:
-            self.recordingPath = filename[0]
+            videopath = filename[0]
+            vid = self.tmprecdir/"complete.mp4"
+            vid.rename(videopath)
 
-        # TODO set default recording path
-        
+        # TODO cleanup temporary directory unless user indicates not to
+
+
+    # def recordSetSource(self):
+    #     pass
+    #     # TODO show same combobox as in toolbar?
+
+              
     def hidePointer(self):
         '''
         Hide and show the pointer in full screen mode
