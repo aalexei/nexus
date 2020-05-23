@@ -721,7 +721,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #self.recordingDialog = RecordDialog(self, QtCore.Qt.WindowStaysOnTopHint)
         #self.recordingDialog.hide()
-        self.recordingPath = "~/output.mp4"
+        # self.recordingPath = "~/output.mp4"
+        self.recording = False
         self.setMode()
 
     def setDefaultSettings(self):
@@ -1446,9 +1447,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recSourceAct = QtWidgets.QAction(QtGui.QIcon(":/images/sound.svg"), self.tr("Microphone Source"), self)
         self.recSourceAct.triggered.connect(self.recordSetSource)
 
-        self.recFileAct = QtWidgets.QAction(QtGui.QIcon(":/images/video.svg"), self.tr("Set Output File"), self)
-        self.recFileAct.triggered.connect(self.recordSetFile)
-
         # The Start/Pause/End don't form an action group as their state
         # is set by the audio class in response to actual state changes
         
@@ -1586,7 +1584,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recMenu.addAction(self.recEndAct)
         self.viewMenu.addSeparator()
         self.recMenu.addAction(self.recSourceAct)
-        self.recMenu.addAction(self.recFileAct)
 
         # grab the window menu maintained from the application
         app = QtWidgets.QApplication.instance()
@@ -1661,7 +1658,6 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.recToolBar.addAction(self.recSourceAct)
         self.recSourceCombo = QtWidgets.QComboBox()
         self.recToolBar.addWidget(self.recSourceCombo)
-        self.recToolBar.addAction(self.recFileAct)
 
 
         self.filterEdit = FilterEdit()
@@ -2152,7 +2148,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 if self.presentationModeAct.isChecked():
                     existing.presentationModeAct.activate(QtWidgets.QAction.Trigger)
-                    existing.showView(existing.viewsModel.firstView())
+                    existing.jumpToView(existing.viewsModel.firstView())
 
             else:
                 # let the OS handle opening the file
@@ -2167,20 +2163,20 @@ class MainWindow(QtWidgets.QMainWindow):
             #webbrowser.open(url)
 
 
-    def showView(self,  viewitem):
+    def jumpToView(self,  viewitem):
 
         if viewitem is None:
             return
 
-        ## below we implement the algorithm in
+        ## Below we implement the algorithm in
         ## "Smooth and Efficient Zooming and Panning" J.J. van Wijk and W.A.A. Nuij
 
-        ## Effective velocity .. this will determine the number of steps
+        ## Effective velocity, this will determine the number of steps
         V = 0.003
-        ## rho is a tradeoff between zooming and panning
-        ## higher values jump more
+        ## rho is a tradeoff between zooming and panning, higher values jump more
         rho = 1.6
 
+        # TODO use view.getViewCSR
         ## initial point: location and scale
         matrix0 = self.view.transform()
         c0=self.view.mapToScene(self.view.viewport().rect().center())
@@ -2270,16 +2266,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.views.viewsListView.clearSelection()
         self.views.viewsListView.setCurrentIndex(viewitem.index())
 
-
     def timedView(self):
 
         if self.viewcurrentstep > len(self.viewsteps)-1:
             self.viewtimer.stop()
         else:
             center,matrix = self.viewsteps[self.viewcurrentstep]
-            self.view.setTransform(matrix)
-            self.view.centerOn(center)
+            x,y,R,S = graphics.Transform(matrix).getTRS()
+            self.view.setViewCSR(center.x(), center.y(), S, R)
+            # self.view.setTransform(matrix)
+            # self.view.centerOn(center)
+            # if self.recording:
+            #     self.event_stream.append({'t':time.time(),'cmd':'view', 'matrix':matrix, 'center':center})
+
             self.viewcurrentstep += 1
+
 
     def setMode(self):
 
@@ -2457,64 +2458,108 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.audiorecorder.setAudioSettings(settings)
         self.audiorecorder.setContainerFormat('audio/x-wav')
-        #
-        # output file name
-        #
-        # self.outputfilename = QtWidgets.QLineEdit("output.wav")
 
-        #
-        # Record button
-        #
-        # self.recordbutton = QtWidgets.QPushButton("Record")
-        # # self.recordbutton.setCheckable(True)
-        # self.recordbutton.setMinimumSize(100,100)
-        # self.recordbutton.clicked.connect(self.recordPushed)
+        self.recStartAct.setEnabled(True)
+        self.recPauseAct.setEnabled(False)
+        self.recEndAct.setEnabled(False)
 
-        # form = QtWidgets.QFormLayout()
-        # form.addRow("Source:", self.sources)
-        # form.addRow("Levels:", self.levels)
-        # form.addRow("Output:", self.outputfilename )
+    def storeRecordingEvent(self, event):
+        self.event_stream.append(event)
 
-        # self.layout = QtWidgets.QVBoxLayout()
-        # self.layout.addLayout(form)
-        # self.layout.addWidget(self.recordbutton)
-        # self.layout.addWidget(self.buttonBox)
-        # self.setLayout(self.layout)
-
-        # self.audiorecorder.stateChanged.connect(self.onStateChange)
-        # self.onStateChange()
-        #self.recordingDialog.show()
     def recordStart(self):
 
         if self.audiorecorder.state()==QAudioRecorder.StoppedState:
+            # This is the initial state of the recorder
+           
             # create a temporary directory to store files for movie
-            self.tmprecdir = tempfile.mkdtemp(prefix="movie_components_", dir=Path.cwd())
+            self.tmprecdir = Path(tempfile.mkdtemp(prefix="movie_components_", dir=Path.cwd()))
 
             logging.info("Created temporary directory %s for movie", self.tmprecdir)
             url = QtCore.QUrl("{}/audio.wav".format(self.tmprecdir))
             self.audiorecorder.setOutputLocation(url)
             self.audiorecorder.setAudioInput(self.recSourceCombo.currentText())
 
+            # initialise stream
+            self.event_stream = []
+            # self.audiorecorder.record()
+            # self.event_stream.append({'t':time.time(),'cmd':'start'})
+            # self.recording = True
+
+        # elif self.audiorecorder.state()==QAudioRecorder.PausedState:
+            # restart recording
+        self.view.recordStateEvent.connect(self.storeRecordingEvent)
         self.audiorecorder.record()
+        t = time.time()
+        cx, cy, scale, rot = self.view.getViewCSR()
+        self.event_stream.append({'t':t,'cmd':'start'})
+        self.event_stream.append({'t':t,'cmd':'view', 'cx':cx, 'cy':cy, 'scale':scale, 'rot':rot})
+
+        self.recording = True
 
         self.recStartAct.setChecked(True)
         self.recPauseAct.setChecked(False)
         self.recEndAct.setChecked(False)
+        self.recStartAct.setEnabled(False)
+        self.recPauseAct.setEnabled(True)
+        self.recEndAct.setEnabled(True)
+
 
     def recordPause(self):
         self.audiorecorder.pause()
+        self.event_stream.append({'t':time.time(),'cmd':'pause'})
+        self.recording = False
+        self.view.recordStateEvent.disconnect(self.storeRecordingEvent)
+
 
         self.recStartAct.setChecked(False)
         self.recPauseAct.setChecked(True)
         self.recEndAct.setChecked(False)
+        self.recStartAct.setEnabled(True)
+        self.recPauseAct.setEnabled(False)
+        self.recEndAct.setEnabled(True)
 
     def recordEnd(self):
         self.audiorecorder.stop()
+        self.event_stream.append({'t':time.time(),'cmd':'end'})
+        self.view.recordStateEvent.disconnect(self.storeRecordingEvent)
+        self.recording = False
         logging.info("recording ended")
 
         self.recStartAct.setChecked(False)
         self.recPauseAct.setChecked(False)
         self.recEndAct.setChecked(True)
+        self.recStartAct.setEnabled(True)
+        self.recPauseAct.setEnabled(False)
+        self.recEndAct.setEnabled(False)
+
+        # sort event_stream just to be safe
+        self.event_stream.sort(key = lambda x:x['t'])
+
+        # TODO generate frames
+        fp = (self.tmprecdir/"timing.txt").open("w")
+        F = 1
+        for i in range(len(self.event_stream)):
+            e = self.event_stream[i]
+            cmd = e['cmd']
+            if cmd=='view':
+                dt = round((self.event_stream[i+1]['t']-e['t'])*60) # 60 fps
+                name = 'frame_{:04d}.png'.format(F)
+                fp.write('file {}\nduration {}\n'.format(name,dt))
+
+                self.view.setViewCSR(e['cx'], e['cy'],e['scale'],e['rot'])
+                pixmap = self.view.grab()
+                pixmap.save((self.tmprecdir/name).as_posix())
+
+                F+=1
+        fp.close()
+        for e in self.event_stream:
+            print(e)
+
+        # TODO generate video
+
+        # TODO combine audio and video
+
+       
 
     def recordSetSource(self):
         pass
@@ -2559,14 +2604,14 @@ class MainWindow(QtWidgets.QMainWindow):
         Go to next view in the list
         """
         self.viewsModel.athome = None
-        self.showView(self.viewsModel.nextView())
+        self.jumpToView(self.viewsModel.nextView())
 
     def viewsPrevious(self):
         """
         Go to previous view in the list
         """
         self.viewsModel.athome = None
-        self.showView(self.viewsModel.previousView())
+        self.jumpToView(self.viewsModel.previousView())
 
     def viewsHome(self):
         """
@@ -2576,18 +2621,18 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.viewsModel.athome is None:
             # store where we are and switch to homeview
             self.viewsModel.athome = self.viewsModel.currentView()
-            self.showView(self.viewsModel.homeView())
+            self.jumpToView(self.viewsModel.homeView())
 
         else:
             # We are on homeview .. go back
-            self.showView(self.viewsModel.athome)
+            self.jumpToView(self.viewsModel.athome)
             self.viewsModel.athome = None
 
     def viewsFirst(self):
         """
         Go to first view
         """
-        self.showView(self.viewsModel.firstView())
+        self.jumpToView(self.viewsModel.firstView())
 
     def viewsFrames(self):
         """

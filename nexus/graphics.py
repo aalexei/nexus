@@ -82,8 +82,10 @@ class Transform(QtGui.QTransform):
         # XXX make general
         x0,y0 = self.map(0.0,0.0)
         x1,y1 = self.map(1.0,0.0)
-        angle = atan2(y1-y0,x1-x0)
-
+        angle = atan2(y1-y0,x1-x0) # between -pi and pi
+        if angle<0:
+            # make between 0 and 2pi
+            angle = 2*pi+angle
         return angle
 
     def getScale(self):
@@ -2585,6 +2587,9 @@ class NexusView(QtWidgets.QGraphicsView):
     # Do alternative pathway here
     presentationEscape = QtCore.pyqtSignal()
 
+    # send position and pen events for recording
+    recordStateEvent = QtCore.pyqtSignal(dict)
+
     def __init__(self, scene, parent = None):
 
         super().__init__(scene, parent)
@@ -2668,6 +2673,26 @@ class NexusView(QtWidgets.QGraphicsView):
                 rect=rect.united(item.sceneBoundingRect())
 
         self.fitInView(rect, QtCore.Qt.KeepAspectRatio)
+
+    def getViewCSR(self):
+        '''
+        Get the center_x, center_y, scale and rotation of view
+        '''
+        matrix = Transform(self.transform())
+        c=self.mapToScene(self.viewport().rect().center())
+        x,y,rot,scale = matrix.getTRS()
+        return c.x(), c.y(), scale, rot
+
+    def setViewCSR(self, cx, cy, scale, rotation=0):
+        '''
+        Set the view based on the center x,y, scale and rotation
+        '''
+        matrix = Transform().setTRS(0,0,rotation, scale)
+        self.setTransform(matrix)
+        self.centerOn(cx, cy)
+
+        # when recording, these events will be caught
+        self.recordStateEvent.emit({'t':time.time(),'cmd':'view', 'cx':cx, 'cy':cy, 'scale':scale, 'rot':rotation})
 
     def wheelEvent(self, event):
 
