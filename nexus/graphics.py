@@ -2789,7 +2789,9 @@ class NexusView(QtWidgets.QGraphicsView):
 
             s = self.transform().m11()
             self._trailTimer.stop()
-            pn = self.mapToScene(event.pos())*s
+            ps = self.mapToScene(event.pos())
+            pn = ps*s
+            self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-point','x':pn.x(), 'y':pn.y()})
             if len(self.pointertrail)==0:
                 # if there's nothing in the queue add the point within a stroke list
                 self.pointertrail.append([pn])
@@ -2877,6 +2879,7 @@ class NexusView(QtWidgets.QGraphicsView):
         if not self.scene().mode in ["presentation", "record"]:
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseReleaseEvent(self, event)
+            self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-up'})
 
     def mouseDoubleClickEvent(self, event):
 
@@ -2913,6 +2916,8 @@ class NexusView(QtWidgets.QGraphicsView):
         if self.pointertrailitem2 is not None:
             self.scene().removeItem(self.pointertrailitem2 )
             self.pointertrailitem2 = None
+        self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-clear'})
+
 
 
     def keyPressEvent(self, event):

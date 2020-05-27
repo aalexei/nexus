@@ -2449,7 +2449,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recSourceCombo.clear()
         self.recSourceCombo.addItems(sources)
         self.recSourceCombo.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
-        #self.recSourceCombo.setMinimumContentsLength(6)
 
         settings = QAudioEncoderSettings()
         settings.setCodec('audio/pcm')
@@ -2463,8 +2462,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recPauseAct.setEnabled(False)
         self.recEndAct.setEnabled(False)
 
+        self.audiorecorder.stateChanged.connect(self.audioRecorderStateChange)
+        self.audioRecorderStateChange()
+
     def storeRecordingEvent(self, event):
         self.event_stream.append(event)
+
+    def audioRecorderStateChange(self):
+
+        if self.audiorecorder.state()==QAudioRecorder.RecordingState:
+            print("Recording")
+        elif self.audiorecorder.state()==QAudioRecorder.PausedState:
+            print("Paused")
+        else:
+            print("Stopped")
 
     def recordStart(self):
 
@@ -2481,12 +2492,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # initialise stream
             self.event_stream = []
-            # self.audiorecorder.record()
-            # self.event_stream.append({'t':time.time(),'cmd':'start'})
-            # self.recording = True
 
-        # elif self.audiorecorder.state()==QAudioRecorder.PausedState:
-            # restart recording
+        # The following applies for initial start and resuming from pause
         self.view.recordStateEvent.connect(self.storeRecordingEvent)
         self.audiorecorder.record()
         t = time.time()
@@ -2543,28 +2550,85 @@ class MainWindow(QtWidgets.QMainWindow):
         fp = (self.tmprecdir/"timing.txt").open("w")
         F = 1
         currentview = ()
+        currentpen = [[]]
         N = len(self.event_stream)
+
+
+        self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
+        self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+        pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
+        pen.setWidthF(CONFIG['trail_outer_width'])
+        pen.setCapStyle(QtCore.Qt.RoundCap)
+        self.pointertrailitem.setPen(pen)
+        self.pointertrailitem.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
+        self.scene.addItem(self.pointertrailitem)
+
+        # inner collor
+        self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
+        self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+        pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
+        pen.setWidthF(CONFIG['trail_inner_width'])
+        pen.setCapStyle(QtCore.Qt.RoundCap)
+        self.pointertrailitem2.setPen(pen)
+        self.pointertrailitem2.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
+        self.scene.addItem(self.pointertrailitem2)
+
+
         for i in range(N):
             e = self.event_stream[i]
             cmd = e['cmd']
             self.statusBar().showMessage("Generating frames {}/{}".format(i,N))
             #self.showMessage("Generating frames {}/{}".format(i,N))
-            if cmd=='view':
+
+            if cmd == 'view':
+                currentview = (e['cx'], e['cy'],e['scale'],e['rot'])
+            elif cmd=='pen-clear':
+                currentpen = [[]]
+            elif cmd=='pen-up':
+                currentpen.append([])
+            elif cmd=='pen-point':
+                currentpen[-1].append((e['x'],e['y']))
+
+            # draw frame
+            if cmd in ['view','pen-clear', 'pen-up', 'pen-point']:
                 dt = self.event_stream[i+1]['t']-e['t']
                 framename = 'frame_{:04d}.png'.format(F)
                 fp.write('file {}\nduration {}\n'.format(framename,dt))
 
-                currentview = (e['cx'], e['cy'],e['scale'],e['rot'])
-                self.view.setViewCSR(*currentview)
-                pixmap = self.view.grab()
-                pixmap.save((self.tmprecdir/framename).as_posix())
+
+
+                image = self.generateFrame(*currentview, penpoints=currentpen)
+                # self.view.setViewCSR(*currentview)
+                # W = 1920
+                # H = 1080
+                # viewrect = self.view.viewport().rect()
+                # dx = (viewrect.width()-W)/2
+                # dy = (viewrect.height()-H)/2
+
+                # image = QtGui.QImage(W,H, QtGui.QImage.Format_ARGB32)
+                # image.fill(QtCore.Qt.transparent)
+                # painter = QtGui.QPainter(image)
+                # painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+                # painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+                # # painter.setRenderHint(QtGui.QPainter.TextAntialiasing, True)
+                # self.view.render(painter, QtCore.QRectF(), QtCore.QRect(dx,dy,W,H), QtCore.Qt.KeepAspectRatio)
+                # #self.view.render(painter)
+                # painter.end()
+
+                image.save((self.tmprecdir/framename).as_posix())
+                #pixmap = self.view.grab(QtCore.QRect(0,0,W,H))
+                #pixmap.save((self.tmprecdir/framename).as_posix())
 
                 F+=1
+
         # last frame must be written again or ffmped ignores the duration
         fp.write('file {}\n'.format(framename))
         fp.close()
 
-        # TODO generate video
+        self.scene.removeItem(self.pointertrailitem )
+        self.scene.removeItem(self.pointertrailitem2 )
+
+        # Generate video
         self.showMessage("Generating video from frames")
         subprocess.run(['ffmpeg', '-f', 'concat',
                         '-i', 'timing.txt',
@@ -2572,7 +2636,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         '-pix_fmt', 'yuv420p', # so quicktime can play it
                         'video.mp4' ], cwd=self.tmprecdir)
 
-        # TODO combine audio and video
+        # Combine audio and video
         self.showMessage("Combining video and audio")
         subprocess.run(['ffmpeg', '-i', 'video.mp4',
                         '-itsoffset', '0.5', # delay the audio slightly
@@ -2581,8 +2645,6 @@ class MainWindow(QtWidgets.QMainWindow):
                         '-c:a', 'aac',
                         'complete.mp4' ], cwd=self.tmprecdir)
 
-        # TODO figure out where audio too soon is coming from (delay in starting to record?)
-
         filename = QtWidgets.QFileDialog.getSaveFileName(self, "Save Movie File", "output.mp4", "*.mp4")
         if len(filename[0])>0:
             videopath = filename[0]
@@ -2590,13 +2652,64 @@ class MainWindow(QtWidgets.QMainWindow):
             vid.rename(videopath)
 
         # TODO cleanup temporary directory unless user indicates not to
+        # TODO slight delay on audio recording starting
+        # TODO figure out where audio too soon is coming from (delay in starting to record?)
+        # TODO geometry is taked from window
+        # TODO needs better feedback
+        # TODO probably should be moved to separate thread
+        
+    def generateFrame(self, x,y,scale,rotation,penpoints):
+
+        # TODO skip frames (but keep points) for faster than 60 fps
+
+        self.view.setViewCSR(x,y,scale,rotation)
+        W = 1920
+        H = 1080
+        viewrect = self.view.viewport().rect()
+        dx = (viewrect.width()-W)/2
+        dy = (viewrect.height()-H)/2
+
+        path = QtGui.QPainterPath()
+        path2 = QtGui.QPainterPath()
+        for stroke in reversed(penpoints):
+            if len(stroke)==0:
+                continue
+            p = QtCore.QPointF(stroke[-1][0],stroke[-1][1])
+            path.moveTo(p)
+            path2.moveTo(p)
+            for sx,sy in reversed(stroke[:-1]):
+                p = QtCore.QPointF(sx,sy)
+                path.lineTo(p)
+                path2.lineTo(p)
+        self.pointertrailitem.setPath(path)
+        self.pointertrailitem2.setPath(path)
+
+        image = QtGui.QImage(W,H, QtGui.QImage.Format_ARGB32)
+        image.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(image)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+        # painter.setRenderHint(QtGui.QPainter.TextAntialiasing, True)
+        self.view.render(painter, QtCore.QRectF(), QtCore.QRect(dx,dy,W,H), QtCore.Qt.KeepAspectRatio)
+        #self.view.render(painter)
+        ## Ideally the pen would be draw here but the transformations are a mess
+        # vp = viewrect.topLeft()
+        # s = H/(viewrect.height())
+        # c = QtCore.QPointF(W/2,H/2)
+        # for stroke in penpoints:
+        #     if len(stroke)==0:
+        #         continue
+        #     #stroke2=[s*(self.view.mapFromScene(QtCore.QPointF(sx,sy))-vp) for sx,sy in stroke]
+        #     stroke2=[s*self.view.mapFromScene((QtCore.QPointF(sx,sy)-QtCore.QPointF(x,y)))+c for sx,sy in stroke]
+        #     print(stroke2[:3])
+        #     #print(vp,s)
+        #     painter.drawPolyline(QtGui.QPolygonF(stroke2))
+
+        painter.end()
 
 
-    # def recordSetSource(self):
-    #     pass
-    #     # TODO show same combobox as in toolbar?
+        return image
 
-              
     def hidePointer(self):
         '''
         Hide and show the pointer in full screen mode

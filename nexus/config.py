@@ -80,8 +80,9 @@ default_config = {
 
     #"view_rect_size": (1024, 768), # match to your screen size. Only for reference.
     #"view_rect_size": (2560/2, 1440/2), # match to your screen size. Only for reference.
-    "view_rect_size": (2732/2, 2048/2), # iPad Pro 12.9" Only for reference.
-    "view_rect_size": (2560, 1440), # match to your screen size. Only for reference.
+    # "view_rect_size": (2732/2, 2048/2), # iPad Pro 12.9" Only for reference.
+    #"view_rect_size": (2560, 1440), # match to your screen size. Only for reference.
+    "view_rect_size": (1920, 1080), # match to your screen size. Only for reference.
 
     # while in presentation mode
     "view_next_keys": ["PgDown","Right", "Down", " "],
