@@ -32,6 +32,8 @@ from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi
 import re, subprocess
 import apsw
 
+
+
 CONFIG = config.get_config()
 
 # used to preserve links in svg generation
@@ -2543,6 +2545,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recPauseAct.setEnabled(False)
         self.recEndAct.setEnabled(False)
 
+
         # Sort event_stream just to be safe
         self.event_stream.sort(key = lambda x:x['t'])
 
@@ -2577,9 +2580,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pointertrailitem2.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
         self.scene.addItem(self.pointertrailitem2)
 
+
         for i in range(N):
             if i%10==0:
-                print('event {}/{}'.format(i,N))
+                print('Writing frames: {:.0f}%'.format(i/N*100))
             e = self.event_stream[i]
             cmd = e['cmd']
             if cmd in ['start','end']:
@@ -2595,7 +2599,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 currentpen.append([])
             elif cmd=='pen-point':
                 currentpen[-1].append(QtCore.QPointF(e['x'],e['y']))
-                if dt+skipped < 0.0167:
+                if dt+skipped < 0.0167 and self.event_stream[i+1]['cmd']!='pen-up':
                     #frame faster than 1/60 fps so skip making this one
                     skipped+=dt
                     continue
@@ -2640,6 +2644,8 @@ class MainWindow(QtWidgets.QMainWindow):
             videopath = filename[0]
             vid = self.tmprecdir/"complete.mp4"
             vid.rename(videopath)
+        else:
+            return
 
         # TODO cleanup temporary directory unless user indicates not to
         # TODO slight delay on audio recording starting
@@ -2650,7 +2656,6 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def generateFrame(self, x, y, scale, rotation, penpoints):
 
-        self.view.setViewCSR(x,y,scale,rotation)
         W = 1920
         H = 1080
         viewrect = self.view.viewport().rect()
@@ -2670,8 +2675,8 @@ class MainWindow(QtWidgets.QMainWindow):
             path.addPath(subpath)
         self.pointertrailitem.setPath(path)
         self.pointertrailitem2.setPath(path)
-        self.pointertrailitem.show()
-        self.pointertrailitem2.show()
+        # self.pointertrailitem.show()
+        # self.pointertrailitem2.show()
 
         image = QtGui.QImage(W,H, QtGui.QImage.Format_ARGB32)
         image.fill(QtCore.Qt.transparent)
