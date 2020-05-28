@@ -2552,8 +2552,12 @@ class MainWindow(QtWidgets.QMainWindow):
         currentview = ()
         currentpen = [[]]
         N = len(self.event_stream)
+        # extra time accumulated on skipping frames:
+        skipped = 0
 
-
+        # this is a mirror of code in graphics
+        # I know, I know, don't duplicate, abstract
+        # outer colour
         self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
         self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
         pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
@@ -2563,7 +2567,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pointertrailitem.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
         self.scene.addItem(self.pointertrailitem)
 
-        # inner collor
+        # inner colour
         self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
         self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
         pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
@@ -2573,12 +2577,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pointertrailitem2.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
         self.scene.addItem(self.pointertrailitem2)
 
-
         for i in range(N):
+            if i%10==0:
+                print('event {}/{}'.format(i,N))
             e = self.event_stream[i]
             cmd = e['cmd']
-            self.statusBar().showMessage("Generating frames {}/{}".format(i,N))
-            #self.showMessage("Generating frames {}/{}".format(i,N))
+            if cmd in ['start','end']:
+                continue
+            # the following will throw exeption if end frame so skip those above
+            dt = self.event_stream[i+1]['t']-e['t']
 
             if cmd == 'view':
                 currentview = (e['cx'], e['cy'],e['scale'],e['rot'])
@@ -2587,39 +2594,22 @@ class MainWindow(QtWidgets.QMainWindow):
             elif cmd=='pen-up':
                 currentpen.append([])
             elif cmd=='pen-point':
-                currentpen[-1].append((e['x'],e['y']))
+                currentpen[-1].append(QtCore.QPointF(e['x'],e['y']))
+                if dt+skipped < 0.0167:
+                    #frame faster than 1/60 fps so skip making this one
+                    skipped+=dt
+                    continue
 
             # draw frame
             if cmd in ['view','pen-clear', 'pen-up', 'pen-point']:
-                dt = self.event_stream[i+1]['t']-e['t']
                 framename = 'frame_{:04d}.png'.format(F)
-                fp.write('file {}\nduration {}\n'.format(framename,dt))
-
-
+                fp.write('file {}\nduration {}\n'.format(framename,dt+skipped))
 
                 image = self.generateFrame(*currentview, penpoints=currentpen)
-                # self.view.setViewCSR(*currentview)
-                # W = 1920
-                # H = 1080
-                # viewrect = self.view.viewport().rect()
-                # dx = (viewrect.width()-W)/2
-                # dy = (viewrect.height()-H)/2
-
-                # image = QtGui.QImage(W,H, QtGui.QImage.Format_ARGB32)
-                # image.fill(QtCore.Qt.transparent)
-                # painter = QtGui.QPainter(image)
-                # painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-                # painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
-                # # painter.setRenderHint(QtGui.QPainter.TextAntialiasing, True)
-                # self.view.render(painter, QtCore.QRectF(), QtCore.QRect(dx,dy,W,H), QtCore.Qt.KeepAspectRatio)
-                # #self.view.render(painter)
-                # painter.end()
-
                 image.save((self.tmprecdir/framename).as_posix())
-                #pixmap = self.view.grab(QtCore.QRect(0,0,W,H))
-                #pixmap.save((self.tmprecdir/framename).as_posix())
 
                 F+=1
+                skipped = 0
 
         # last frame must be written again or ffmped ignores the duration
         fp.write('file {}\n'.format(framename))
@@ -2654,13 +2644,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # TODO cleanup temporary directory unless user indicates not to
         # TODO slight delay on audio recording starting
         # TODO figure out where audio too soon is coming from (delay in starting to record?)
-        # TODO geometry is taked from window
         # TODO needs better feedback
         # TODO probably should be moved to separate thread
+        # TODO accomodate changing screens: store central point and width of HD view and addapt dynamically
         
-    def generateFrame(self, x,y,scale,rotation,penpoints):
-
-        # TODO skip frames (but keep points) for faster than 60 fps
+    def generateFrame(self, x, y, scale, rotation, penpoints):
 
         self.view.setViewCSR(x,y,scale,rotation)
         W = 1920
@@ -2670,29 +2658,30 @@ class MainWindow(QtWidgets.QMainWindow):
         dy = (viewrect.height()-H)/2
 
         path = QtGui.QPainterPath()
-        path2 = QtGui.QPainterPath()
-        for stroke in reversed(penpoints):
+        for stroke in penpoints:
             if len(stroke)==0:
                 continue
-            p = QtCore.QPointF(stroke[-1][0],stroke[-1][1])
-            path.moveTo(p)
-            path2.moveTo(p)
-            for sx,sy in reversed(stroke[:-1]):
-                p = QtCore.QPointF(sx,sy)
-                path.lineTo(p)
-                path2.lineTo(p)
+            subpath = QtGui.QPainterPath()
+            p = stroke[0]
+            subpath.moveTo(p)
+            for p in stroke:
+                subpath.lineTo(p)
+            # subpath.closeSubpath()
+            path.addPath(subpath)
         self.pointertrailitem.setPath(path)
         self.pointertrailitem2.setPath(path)
+        self.pointertrailitem.show()
+        self.pointertrailitem2.show()
 
         image = QtGui.QImage(W,H, QtGui.QImage.Format_ARGB32)
         image.fill(QtCore.Qt.transparent)
         painter = QtGui.QPainter(image)
         painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
         painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
-        # painter.setRenderHint(QtGui.QPainter.TextAntialiasing, True)
         self.view.render(painter, QtCore.QRectF(), QtCore.QRect(dx,dy,W,H), QtCore.Qt.KeepAspectRatio)
-        #self.view.render(painter)
+
         ## Ideally the pen would be draw here but the transformations are a mess
+        ## Needs a complete overhaul to accomodate different res screens anyway
         # vp = viewrect.topLeft()
         # s = H/(viewrect.height())
         # c = QtCore.QPointF(W/2,H/2)
