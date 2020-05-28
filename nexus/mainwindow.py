@@ -2580,10 +2580,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pointertrailitem2.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
         self.scene.addItem(self.pointertrailitem2)
 
+        progress = QtWidgets.QProgressDialog("Making frames","Cancel",0,120, self)
+        progress.setWindowModality(QtCore.Qt.WindowModal)
 
         for i in range(N):
-            if i%10==0:
+            if i%1==0:
                 print('Writing frames: {:.0f}%'.format(i/N*100))
+                progress.setValue(i/N*100)
             e = self.event_stream[i]
             cmd = e['cmd']
             if cmd in ['start','end']:
@@ -2622,6 +2625,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.scene.removeItem(self.pointertrailitem )
         self.scene.removeItem(self.pointertrailitem2 )
 
+        progress.setLabelText("Generating video")
+        progress.setValue(100)
+
         # Generate video
         self.showMessage("Generating video from frames")
         subprocess.run(['ffmpeg', '-f', 'concat',
@@ -2629,6 +2635,9 @@ class MainWindow(QtWidgets.QMainWindow):
                         '-vf', 'fps=60', # 60fps
                         '-pix_fmt', 'yuv420p', # so quicktime can play it
                         'video.mp4' ], cwd=self.tmprecdir)
+
+        progress.setLabelText("Combining with audio")
+        progress.setValue(110)
 
         # Combine audio and video
         self.showMessage("Combining video and audio")
@@ -2638,6 +2647,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         '-c:v', 'copy',
                         '-c:a', 'aac',
                         'complete.mp4' ], cwd=self.tmprecdir)
+
+        progress.setValue(120)
 
         filename = QtWidgets.QFileDialog.getSaveFileName(self, "Save Movie File", "output.mp4", "*.mp4")
         if len(filename[0])>0:
@@ -2656,27 +2667,35 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def generateFrame(self, x, y, scale, rotation, penpoints):
 
+        # path = QtGui.QPainterPath()
+        # for stroke in penpoints:
+        #     if len(stroke)==0:
+        #         continue
+        #     subpath = QtGui.QPainterPath()
+        #     p = stroke[0]
+        #     subpath.moveTo(p)
+        #     for p in stroke:
+        #         subpath.lineTo(p)
+        #     # subpath.closeSubpath()
+        #     path.addPath(subpath)
+        # self.pointertrailitem.setPath(path)
+        # self.pointertrailitem2.setPath(path)
+        # self.pointertrailitem.update(path.boundingRect())
+        # self.pointertrailitem2.update(path.boundingRect())
+
+        # self.view.update()
+        # self.pointertrailitem.show()
+        # self.pointertrailitem2.show()
+        # self.view.setViewportUpdateMode(self.view.FullViewportUpdate)
+        # self.view.resetCachedContent()
+        
+        self.view.setViewCSR(x,y,scale,rotation)
+
         W = 1920
         H = 1080
         viewrect = self.view.viewport().rect()
         dx = (viewrect.width()-W)/2
         dy = (viewrect.height()-H)/2
-
-        path = QtGui.QPainterPath()
-        for stroke in penpoints:
-            if len(stroke)==0:
-                continue
-            subpath = QtGui.QPainterPath()
-            p = stroke[0]
-            subpath.moveTo(p)
-            for p in stroke:
-                subpath.lineTo(p)
-            # subpath.closeSubpath()
-            path.addPath(subpath)
-        self.pointertrailitem.setPath(path)
-        self.pointertrailitem2.setPath(path)
-        # self.pointertrailitem.show()
-        # self.pointertrailitem2.show()
 
         image = QtGui.QImage(W,H, QtGui.QImage.Format_ARGB32)
         image.fill(QtCore.Qt.transparent)
@@ -2687,17 +2706,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
         ## Ideally the pen would be draw here but the transformations are a mess
         ## Needs a complete overhaul to accomodate different res screens anyway
-        # vp = viewrect.topLeft()
-        # s = H/(viewrect.height())
-        # c = QtCore.QPointF(W/2,H/2)
-        # for stroke in penpoints:
-        #     if len(stroke)==0:
-        #         continue
-        #     #stroke2=[s*(self.view.mapFromScene(QtCore.QPointF(sx,sy))-vp) for sx,sy in stroke]
-        #     stroke2=[s*self.view.mapFromScene((QtCore.QPointF(sx,sy)-QtCore.QPointF(x,y)))+c for sx,sy in stroke]
-        #     print(stroke2[:3])
-        #     #print(vp,s)
-        #     painter.drawPolyline(QtGui.QPolygonF(stroke2))
+        vc = viewrect.center()
+        s = W/(4*viewrect.width())
+        c = QtCore.QPointF(W/2,H/2)
+        tc = QtCore.QPointF(x,y)
+        for stroke in penpoints:
+            if len(stroke)==0:
+                continue
+
+            #stroke2=[s*(self.view.mapFromScene(QtCore.QPointF(sx,sy))-vp) for sx,sy in stroke]
+            stroke2=[s*(self.view.mapFromScene(sp)-vc)+c-2*tc for sp in stroke]
+            print(dx,dy, tc, vc)
+            #print(stroke2[:3])
+            #print(vp,s)
+            painter.drawPolyline(QtGui.QPolygonF(stroke2))
 
         painter.end()
 
