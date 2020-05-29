@@ -721,11 +721,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.updateRecentFilesMenu()
 
-        #self.recordingDialog = RecordDialog(self, QtCore.Qt.WindowStaysOnTopHint)
-        #self.recordingDialog.hide()
-        # self.recordingPath = "~/output.mp4"
-        self.recording = False
         self.setMode()
+
 
     def setDefaultSettings(self):
         '''
@@ -1619,12 +1616,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fileToolBar.setIconSize(QtCore.QSize(24,24))
         self.fileToolBar.addAction(self.newAct)
         self.fileToolBar.addAction(self.openAct)
-        #self.fileToolBar.addAction(self.saveAct)
-
-        # self.modeToolBar = self.addToolBar(self.tr("Mode"))
-        # self.modeToolBar.addAction(self.grabModeAct)
-        # self.modeToolBar.addAction(self.addModeAct)
-        # self.modeToolBar.addAction(self.moveModeAct)
 
         self.editToolBar = self.addToolBar(self.tr("Edit"))
         self.editToolBar.setIconSize(QtCore.QSize(24,24))
@@ -1639,24 +1630,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewToolBar.addAction(self.zoomInAct)
         self.viewToolBar.addAction(self.zoomOutAct)
         self.viewToolBar.addAction(self.zoomSelectionAct)
-        #self.viewToolBar.addAction(self.presentationModeAct)
         self.viewToolBar.addAction(self.viewsAct)
         self.viewToolBar.addAction(self.viewsFirstAct)
         self.viewToolBar.addAction(self.viewsPreviousAct)
         self.viewToolBar.addAction(self.viewsHomeAct)
         self.viewToolBar.addAction(self.viewsNextAct)
 
-        # self.viewToolBar = self.addToolBar(self.tr("Mode"))
-        self.viewToolBar.addAction(self.editModeAct)
-        self.viewToolBar.addAction(self.presentationModeAct)
-        self.viewToolBar.addAction(self.recordModeAct)
+        self.modeToolBar = self.addToolBar(self.tr("Mode"))
+        self.modeToolBar.addAction(self.editModeAct)
+        self.modeToolBar.addAction(self.presentationModeAct)
+        self.modeToolBar.addAction(self.recordModeAct)
 
         self.recToolBar = self.addToolBar(self.tr("Record"))
         self.recToolBar.setIconSize(QtCore.QSize(24,24))
         self.recToolBar.addAction(self.recStartAct)
         self.recToolBar.addAction(self.recPauseAct)
         self.recToolBar.addAction(self.recEndAct)
-        #self.recToolBar.addAction(self.recSourceAct)
         self.recSourceCombo = QtWidgets.QComboBox()
         self.recToolBar.addWidget(self.recSourceCombo)
 
@@ -2275,10 +2264,6 @@ class MainWindow(QtWidgets.QMainWindow):
             center,matrix = self.viewsteps[self.viewcurrentstep]
             x,y,R,S = graphics.Transform(matrix).getTRS()
             self.view.setViewCSR(center.x(), center.y(), S, R)
-            # self.view.setTransform(matrix)
-            # self.view.centerOn(center)
-            # if self.recording:
-            #     self.event_stream.append({'t':time.time(),'cmd':'view', 'matrix':matrix, 'center':center})
 
             self.viewcurrentstep += 1
 
@@ -2301,15 +2286,12 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.presentationModeAct.setChecked(False)
         logging.debug("Switching on edit mode")
 
-        #self.recordingDialog.hide()
-        # point on scene where the view is centred on
-        #center=self.view.mapToScene(self.view.viewport().rect().center())
-
+        # TODO Need to store geometry of window on first use
         # show Normal seems too abrupt after full screen
-        # XXX Need to store geometry of window on first use
+        # Seems to not store maximised state on a mac?
         self.showNormal()
         #self.showMaximized()
-        #
+
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.viewToolBar.setVisible(True)
@@ -2322,7 +2304,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editToolBar.setVisible(True)
         self.fileToolBar.setVisible(True)
         self.filterToolBar.setVisible(True)
-        # self.modeToolBar.setVisible(True)
+        self.modeToolBar.setVisible(True)
 
         for child in self.presentationhiddenstems:
             child.show()
@@ -2346,11 +2328,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.scene.mode = "presentation"
         logging.debug("Switching on presentation mode")
 
-        # point on scene where the view is centred on
-        #center=self.view.mapToScene(self.view.viewport().rect().center())
-
-        #self.recordingDialog.hide()
-
         self.statusBar().setVisible(False)
         self.menuBar().setVisible(False)
         self.editToolBar.setVisible(False)
@@ -2358,7 +2335,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.filterToolBar.setVisible(False)
         self.viewToolBar.setVisible(False)
         self.recToolBar.setVisible(False)
-        # self.modeToolBar.setVisible(False)
+        self.modeToolBar.setVisible(False)
         self.scene.clearSelection()
 
         if self.viewsFramesAct.isChecked():
@@ -2399,6 +2376,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editToolBar.setVisible(False)
         self.fileToolBar.setVisible(False)
         self.filterToolBar.setVisible(False)
+        self.modeToolBar.setVisible(False)
 
         self.recMenu.setEnabled(True)
 
@@ -2449,7 +2427,6 @@ class MainWindow(QtWidgets.QMainWindow):
         default_source = self.audiorecorder.defaultAudioInput()
         sources.remove(default_source)
         sources.insert(0, default_source)
-        # self.sources = QtWidgets.QComboBox()
         self.recSourceCombo.clear()
         self.recSourceCombo.addItems(sources)
         self.recSourceCombo.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
@@ -2505,8 +2482,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.event_stream.append({'t':t,'cmd':'start'})
         self.event_stream.append({'t':t,'cmd':'view', 'cx':cx, 'cy':cy, 'scale':scale, 'rot':rot})
 
-        self.recording = True
-
         self.recStartAct.setChecked(True)
         self.recPauseAct.setChecked(False)
         self.recEndAct.setChecked(False)
@@ -2518,7 +2493,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def recordPause(self):
         self.audiorecorder.pause()
         self.event_stream.append({'t':time.time(),'cmd':'pause'})
-        self.recording = False
         self.view.recordStateEvent.disconnect(self.storeRecordingEvent)
 
 
@@ -2537,7 +2511,6 @@ class MainWindow(QtWidgets.QMainWindow):
         except TypeError:
             # may have stopped from pause, in which case not connected
             pass
-        self.recording = False
         logging.info("recording ended")
 
         self.recStartAct.setChecked(False)
