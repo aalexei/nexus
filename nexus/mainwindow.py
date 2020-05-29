@@ -1446,7 +1446,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recEndAct.setCheckable(True)
         self.recEndAct.triggered.connect(self.recordEnd)
 
-        self.recSourceAct = QtWidgets.QAction(QtGui.QIcon(":/images/sound.svg"), self.tr("Microphone Source"), self)
+        # self.recSourceAct = QtWidgets.QAction(QtGui.QIcon(":/images/sound.svg"), self.tr("Microphone Source"), self)
         # self.recSourceAct.triggered.connect(self.recordSetSource)
 
         # The Start/Pause/End don't form an action group as their state
@@ -1584,8 +1584,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recMenu.addAction(self.recStartAct)
         self.recMenu.addAction(self.recPauseAct)
         self.recMenu.addAction(self.recEndAct)
-        self.viewMenu.addSeparator()
-        self.recMenu.addAction(self.recSourceAct)
+        self.recMenu.setEnabled(False)
 
         # grab the window menu maintained from the application
         app = QtWidgets.QApplication.instance()
@@ -2310,7 +2309,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # XXX Need to store geometry of window on first use
         self.showNormal()
         #self.showMaximized()
-
+        #
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.viewToolBar.setVisible(True)
@@ -2319,6 +2318,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.menuBar().setVisible(True)
 
+        self.recMenu.setEnabled(False)
         self.editToolBar.setVisible(True)
         self.fileToolBar.setVisible(True)
         self.filterToolBar.setVisible(True)
@@ -2399,6 +2399,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editToolBar.setVisible(False)
         self.fileToolBar.setVisible(False)
         self.filterToolBar.setVisible(False)
+
+        self.recMenu.setEnabled(True)
 
         self.scene.clearSelection()
 
