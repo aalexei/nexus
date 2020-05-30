@@ -2679,15 +2679,41 @@ class NexusView(QtWidgets.QGraphicsView):
         Get the center_x, center_y, scale and rotation of view
         '''
         matrix = Transform(self.transform())
-        c=self.mapToScene(self.viewport().rect().center())
         x,y,rot,scale = matrix.getTRS()
-        return c.x(), c.y(), scale, rot
+        vrect = self.viewport().rect()
+        vc = vrect.center()
 
-    def setViewCSR(self, cx, cy, scale, rotation=0):
+        # srect = self.mapToScene(vrect) # this returns a Polygon!
+        
+        sc=self.mapToScene(vrect.center())
+        s0=self.mapToScene(0,0)
+
+        # this is exactly the scale:
+        # distv = sqrt(vc.x()**2+vc.y()**2)
+        # dists = sqrt((sc.x()-s0.x())**2+(sc.y()-s0.y())**2)
+        # s2 = distv/dists
+        # As is this
+        # v1=self.mapFromScene(100,0)
+        # v0=self.mapFromScene(0,0)
+        # uv=sqrt((v1.x()-v0.x())**2+(v1.y()-v0.y())**2)/100
+
+        unit_width = scale/vrect.width()
+        
+        # print('scale=',scale, 'vw', vrect.width(),'uv',uv, 'rot', rot)
+
+        return {'x':sc.x(), 'y':sc.y(), 's':scale, 'r':rot, 'u':unit_width}
+
+    def setViewCSR(self, param):
         '''
         Set the view based on the center x,y, scale and rotation
         '''
-        matrix = Transform().setTRS(0,0,rotation, scale)
+        cx=param['x']
+        cy=param['y']
+        rotation=param.get('r',0)
+        scale=param.get('s',1)
+        u = param.get('u',1)
+        vrect = self.viewport().rect()
+        matrix = Transform().setTRS(0,0,rotation, u*vrect.width())
         self.setTransform(matrix)
         self.centerOn(cx, cy)
 

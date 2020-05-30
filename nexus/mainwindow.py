@@ -653,11 +653,10 @@ class MainWindow(QtWidgets.QMainWindow):
         #
         # Views widget
         #
-        self.viewsModel = ViewsModel(0,1)
+        # self.viewsModel = ViewsModel(0,1)
         viewstoolbar = QtWidgets.QToolBar()
         self.views = ViewsWidget(self, viewstoolbar)
 
-        self.views.viewsListView.selectionChange.connect(self.viewsFrames)
         dock = QtWidgets.QDockWidget(self.tr("Views"), self)
         self.viewsAct = dock.toggleViewAction()
         dock.setWidget(self.views)
@@ -2263,7 +2262,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             center,matrix = self.viewsteps[self.viewcurrentstep]
             x,y,R,S = graphics.Transform(matrix).getTRS()
-            self.view.setViewCSR(center.x(), center.y(), S, R)
+            self.view.setViewCSR({'x':center.x(), 'y':center.y(), 's':S, 'r':R})
 
             self.viewcurrentstep += 1
 
@@ -2478,9 +2477,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.view.recordStateEvent.connect(self.storeRecordingEvent)
         self.audiorecorder.record()
         t = time.time()
-        cx, cy, scale, rot = self.view.getViewCSR()
+        V = self.view.getViewCSR()
+                                
         self.event_stream.append({'t':t,'cmd':'start'})
-        self.event_stream.append({'t':t,'cmd':'view', 'cx':cx, 'cy':cy, 'scale':scale, 'rot':rot})
+        self.event_stream.append({'t':t,'cmd':'view', 'cx':V['x'], 'cy':V['y'], 'scale':V['s'], 'rot':V['r']})
 
         self.recStartAct.setChecked(True)
         self.recPauseAct.setChecked(False)
@@ -2664,7 +2664,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.view.setViewportUpdateMode(self.view.FullViewportUpdate)
         # self.view.resetCachedContent()
         
-        self.view.setViewCSR(x,y,scale,rotation)
+        self.view.setViewCSR({'x':x,'y':y,'s':scale,'r':rotation})
 
         W = 1920
         H = 1080
@@ -2732,15 +2732,15 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Go to next view in the list
         """
-        self.viewsModel.athome = None
-        self.jumpToView(self.viewsModel.nextView())
+        self.views.viewsModel.athome = None
+        self.jumpToView(self.views.viewsModel.nextView())
 
     def viewsPrevious(self):
         """
         Go to previous view in the list
         """
-        self.viewsModel.athome = None
-        self.jumpToView(self.viewsModel.previousView())
+        self.views.viewsModel.athome = None
+        self.jumpToView(self.views.viewsModel.previousView())
 
     def viewsHome(self):
         """
@@ -2749,19 +2749,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self.viewsModel.athome is None:
             # store where we are and switch to homeview
-            self.viewsModel.athome = self.viewsModel.currentView()
-            self.jumpToView(self.viewsModel.homeView())
+            self.views.viewsModel.athome = self.viewsModel.currentView()
+            self.jumpToView(self.views.viewsModel.homeView())
 
         else:
             # We are on homeview .. go back
-            self.jumpToView(self.viewsModel.athome)
-            self.viewsModel.athome = None
+            self.jumpToView(self.views.viewsModel.athome)
+            self.views.viewsModel.athome = None
 
     def viewsFirst(self):
         """
         Go to first view
         """
-        self.jumpToView(self.viewsModel.firstView())
+        self.jumpToView(self.views.viewsModel.firstView())
 
     def viewsFrames(self):
         """
@@ -2778,8 +2778,8 @@ class MainWindow(QtWidgets.QMainWindow):
         for s in selected:
             selecteditems.append(self.viewsModel.itemFromIndex(s))
 
-        for row in range(self.viewsModel.rowCount()):
-            item = self.viewsModel.item(row)
+        for row in range(self.views.viewsModel.rowCount()):
+            item = self.views.viewsModel.item(row)
             if vis and item in selecteditems:
                 item.viewRectItem.setVisible(vis)
             else:
@@ -2955,7 +2955,81 @@ class PreferencesDialog(QtWidgets.QDialog):
     # TODO default branch parameters
     pass
 
-class ViewsModel(QtGui.QStandardItemModel):
+class ViewsModel(QtCore.QAbstractListModel):
+    current = 0
+    home = 0 # home is the first view by default
+    athome = None  # the location of the previous view will be stored here on switch
+    
+    def __init__(self):
+        super().__init__()
+        self.views = []
+
+    def data(self, index, role):
+        if role == QtCore.Qt.DecorationRole:
+            # See below for the data structure.
+            v = self.views[index.row()]
+            # Return the todo text only.
+            return v['icon']
+
+    def rowCount(self, index):
+        return len(self.views)
+
+    def addRow(self, item, after=-1):
+        if after==-1:
+            self.views.append(item)
+        else:
+            self.views.insert(after+1, item)
+        self.layoutChanged.emit()
+
+    def itemFromIndex(self, index):
+        return self.views[index.row()]
+       
+    def _cleanlimits(self,  viewnumber):
+        '''
+        clamp limits for requested view number
+        so can always request next or previous
+        '''
+        return max(min(viewnumber, len(self.views)-1), 0)
+
+    def currentView(self):
+        '''
+        Return current view in presentation
+        '''
+        return self.views[self.current]
+
+    def firstView(self):
+        '''
+        reset view to first one
+        '''
+        self.current = 0
+        return self.currentView()
+
+    def setCurrentView(self,  viewnumber):
+        '''
+        Set current view for presentations
+        '''
+        self.current = self._cleanlimits(viewnumber)
+
+    def nextView(self):
+
+        self.current = self._cleanlimits(self.current+1)
+        return self.currentView()
+
+    def previousView(self):
+
+        self.current = self._cleanlimits(self.current-1)
+        return self.currentView()
+
+    def homeView(self):
+        '''
+        Return special "home" view slide
+        '''
+        return self.views[self.home]
+
+    def setHomeView(self,  viewnumber):
+        self.home = self._cleanlimits(viewnumber)
+
+class ViewsModelold(QtGui.QStandardItemModel):
 
     current = 0
     home = 0 # home is the first view by default
@@ -3379,13 +3453,15 @@ class ViewsListView(QtWidgets.QListView):
 #----------------------------------------------------------------------
 class ViewsWidget(QtWidgets.QWidget):
 
+    ICONMAXSIZE = 300
+
     def __init__(self, parent, toolbar):
         super().__init__(parent)
 
         self.view = parent.view
         self.scene = parent.scene
-        self.viewsModel = parent.viewsModel
-        self.viewsModel.reordered.connect(self.relinkViews)
+        self.viewsModel = ViewsModel()
+
 
         self.toolbar = toolbar
 
@@ -3394,6 +3470,14 @@ class ViewsWidget(QtWidgets.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
+        ## create listview
+        self.viewsListView = ViewsListView()
+        self.viewsListView.setModel(self.viewsModel)
+        self.viewsListView.doubleClicked.connect(self.doubleClicked)
+        #self.viewsModel.reordered.connect(self.relinkViews)
+        #self.views.viewsListView.selectionChange.connect(self.viewsFrames)
+        layout.addWidget(self.viewsListView)
+
         ## create actions
         self.resetViewAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-reset.svg"), self.tr("&Reset View"), self)
         self.resetViewAct.setStatusTip(self.tr("Reset item to current view"))
@@ -3401,7 +3485,7 @@ class ViewsWidget(QtWidgets.QWidget):
 
         self.addViewAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-add.svg"), self.tr("&Add View"), self)
         self.addViewAct.setStatusTip(self.tr("Add new View"))
-        self.addViewAct.triggered.connect(self.addView)
+        self.addViewAct.triggered.connect(self.addCurrentView)
 
         self.deleteViewAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-remove.svg"), self.tr("&Delete View"), self)
         self.deleteViewAct.setStatusTip(self.tr("Delete selected View"))
@@ -3415,11 +3499,6 @@ class ViewsWidget(QtWidgets.QWidget):
         self.toolbar.addAction(self.resetViewAct)
         self.toolbar.addAction(self.deleteViewAct)
 
-        ## create listview
-        self.viewsListView = ViewsListView()
-        self.viewsListView.setModel(self.viewsModel)
-        self.viewsListView.doubleClicked.connect(self.doubleClicked)
-        layout.addWidget(self.viewsListView)
 
         g = self.scene.graph
 
@@ -3450,13 +3529,13 @@ class ViewsWidget(QtWidgets.QWidget):
                 if view != viewnode:
                     view.delete(setchange=False)
 
-        while viewnode is not None:
-            item = ViewsItem(viewnode, scene=self.scene)
-            #item.fromxml(viewxml, self.view)
-            self.viewsModel.appendRow(item)
-            item.createPreview(view=self.view)
+        # while viewnode is not None:
+        #     item = ViewsItem(viewnode, scene=self.scene)
+        #     #item.fromxml(viewxml, self.view)
+        #     self.viewsModel.appendRow(item)
+        #     item.createPreview(view=self.view)
 
-            viewnode = viewnode.outN('e.kind = "Transition"').one
+        #     viewnode = viewnode.outN('e.kind = "Transition"').one
 
 
     def locationChanged(self, loc):
@@ -3474,52 +3553,140 @@ class ViewsWidget(QtWidgets.QWidget):
         self.viewsListView.resetOrientation()
 
     def doubleClicked(self,  itemindex):
-        item = self.viewsModel.itemFromIndex(itemindex)
-        mi = item.viewTransform().inverted()[0]
-        self.view.setTransform(mi)
-        self.view.centerOn(item.viewCentre())
+        data = self.viewsModel.itemFromIndex(itemindex)
+        # mi = item.viewTransform().inverted()[0]
+        # self.view.setTransform(mi)
+        # self.view.centerOn(item.viewCentre())
+
+        self.view.setViewCSR(data)
+
         self.viewsModel.athome = False
         self.viewsModel.current = itemindex.row()
 
-    def addView(self):
+    def addCurrentView(self):
+        '''
+        Add the current view as a Views item
+        '''
+        data = self.view.getViewCSR()
 
-        node = self.scene.graph.Node('View', transform=graphics.Transform().tolist())
-        item = ViewsItem(node, scene=self.scene)
-        item.setView(self.view)
-       
-        if not self.window().viewsFramesAct.isChecked():
-            item.viewRectItem.setVisible(False)
+        # node = self.scene.graph.Node('View')
+        # node['x'] = data['x']
+        # node['y'] = data['y']
+        # node['s'] = data['s']
+        # node['r'] = data['r']
+        # node.save(setchange=False)
+
+        # TODO keep data inside node or use node with _ for extra
+        # data['node'] = node
+        self.addView(data)
+
+    def addView(self, data):
+
+        rectitem = ViewRectangle(self.scene)
+        #scene.addItem(rectitem)
+        data['rect'] = rectitem
+        #self.viewRectItem = rectitem
+
+        # set the transformation on the viewRectItem
+        #T = graphics.Transform(*self.node['transform'])
+        T = graphics.Transform().setTRS(data['x'],data['y'],data['r'],data['s'])
+        rectitem.setTransform(T)
+        rectitem.setVisible(False)
+
+        # invmatrix = view.transform()
+        # matrix = invmatrix.inverted()[0]
+        # centrePoint = view.mapToScene(view.viewport().rect().center())
+
+        # # XXX store centre, scale, and rotation
+        # dx,dy,r,s = graphics.Transform(matrix).getTRS()
+        # matrix = graphics.Transform().setTRS(centrePoint.x(),centrePoint.y(),r,s)
+        # self.viewRectItem.setTransform(matrix)
+
+        # self.saveView()
+        icon = self.createPreview(data)
+        data['icon'] = icon
+
+        # if not self.window().viewsFramesAct.isChecked():
+        #     item.viewRectItem.setVisible(False)
 
         selected = self.viewsListView.selectedIndexes()
         if len(selected) == 0:
-            self.viewsModel.appendRow(item)
+            self.viewsModel.addRow(data)
         else:
             row=0
             for itemindex in selected:
                 row = max(row, itemindex.row())
 
-            self.viewsModel.insertRow(row+1,item)
-            
+            self.viewsModel.addRow(data, row)
+
+
         self.relinkViews()
 
         self.viewsListView.clearSelection()
-        self.viewsListView.setCurrentIndex(item.index())
+        #self.viewsListView.setCurrentIndex(0)
+       
+
+    def createPreview(self, data):
+
+        # temporarily deselect selected items
+        selected = self.scene.selectedItems()
+        for item in selected:
+            item.setSelected(False)
+
+        # remember the visibility of viewrect and hide it
+        # XXX need to hide them all
+        #vis = self.viewRectItem.isVisible()
+        #self.viewRectItem.hide()
+
+        # remember current view
+        crs = self.view.getViewCSR()
+        #matrix0 = self.view.transform()
+        #center0 = self.view.mapToScene(view.viewport().rect().center())
+
+        # set view to viewRectItem's view
+        self.view.setViewCSR(data)
+        # matrix = self.viewInverseTransform()
+        # center = self.viewCentre()
+        # view.setTransform(matrix)
+        # view.centerOn(center)
+
+        # generate pixmap
+        pixmap = self.view.grab()
+        pixmap = pixmap.scaled( self.ICONMAXSIZE, self.ICONMAXSIZE, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+
+        # restore view
+        self.view.setViewCSR(crs)
+        # view.setTransform(matrix0)
+        # view.centerOn(center0)
+
+        icon = QtGui.QIcon(pixmap)
+
+        # restore visibility
+        # self.viewRectItem.setVisible(vis)
+
+        # restore selected state
+        for item in selected:
+            item.setSelected(True)
+
+        return icon
+       
 
     def relinkViews(self):
         # ensure all views are daisy chained correctly
-        rows = self.viewsModel.rowCount()
-        if rows == 0:
-            # Nothing to do
-            return
+        # rows = self.viewsModel.rowCount()
+        # if rows == 0:
+        #     # Nothing to do
+        #     return
 
         # delete all Transition edges and relink
-        for r in range(rows):
-            item = self.viewsModel.item(r)
-            item.node.bothE('e.kind="Transition"').delete(setchange=False)
-        for r in range(1,rows):
-            item0 = self.viewsModel.item(r-1)
-            item1 = self.viewsModel.item(r)
-            self.scene.graph.Edge(item0.node, "Transition", item1.node).save(setchange=False)
+        # for r in range(rows):
+        #     item = self.viewsModel.item(r)
+        #     item.node.bothE('e.kind="Transition"').delete(setchange=False)
+        # for r in range(1,rows):
+        #     item0 = self.viewsModel.item(r-1)
+        #     item1 = self.viewsModel.item(r)
+        #     self.scene.graph.Edge(item0.node, "Transition", item1.node).save(setchange=False)
+        pass
    
     def resetView(self):
 
