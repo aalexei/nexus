@@ -2165,28 +2165,38 @@ class MainWindow(QtWidgets.QMainWindow):
         ## rho is a tradeoff between zooming and panning, higher values jump more
         rho = 1.6
 
+        vwidth = self.view.viewport().rect().width()
         # TODO use view.getViewCSR
         ## initial point: location and scale
-        matrix0 = self.view.transform()
-        c0=self.view.mapToScene(self.view.viewport().rect().center())
-        s0 = sqrt(matrix0.m11()**2+matrix0.m21()**2)
-        rot0 = atan2(matrix0.m11(),matrix0.m21())  # between -pi and pi
-        if rot0<0:
-            # make between 0 and 2pi
-            rot0 = 2*pi+rot0
+        csr0 = self.view.getViewCSR()
+        c0 = QtCore.QPointF(csr0['x'],csr0['y'])
+        s0 = csr0['s']*vwidth
+        rot0 = csr0['r']
+        # matrix0 = self.view.transform()
+        # c0=self.view.mapToScene(self.view.viewport().rect().center())
+        # s0 = sqrt(matrix0.m11()**2+matrix0.m21()**2)
+        # rot0 = atan2(matrix0.m11(),matrix0.m21())  # between -pi and pi
+        # if rot0<0:
+        #     # make between 0 and 2pi
+        #     rot0 = 2*pi+rot0
 
         ## final point: location and scale
-        matrix1 = viewitem.viewInverseTransform()
-        c1 = viewitem.viewCentre()
-        s1 = sqrt(matrix1.m11()**2+matrix1.m21()**2)
-        rot1 = atan2(matrix1.m11(),matrix1.m21()) # between -pi and pi
-        if rot1<0:
-            # make between 0 and 2pi
-            rot1 = 2*pi+rot1
+        csr1 = viewitem
+        c1 = QtCore.QPointF(csr1['x'],csr1['y'])
+        s1 = csr1['s']*vwidth
+        rot1 = csr1['r']
+        # matrix1 = viewitem.viewInverseTransform()
+        # c1 = viewitem.viewCentre()
+        # s1 = sqrt(matrix1.m11()**2+matrix1.m21()**2)
+        # rot1 = atan2(matrix1.m11(),matrix1.m21()) # between -pi and pi
+        # if rot1<0:
+        #     # make between 0 and 2pi
+        #     rot1 = 2*pi+rot1
 
         ## the algorithm below is in terms of the width of the field of view
         ## the natural width at scaling 1 will be the viewport width
-        wn = self.view.viewport().size().width()
+        #wn = self.view.viewport().size().width()
+        wn = vwidth
 
         ## the transform scale is inversely proportional with field of view
         w0 = wn/float(s0)
@@ -2238,13 +2248,20 @@ class MainWindow(QtWidgets.QMainWindow):
             ws = w0*cosh(r0)/cosh(rho*s+r0)
 
             tmpcentre =  c0+uvector*us
-            tmpmatrix = QtGui.QTransform()
-            tmpmatrix.rotateRadians(ii*drot+rot0-pi/2.0)
-            tmpmatrix.scale(wn/float(ws), wn/float(ws))
+            # tmpmatrix = QtGui.QTransform()
+            # tmpmatrix.rotateRadians(ii*drot+rot0-pi/2.0)
+            # tmpmatrix.scale(wn/float(ws), wn/float(ws))
 
-            self.viewsteps.append((tmpcentre, tmpmatrix))
+            self.viewsteps.append({
+                'x':tmpcentre.x(), 'y':tmpcentre.y(),
+                'r':ii*drot+rot0,
+                #'s':wn/float(ws),
+                's':1.0/float(ws),
+            })
+            #self.viewsteps.append((tmpcentre, tmpmatrix))
 
-        self.viewsteps.append((c1, matrix1))
+        #self.viewsteps.append((c1, matrix1))
+        self.viewsteps.append({'x':c1.x(), 'y':c1.y(), 's':s1/vwidth, 'r':rot1})
         self.viewcurrentstep = 0
 
         self.viewtimer = QtCore.QTimer()
@@ -2253,16 +2270,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
         self.views.viewsListView.clearSelection()
-        self.views.viewsListView.setCurrentIndex(viewitem.index())
+        # self.views.viewsListView.setCurrentIndex(viewitem.index())
 
     def timedView(self):
 
         if self.viewcurrentstep > len(self.viewsteps)-1:
             self.viewtimer.stop()
         else:
-            center,matrix = self.viewsteps[self.viewcurrentstep]
-            x,y,R,S = graphics.Transform(matrix).getTRS()
-            self.view.setViewCSR({'x':center.x(), 'y':center.y(), 's':S, 'r':R})
+            #center,matrix = self.viewsteps[self.viewcurrentstep]
+            crs = self.viewsteps[self.viewcurrentstep]
+            # x,y,R,S = graphics.Transform(matrix).getTRS()
+            # self.view.setViewCSR({'x':center.x(), 'y':center.y(), 's':S, 'r':R})
+            self.view.setViewCSR(crs)
 
             self.viewcurrentstep += 1
 
@@ -2776,17 +2795,14 @@ class MainWindow(QtWidgets.QMainWindow):
         selecteditems = []
         selected = self.views.viewsListView.selectedIndexes()
         for s in selected:
-            selecteditems.append(self.viewsModel.itemFromIndex(s))
+            selecteditems.append(self.views.viewsModel.itemFromIndex(s))
+        print(selecteditems)
 
-        for row in range(self.views.viewsModel.rowCount()):
-            item = self.views.viewsModel.item(row)
+        for item in self.views.viewsModel.views:
             if vis and item in selecteditems:
-                item.viewRectItem.setVisible(vis)
+                item['rect'].setVisible(vis)
             else:
-                try:
-                    item.viewRectItem.setVisible(False)
-                except AttributeError:
-                    pass
+                item['rect'].setVisible(False)
 
 
 
@@ -2969,7 +2985,7 @@ class ViewsModel(QtCore.QAbstractListModel):
             # See below for the data structure.
             v = self.views[index.row()]
             # Return the todo text only.
-            return v['icon']
+            return v['_icon']
 
     def rowCount(self, index):
         return len(self.views)
@@ -3553,12 +3569,12 @@ class ViewsWidget(QtWidgets.QWidget):
         self.viewsListView.resetOrientation()
 
     def doubleClicked(self,  itemindex):
-        data = self.viewsModel.itemFromIndex(itemindex)
+        node = self.viewsModel.itemFromIndex(itemindex)
         # mi = item.viewTransform().inverted()[0]
         # self.view.setTransform(mi)
         # self.view.centerOn(item.viewCentre())
 
-        self.view.setViewCSR(data)
+        self.view.setViewCSR({'x':node['x'], 'y':node['y'], 's':node['s'], 'r':node['r']})
 
         self.viewsModel.athome = False
         self.viewsModel.current = itemindex.row()
@@ -3569,27 +3585,27 @@ class ViewsWidget(QtWidgets.QWidget):
         '''
         data = self.view.getViewCSR()
 
-        # node = self.scene.graph.Node('View')
-        # node['x'] = data['x']
-        # node['y'] = data['y']
-        # node['s'] = data['s']
-        # node['r'] = data['r']
+        node = self.scene.graph.Node('View')
+        node['x'] = data['x']
+        node['y'] = data['y']
+        node['s'] = data['s']
+        node['r'] = data['r']
         # node.save(setchange=False)
 
         # TODO keep data inside node or use node with _ for extra
         # data['node'] = node
-        self.addView(data)
+        self.addView(node)
 
-    def addView(self, data):
+    def addView(self, node):
 
         rectitem = ViewRectangle(self.scene)
-        #scene.addItem(rectitem)
-        data['rect'] = rectitem
+        self.scene.addItem(rectitem)
+        node['_rect'] = rectitem
         #self.viewRectItem = rectitem
 
         # set the transformation on the viewRectItem
         #T = graphics.Transform(*self.node['transform'])
-        T = graphics.Transform().setTRS(data['x'],data['y'],data['r'],data['s'])
+        T = graphics.Transform().setTRS(node['x'], node['y'], node['r'], node['s'])
         rectitem.setTransform(T)
         rectitem.setVisible(False)
 
@@ -3603,21 +3619,21 @@ class ViewsWidget(QtWidgets.QWidget):
         # self.viewRectItem.setTransform(matrix)
 
         # self.saveView()
-        icon = self.createPreview(data)
-        data['icon'] = icon
+        icon = self.createPreview({'x':node['x'], 'y':node['y'], 's':node['s']})
+        node['_icon'] = icon
 
         # if not self.window().viewsFramesAct.isChecked():
         #     item.viewRectItem.setVisible(False)
 
         selected = self.viewsListView.selectedIndexes()
         if len(selected) == 0:
-            self.viewsModel.addRow(data)
+            self.viewsModel.addRow(node)
         else:
             row=0
             for itemindex in selected:
                 row = max(row, itemindex.row())
 
-            self.viewsModel.addRow(data, row)
+            self.viewsModel.addRow(node, row)
 
 
         self.relinkViews()
@@ -3626,7 +3642,7 @@ class ViewsWidget(QtWidgets.QWidget):
         #self.viewsListView.setCurrentIndex(0)
        
 
-    def createPreview(self, data):
+    def createPreview(self, node):
 
         # temporarily deselect selected items
         selected = self.scene.selectedItems()
@@ -3644,7 +3660,7 @@ class ViewsWidget(QtWidgets.QWidget):
         #center0 = self.view.mapToScene(view.viewport().rect().center())
 
         # set view to viewRectItem's view
-        self.view.setViewCSR(data)
+        self.view.setViewCSR(node)
         # matrix = self.viewInverseTransform()
         # center = self.viewCentre()
         # view.setTransform(matrix)

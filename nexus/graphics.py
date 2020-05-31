@@ -2686,7 +2686,7 @@ class NexusView(QtWidgets.QGraphicsView):
         # srect = self.mapToScene(vrect) # this returns a Polygon!
         
         sc=self.mapToScene(vrect.center())
-        s0=self.mapToScene(0,0)
+        # s0=self.mapToScene(0,0)
 
         # this is exactly the scale:
         # distv = sqrt(vc.x()**2+vc.y()**2)
@@ -2697,11 +2697,12 @@ class NexusView(QtWidgets.QGraphicsView):
         # v0=self.mapFromScene(0,0)
         # uv=sqrt((v1.x()-v0.x())**2+(v1.y()-v0.y())**2)/100
 
-        unit_width = scale/vrect.width()
+        # this is the scale from scene of one view pixel
+        unit_scale = scale/vrect.width()
         
         # print('scale=',scale, 'vw', vrect.width(),'uv',uv, 'rot', rot)
 
-        return {'x':sc.x(), 'y':sc.y(), 's':scale, 'r':rot, 'u':unit_width}
+        return {'x':sc.x(), 'y':sc.y(), 's':unit_scale, 'r':rot}
 
     def setViewCSR(self, param):
         '''
@@ -2711,13 +2712,12 @@ class NexusView(QtWidgets.QGraphicsView):
         cy=param['y']
         rotation=param.get('r',0)
         scale=param.get('s',1)
-        u = param.get('u',1)
         vrect = self.viewport().rect()
-        matrix = Transform().setTRS(0,0,rotation, u*vrect.width())
+        matrix = Transform().setTRS(0,0,rotation, scale*vrect.width())
         self.setTransform(matrix)
         self.centerOn(cx, cy)
 
-        # when recording, these events will be caught
+        # when recording, these events will be caught otherwise ignored
         self.recordStateEvent.emit({'t':time.time(),'cmd':'view', 'cx':cx, 'cy':cy, 'scale':scale, 'rot':rotation})
 
     def wheelEvent(self, event):
