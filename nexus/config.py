@@ -99,8 +99,8 @@ def get_config():
     config = default_config.copy()
 
     possible_configs = [
-        Path("~/Library/Application Support/Ook/config.py").expanduser(),
-        Path("~/.config/ook/config.py").expanduser(),
+        Path("~/Library/Application Support/Nexus/config.py").expanduser(),
+        Path("~/.config/nexus/config.py").expanduser(),
     ]
 
     for c in possible_configs:
