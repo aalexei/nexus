@@ -551,7 +551,7 @@ class InputDialog(QtWidgets.QDialog):
 
     def scaleWidgetChanged(self, scale):
         # callback for spinbox
-        if self.scene.node['scale'] != scale:
+        if 'scale' not in self.scene.node or self.scene.node['scale'] != scale:
             self.scene.node['scale'] = scale
             self.scene.node.save(setchange=True)
             self.stem.renew(reload=False, children=False, recurse=False, position=False)
