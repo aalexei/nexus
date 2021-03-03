@@ -494,7 +494,7 @@ class NexusApplication(QtWidgets.QApplication):
         window = self.activeWindow()
         if window.isFullScreen():
             window.showNormal()
-
+            #window.showMaximized()
         else:
             window.showFullScreen()
 
