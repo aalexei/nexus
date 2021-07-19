@@ -369,6 +369,8 @@ class InputDialog(QtWidgets.QDialog):
         self.fullscreenwidget.setCheckState(False)
         dlayout.addRow("Maximize dialog", self.fullscreenwidget)
 
+
+
     def setDialog(self, stem):
 
         if hasattr(self, 'scene'):

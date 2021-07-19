@@ -202,6 +202,11 @@ class NexusGraph(graphydb.Graph):
         '''
         Add stems from mimedata to CopyNode
         '''
+        # print('formats:', mimedata.formats())
+        # print('text:', mimedata.text())
+        # print('urls:', mimedata.urls())
+        # print(mimedata.html())
+
         if mimedata.hasFormat('application/x-nexus'):
             data = mimedata.data('application/x-nexus')
             nexuslink = bytes(data).decode('utf-8')

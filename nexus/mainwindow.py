@@ -529,6 +529,10 @@ class NexusApplication(QtWidgets.QApplication):
         w.raise_()
         w.activateWindow()
 
+        # try out transparancy
+        # w.setWindowFlag(QtCore.Qt.FramelessWindowHint)
+        # w.setAttribute(QtCore.Qt.WA_TranslucentBackground, True)
+
         return w
 
     def dialogOpen(self):
@@ -629,6 +633,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.isUntitled = True
+
 
         self.setWindowIcon(QtGui.QIcon(":/images/nexusicon.png"))
 
