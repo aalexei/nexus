@@ -2652,6 +2652,8 @@ class NexusView(QtWidgets.QGraphicsView):
 
         self.setTransform(matrix,False)
 
+
+
     def zoomIn(self):
         self.scaleView(1.15)
 
@@ -2883,6 +2885,8 @@ class NexusView(QtWidgets.QGraphicsView):
             QtWidgets.QGraphicsView.mouseReleaseEvent(self, event)
             self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-up'})
 
+        #self.viewToImage()
+
     def mouseDoubleClickEvent(self, event):
 
         if self.scene().mode in ["presentation", "record"]:
@@ -3043,6 +3047,34 @@ class NexusView(QtWidgets.QGraphicsView):
         self.setTransformationAnchor(anchor)
 
 
+
+    def viewToImage(self):
+        # Get the size of your graphicsview
+        rect = self.viewport().rect()
+
+        # Create a Image the same size as your graphicsview
+        # make larger based on retina?
+        image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
+        image.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(image)
+
+        oldbrush =  self.scene().backgroundBrush()
+        brush = QtGui.QBrush(QtCore.Qt.transparent)
+        self.scene().setBackgroundBrush(brush)
+
+        # Render the graphicsview onto the image and save it out.
+        self.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
+        self.render(painter, QtCore.QRectF(image.rect()), rect)
+
+        # return previous background
+        self.scene().setBackgroundBrush(oldbrush)
+
+        image.save('/tmp/screen.png')
+        painter.end()
+
+
+
+
 ##----------------------------------------------------------------------
 class BackgroundDialog(QtWidgets.QDialog):
 ##----------------------------------------------------------------------
@@ -3179,7 +3211,7 @@ class BackgroundDialog(QtWidgets.QDialog):
     def setColor(self):
 
         brush = self.scene.backgroundBrush()
-        col = QtWidgets.QColorDialog.getColor(brush.color() )
+        col = QtWidgets.QColorDialog.getColor(brush.color(), options=QtWidgets.QColorDialog.ShowAlphaChannel )
         if col.isValid():
 
             pix = QtGui.QPixmap(16,16)
