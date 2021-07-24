@@ -632,15 +632,20 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "multipart/x-mixed-replace; boundary=frame")
             self.end_headers()
-            # convert QPixmap to bytes
-            ba = QtCore.QByteArray()
-            buff = QtCore.QBuffer(ba)
-            buff.open(QtCore.QIODevice.WriteOnly)
-            ok = self.server.mainwindow.viewImage.save(buff, "JPG")
-            assert ok
-            pixmap_bytes = ba.data()
-            self.wfile.write(bytes("--frame\nContent-Type: image/jpeg\n\n","utf-8"))
-            self.wfile.write(pixmap_bytes)
+            while True:
+                # convert QPixmap to bytes
+                ba = QtCore.QByteArray()
+                buff = QtCore.QBuffer(ba)
+                buff.open(QtCore.QIODevice.WriteOnly)
+                ok = self.server.mainwindow.viewImage.save(buff, "JPG")
+                assert ok
+                image_bytes = ba.data()
+                self.wfile.write(bytes("--frame\n",'utf-8'))
+                self.send_header('Content-type','image/jpeg')
+                self.send_header('Content-length', str(len(image_bytes)))
+                self.end_headers()
+                self.wfile.write(image_bytes)
+                time.sleep(0.1)
         else:
             self.send_error(404)
     # def do_HEAD(self):
