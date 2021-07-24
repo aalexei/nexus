@@ -2592,6 +2592,8 @@ class NexusView(QtWidgets.QGraphicsView):
     # send position and pen events for recording
     recordStateEvent = QtCore.pyqtSignal(dict)
 
+    viewChangeStream = QtCore.pyqtSignal(QtWidgets.QGraphicsView)
+
     def __init__(self, scene, parent = None):
 
         super().__init__(scene, parent)
@@ -2885,7 +2887,7 @@ class NexusView(QtWidgets.QGraphicsView):
             QtWidgets.QGraphicsView.mouseReleaseEvent(self, event)
             self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-up'})
 
-        self.viewToImage()
+        self.viewChangeStream.emit(self)
 
     def mouseDoubleClickEvent(self, event):
 
@@ -3048,47 +3050,6 @@ class NexusView(QtWidgets.QGraphicsView):
 
 
 
-    def viewToImage(self):
-        # Get the size of your graphicsview
-        rect = self.viewport().rect()
-
-
-        # import time
-        # tic = time.time()
-
-        # # Create a Image the same size as your graphicsview
-        # # make larger based on retina?
-        # image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
-        # image.fill(QtCore.Qt.transparent)
-        # painter = QtGui.QPainter(image)
-
-        # oldbrush =  self.scene().backgroundBrush()
-        # brush = QtGui.QBrush(QtCore.Qt.transparent)
-        # self.scene().setBackgroundBrush(brush)
-
-        # # Render the graphicsview onto the image and save it out.
-        # self.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
-        # self.render(painter, QtCore.QRectF(image.rect()), rect)
-
-        # # return previous background
-        # self.scene().setBackgroundBrush(oldbrush)
-
-        # image.save('/tmp/screen.png')
-        # painter.end()
-
-        # Alternative (produces nicer picture, same duration ~0.1s)
-        image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
-        image.fill(QtCore.Qt.transparent)
-        oldbrush =  self.scene().backgroundBrush()
-        brush = QtGui.QBrush(QtCore.Qt.transparent)
-        self.scene().setBackgroundBrush(brush)
-        self.viewport().render(image)
-        self.scene().setBackgroundBrush(oldbrush)
-        image.save('/tmp/screen.png')
-
-
-        # toc = time.time()
-        # print(toc-tic)
 
 ##----------------------------------------------------------------------
 class BackgroundDialog(QtWidgets.QDialog):
