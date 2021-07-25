@@ -645,12 +645,32 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(image_bytes)
                 time.sleep(0.1)
             return
+        elif self.path.endswith('.svg'):
+            self.send_response(200)
+            self.send_header('Content-type','image/svg+xml')
+            self.end_headers()
+            self.wfile.write(self.server.mainwindow.viewImage)
+            return
+
+        elif self.path.endswith('.png'):
+            self.send_response(200)
+            self.send_header('Content-type','image/png')
+            self.end_headers()
+            # convert QPixmap to bytes
+            ba = QtCore.QByteArray()
+            buff = QtCore.QBuffer(ba)
+            buff.open(QtCore.QIODevice.WriteOnly)
+            ok = self.server.mainwindow.viewImage.save(buff, "PNG")
+            assert ok
+            image_bytes = ba.data()
+            self.wfile.write(image_bytes)
+            return
         else:
             self.send_response(200)
             self.send_header('Content-type','text/html')
             self.end_headers()
-            self.wfile.write(bytes('<html><head></head><body>','utf-8'))
-            self.wfile.write(bytes(f'<img src="http://{HOST}:{PORT}/mirror.mjpg"/>','utf-8'))
+            self.wfile.write(bytes('<html><head></head><body style="background-color: rgba(0,0,0,0)!important;">','utf-8'))
+            self.wfile.write(bytes(f'<img src="http://{HOST}:{PORT}/1.mjpg"/>','utf-8'))
             self.wfile.write(bytes('</body></html>','utf-8'))
             return
         # else:
@@ -2859,37 +2879,58 @@ class MainWindow(QtWidgets.QMainWindow):
         import time
         tic = time.time()
 
-        # # Create a Image the same size as your graphicsview
-        # # make larger based on retina?
-        # image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
-        # image.fill(QtCore.Qt.transparent)
-        # painter = QtGui.QPainter(image)
-
-        # oldbrush =  self.scene().backgroundBrush()
-        # brush = QtGui.QBrush(QtCore.Qt.transparent)
-        # self.scene().setBackgroundBrush(brush)
-
-        # # Render the graphicsview onto the image and save it out.
-        # self.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform)
-        # self.render(painter, QtCore.QRectF(image.rect()), rect)
-
-        # # return previous background
-        # self.scene().setBackgroundBrush(oldbrush)
-
-        # image.save('/tmp/screen.png')
-        # painter.end()
-
-        # Alternative (produces nicer picture, same duration ~0.1s)
-        # 2-3 times faster to generate jpg instead of png ~0.03s
+        # ---- method 1 ----
+        # Create a Image the same size as your graphicsview
+        # make larger based on retina?
         image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
         image.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(image)
+
         oldbrush =  view.scene().backgroundBrush()
         brush = QtGui.QBrush(QtCore.Qt.transparent)
         view.scene().setBackgroundBrush(brush)
-        view.viewport().render(image)
+
+        # Render the graphicsview onto the image and save it out.
+        view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+        view.render(painter, QtCore.QRectF(image.rect()), rect)
+
+        # return previous background
         view.scene().setBackgroundBrush(oldbrush)
+
+        #image.save('/tmp/screen.png')
+        painter.end()
         self.viewImage = image
-        # image.save('/tmp/screen.jpg')
+
+        # # --- method 2 ---
+        # # Alternative (produces nicer picture, same duration ~0.1s)
+        # # 2-3 times faster to generate jpg instead of png ~0.03s
+        # # no transparency!
+        # image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
+        # image.fill(QtCore.Qt.transparent)
+        # oldbrush =  view.scene().backgroundBrush()
+        # brush = QtGui.QBrush(QtCore.Qt.transparent)
+        # view.scene().setBackgroundBrush(brush)
+        # view.viewport().render(image)
+        # view.scene().setBackgroundBrush(oldbrush)
+        # self.viewImage = image
+        # # image.save('/tmp/screen.png')
+
+        # # --- method 3 ---
+        # buffer = QtCore.QBuffer()
+        # generator = QtSvg.QSvgGenerator()
+        # generator.setOutputDevice(buffer)
+        # generator.setSize(rect.size())
+        # generator.setViewBox(rect)
+        # painter = QtGui.QPainter(generator)
+        # painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        # oldbrush =  view.scene().backgroundBrush()
+        # brush = QtGui.QBrush(QtCore.Qt.transparent)
+        # view.scene().setBackgroundBrush(brush)
+        # #self.render(painter)
+        # view.viewport().render(painter)
+        # painter.end()
+        # view.scene().setBackgroundBrush(oldbrush)
+        # self.viewImage = buffer.data()
 
         toc = time.time()
         print(toc-tic)
