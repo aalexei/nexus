@@ -623,12 +623,9 @@ class NexusApplication(QtWidgets.QApplication):
 #----------------------------------------------------------------------
 HOST, PORT = '127.0.0.1', 12345
 
-content = 'Hello!'
-
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        """Respond to a GET request."""
-        if self.path == "/":
+        if self.path.endswith('.mjpg'):
             self.send_response(200)
             self.send_header("Content-type", "multipart/x-mixed-replace; boundary=frame")
             self.end_headers()
@@ -637,22 +634,27 @@ class RequestHandler(BaseHTTPRequestHandler):
                 ba = QtCore.QByteArray()
                 buff = QtCore.QBuffer(ba)
                 buff.open(QtCore.QIODevice.WriteOnly)
-                ok = self.server.mainwindow.viewImage.save(buff, "JPG")
+                ok = self.server.mainwindow.viewImage.save(buff, "PNG")
                 assert ok
                 image_bytes = ba.data()
-                self.wfile.write(bytes("--frame\n",'utf-8'))
-                self.send_header('Content-type','image/jpeg')
+                # use \r\n for multi-line
+                self.wfile.write(bytes("--frame",'utf-8'))
+                self.send_header('Content-type','image/png')
                 self.send_header('Content-length', str(len(image_bytes)))
                 self.end_headers()
                 self.wfile.write(image_bytes)
                 time.sleep(0.1)
+            return
         else:
-            self.send_error(404)
-    # def do_HEAD(self):
-    #     self.send_response(200)
-    #     self.send_header('Content-Length', self.server.mainwindow.viewImage.sizeInBytes()  )
-    #     self.end_headers()
-    #     return
+            self.send_response(200)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
+            self.wfile.write(bytes('<html><head></head><body>','utf-8'))
+            self.wfile.write(bytes(f'<img src="http://{HOST}:{PORT}/mirror.mjpg"/>','utf-8'))
+            self.wfile.write(bytes('</body></html>','utf-8'))
+            return
+        # else:
+        #     self.send_error(404)
 
 class HttpDaemon(QtCore.QRunnable):
     def __init__(self, mainwindow):
