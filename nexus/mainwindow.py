@@ -462,6 +462,13 @@ class NexusApplication(QtWidgets.QApplication):
 
         self.windowMenu = menu
 
+        # lauch webserver
+        self.threadpool = QtCore.QThreadPool()
+        httpd = HttpDaemon(self)
+        self.threadpool.start(httpd)
+        self.viewImage = QtGui.QImage()
+
+
         logging.debug('start')
 
     def updateWindowMenu(self):
@@ -620,6 +627,80 @@ class NexusApplication(QtWidgets.QApplication):
         return QtWidgets.QApplication.event(self, event)
 
 
+    @QtCore.pyqtSlot(QtWidgets.QGraphicsView)
+    def createViewImage(self, view):
+
+        # Get the size of your graphicsview
+        rect = view.viewport().rect()
+
+
+        import time
+        tic = time.time()
+
+        # ---- method 1 ----
+        # Create a Image the same size as your graphicsview
+        # make larger based on retina?
+        #image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
+        image = QtGui.QImage(1920,1080, QtGui.QImage.Format_ARGB32)
+        image.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(image)
+
+        oldbrush =  view.scene().backgroundBrush()
+        brush = QtGui.QBrush(QtCore.Qt.transparent)
+        view.scene().setBackgroundBrush(brush)
+
+        # Render the graphicsview onto the image and save it out.
+        view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+        view.render(painter, QtCore.QRectF(image.rect()), rect)
+
+        # return previous background
+        view.scene().setBackgroundBrush(oldbrush)
+
+        #image.save('/tmp/screen.png')
+        painter.end()
+        self.viewImage = image
+
+        # convert QPixmap to bytes
+        view_byte_array = QtCore.QByteArray()
+        buffer = QtCore.QBuffer(view_bytes_array)
+        buffer.open(QtCore.QIODevice.WriteOnly)
+        ok = self.server.app.viewImage.save(buffer, "PNG")
+        #assert ok
+        self.view_bytes = view_byte_array.data()
+
+        # # --- method 2 ---
+        # # Alternative (produces nicer picture, same duration ~0.1s)
+        # # 2-3 times faster to generate jpg instead of png ~0.03s
+        # # no transparency!
+        # image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
+        # image.fill(QtCore.Qt.transparent)
+        # oldbrush =  view.scene().backgroundBrush()
+        # brush = QtGui.QBrush(QtCore.Qt.transparent)
+        # view.scene().setBackgroundBrush(brush)
+        # view.viewport().render(image)
+        # view.scene().setBackgroundBrush(oldbrush)
+        # self.viewImage = image
+        # # image.save('/tmp/screen.png')
+
+        # # --- method 3 ---
+        # buffer = QtCore.QBuffer()
+        # generator = QtSvg.QSvgGenerator()
+        # generator.setOutputDevice(buffer)
+        # generator.setSize(rect.size())
+        # generator.setViewBox(rect)
+        # painter = QtGui.QPainter(generator)
+        # painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        # oldbrush =  view.scene().backgroundBrush()
+        # brush = QtGui.QBrush(QtCore.Qt.transparent)
+        # view.scene().setBackgroundBrush(brush)
+        # #self.render(painter)
+        # view.viewport().render(painter)
+        # painter.end()
+        # view.scene().setBackgroundBrush(oldbrush)
+        # self.viewImage = buffer.data()
+
+        toc = time.time()
+        print(toc-tic)
 #----------------------------------------------------------------------
 HOST, PORT = '127.0.0.1', 12345
 
@@ -630,26 +711,18 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_header("Content-type", "multipart/x-mixed-replace; boundary=frame")
             self.end_headers()
             while True:
-                # convert QPixmap to bytes
-                ba = QtCore.QByteArray()
-                buff = QtCore.QBuffer(ba)
-                buff.open(QtCore.QIODevice.WriteOnly)
-                ok = self.server.mainwindow.viewImage.save(buff, "PNG")
-                assert ok
-                image_bytes = ba.data()
-                # use \r\n for multi-line
                 self.wfile.write(bytes("--frame",'utf-8'))
                 self.send_header('Content-type','image/png')
-                self.send_header('Content-length', str(len(image_bytes)))
+                self.send_header('Content-length', str(len(self.server.app.image_bytes)))
                 self.end_headers()
-                self.wfile.write(image_bytes)
-                time.sleep(0.1)
+                self.wfile.write(self.server.app.image_bytes)
+                time.sleep(0.05)
             return
         elif self.path.endswith('.svg'):
             self.send_response(200)
             self.send_header('Content-type','image/svg+xml')
             self.end_headers()
-            self.wfile.write(self.server.mainwindow.viewImage)
+            self.wfile.write(self.server.app.viewImage)
             return
 
         elif self.path.endswith('.png'):
@@ -660,7 +733,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             ba = QtCore.QByteArray()
             buff = QtCore.QBuffer(ba)
             buff.open(QtCore.QIODevice.WriteOnly)
-            ok = self.server.mainwindow.viewImage.save(buff, "PNG")
+            ok = self.server.app.viewImage.save(buff, "PNG")
             assert ok
             image_bytes = ba.data()
             self.wfile.write(image_bytes)
@@ -677,13 +750,13 @@ class RequestHandler(BaseHTTPRequestHandler):
         #     self.send_error(404)
 
 class HttpDaemon(QtCore.QRunnable):
-    def __init__(self, mainwindow):
+    def __init__(self, app):
         super().__init__()
-        self.mainwindow = mainwindow
+        self.app = app
 
     def run(self):
         self._server = HTTPServer((HOST, PORT), RequestHandler)
-        self._server.mainwindow = self.mainwindow
+        self._server.app = self.app
         self._server.serve_forever()
 
 
@@ -703,7 +776,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.isUntitled = True
 
-
         self.setWindowIcon(QtGui.QIcon(":/images/nexusicon.png"))
 
         self.editDialog = graphics.InputDialog()
@@ -718,7 +790,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.view = graphics.NexusView(self.scene)
         self.setCentralWidget(self.view)
 
-        self.view.viewChangeStream.connect(self.createViewImage)
 
         # dock = QtWidgets.QDockWidget(self.tr("Edit"), self)
         # self.editwidget = EditWidget(self)
@@ -790,6 +861,8 @@ class MainWindow(QtWidgets.QMainWindow):
         app = QtWidgets.QApplication.instance()
         app.updateWindowMenu()
 
+        self.view.viewChangeStream.connect(app.createViewImage)
+
         self.presentationhiddenstems = []
 
         self.createToolBars()
@@ -798,11 +871,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setMode()
 
-        # lauch webserver
-        self.threadpool = QtCore.QThreadPool()
-        httpd = HttpDaemon(self)
-        self.threadpool.start(httpd)
-        self.viewImage = QtGui.QImage()
 
 
     def setDefaultSettings(self):
@@ -2869,71 +2937,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 except AttributeError:
                     pass
 
-    @QtCore.pyqtSlot(QtWidgets.QGraphicsView)
-    def createViewImage(self, view):
-
-        # Get the size of your graphicsview
-        rect = view.viewport().rect()
-
-
-        import time
-        tic = time.time()
-
-        # ---- method 1 ----
-        # Create a Image the same size as your graphicsview
-        # make larger based on retina?
-        image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
-        image.fill(QtCore.Qt.transparent)
-        painter = QtGui.QPainter(image)
-
-        oldbrush =  view.scene().backgroundBrush()
-        brush = QtGui.QBrush(QtCore.Qt.transparent)
-        view.scene().setBackgroundBrush(brush)
-
-        # Render the graphicsview onto the image and save it out.
-        view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
-        view.render(painter, QtCore.QRectF(image.rect()), rect)
-
-        # return previous background
-        view.scene().setBackgroundBrush(oldbrush)
-
-        #image.save('/tmp/screen.png')
-        painter.end()
-        self.viewImage = image
-
-        # # --- method 2 ---
-        # # Alternative (produces nicer picture, same duration ~0.1s)
-        # # 2-3 times faster to generate jpg instead of png ~0.03s
-        # # no transparency!
-        # image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
-        # image.fill(QtCore.Qt.transparent)
-        # oldbrush =  view.scene().backgroundBrush()
-        # brush = QtGui.QBrush(QtCore.Qt.transparent)
-        # view.scene().setBackgroundBrush(brush)
-        # view.viewport().render(image)
-        # view.scene().setBackgroundBrush(oldbrush)
-        # self.viewImage = image
-        # # image.save('/tmp/screen.png')
-
-        # # --- method 3 ---
-        # buffer = QtCore.QBuffer()
-        # generator = QtSvg.QSvgGenerator()
-        # generator.setOutputDevice(buffer)
-        # generator.setSize(rect.size())
-        # generator.setViewBox(rect)
-        # painter = QtGui.QPainter(generator)
-        # painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        # oldbrush =  view.scene().backgroundBrush()
-        # brush = QtGui.QBrush(QtCore.Qt.transparent)
-        # view.scene().setBackgroundBrush(brush)
-        # #self.render(painter)
-        # view.viewport().render(painter)
-        # painter.end()
-        # view.scene().setBackgroundBrush(oldbrush)
-        # self.viewImage = buffer.data()
-
-        toc = time.time()
-        print(toc-tic)
 
 class FilterEdit(QtWidgets.QLineEdit):
 

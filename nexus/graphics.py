@@ -2740,6 +2740,8 @@ class NexusView(QtWidgets.QGraphicsView):
             sb.setValue(sb.value()+distancey)
 
         event.accept()
+        self.viewChangeStream.emit(self)
+
 
 
     def mousePressEvent(self, event):
@@ -2862,6 +2864,8 @@ class NexusView(QtWidgets.QGraphicsView):
         elif not self.scene().mode in ["presentation", "record"]:
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
+
+        self.viewChangeStream.emit(self)
 
 
     def mouseReleaseEvent(self, event):
@@ -3045,6 +3049,9 @@ class NexusView(QtWidgets.QGraphicsView):
 
             M.translate(D.x(),D.y())
             self.setTransform(M, False)
+
+            self.viewChangeStream.emit(self)
+
 
         self.setTransformationAnchor(anchor)
 
