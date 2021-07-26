@@ -462,12 +462,7 @@ class NexusApplication(QtWidgets.QApplication):
 
         self.windowMenu = menu
 
-        # lauch webserver
-        self.threadpool = QtCore.QThreadPool()
-        httpd = HttpDaemon(self)
-        self.threadpool.start(httpd)
-        self.viewImage = QtGui.QImage()
-
+        self.startStreamingServer()
 
         logging.debug('start')
 
@@ -497,6 +492,8 @@ class NexusApplication(QtWidgets.QApplication):
                 act.setEnabled(False)
             act.triggered.connect(window.activateWindowViaMenu)
             self.windowMenu.addAction(act)
+
+
 
     def windowFullScreen(self):
         window = self.activeWindow()
@@ -626,6 +623,20 @@ class NexusApplication(QtWidgets.QApplication):
 
         return QtWidgets.QApplication.event(self, event)
 
+    def startStreamingServer(self):
+        self.view_image = QtGui.QImage()
+        self.streamin_ready_time = time.time()
+
+
+        self.streaming_thread = QtCore.QThread()
+        self.streaming_daemon = StreamingDaemon(self)
+        self.streaming_daemon.moveToThread(self.streaming_thread)
+
+        self.streaming_thread.started.connect(self.streaming_daemon.run)
+        self.streaming_thread.start()
+
+    def stopStreamingServer(self):
+        self.streaming_thread.quit()
 
     @QtCore.pyqtSlot(QtWidgets.QGraphicsView)
     def createViewImage(self, view):
@@ -633,15 +644,13 @@ class NexusApplication(QtWidgets.QApplication):
         # Get the size of your graphicsview
         rect = view.viewport().rect()
 
-
-        import time
         tic = time.time()
 
         # ---- method 1 ----
         # Create a Image the same size as your graphicsview
         # make larger based on retina?
         #image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
-        image = QtGui.QImage(1920,1080, QtGui.QImage.Format_ARGB32)
+        image = QtGui.QImage(1920,1080, QtGui.QImage.Format_ARGB32_Premultiplied)
         image.fill(QtCore.Qt.transparent)
         painter = QtGui.QPainter(image)
 
@@ -658,15 +667,15 @@ class NexusApplication(QtWidgets.QApplication):
 
         #image.save('/tmp/screen.png')
         painter.end()
-        self.viewImage = image
+        toc0 = time.time()
 
-        # convert QPixmap to bytes
-        view_byte_array = QtCore.QByteArray()
-        buffer = QtCore.QBuffer(view_bytes_array)
+        self.view_image = image
+
+        # convert QImage to bytes
+        buffer = QtCore.QBuffer()
         buffer.open(QtCore.QIODevice.WriteOnly)
-        ok = self.server.app.viewImage.save(buffer, "PNG")
-        #assert ok
-        self.view_bytes = view_byte_array.data()
+        ok = image.save(buffer, "PNG")
+        self.view_bytes = buffer.data().data()
 
         # # --- method 2 ---
         # # Alternative (produces nicer picture, same duration ~0.1s)
@@ -697,10 +706,13 @@ class NexusApplication(QtWidgets.QApplication):
         # view.viewport().render(painter)
         # painter.end()
         # view.scene().setBackgroundBrush(oldbrush)
-        # self.viewImage = buffer.data()
+        # self.image_bytes = buffer.data().data()
+        # with open('/tmp/screen.svg','w') as fp:
+        #     fp.write(str(self.image_bytes))
+        # # # image.save('/tmp/screen.png')
 
         toc = time.time()
-        print(toc-tic)
+        print(f"gen image: {toc0-tic}, gen bytes: {toc-toc0}, tot: {toc-tic}")
 #----------------------------------------------------------------------
 HOST, PORT = '127.0.0.1', 12345
 
@@ -713,43 +725,22 @@ class RequestHandler(BaseHTTPRequestHandler):
             while True:
                 self.wfile.write(bytes("--frame",'utf-8'))
                 self.send_header('Content-type','image/png')
-                self.send_header('Content-length', str(len(self.server.app.image_bytes)))
+                self.send_header('Content-length', str(len(self.server.app.view_bytes)))
                 self.end_headers()
-                self.wfile.write(self.server.app.image_bytes)
+                # self.server.app.view_image.save(QtCore.QIOdevce(self.wfile))
+                self.wfile.write(self.server.app.view_bytes)
                 time.sleep(0.05)
-            return
-        elif self.path.endswith('.svg'):
-            self.send_response(200)
-            self.send_header('Content-type','image/svg+xml')
-            self.end_headers()
-            self.wfile.write(self.server.app.viewImage)
-            return
-
-        elif self.path.endswith('.png'):
-            self.send_response(200)
-            self.send_header('Content-type','image/png')
-            self.end_headers()
-            # convert QPixmap to bytes
-            ba = QtCore.QByteArray()
-            buff = QtCore.QBuffer(ba)
-            buff.open(QtCore.QIODevice.WriteOnly)
-            ok = self.server.app.viewImage.save(buff, "PNG")
-            assert ok
-            image_bytes = ba.data()
-            self.wfile.write(image_bytes)
             return
         else:
             self.send_response(200)
             self.send_header('Content-type','text/html')
             self.end_headers()
             self.wfile.write(bytes('<html><head></head><body style="background-color: rgba(0,0,0,0)!important;">','utf-8'))
-            self.wfile.write(bytes(f'<img src="http://{HOST}:{PORT}/1.mjpg"/>','utf-8'))
+            self.wfile.write(bytes(f'<img src="http://{HOST}:{PORT}/streaming.mjpg"/>','utf-8'))
             self.wfile.write(bytes('</body></html>','utf-8'))
             return
-        # else:
-        #     self.send_error(404)
 
-class HttpDaemon(QtCore.QRunnable):
+class StreamingDaemon(QtCore.QObject):
     def __init__(self, app):
         super().__init__()
         self.app = app
