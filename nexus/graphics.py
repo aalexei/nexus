@@ -2791,6 +2791,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
             self._dragy = event.pos().y()
 
+            self.viewChangeStream.emit(self)
             event.accept()
 
         elif self._dragmode == self.DRAGPAN and self.scene().mode in ["presentation", "record"]:
@@ -2842,6 +2843,8 @@ class NexusView(QtWidgets.QGraphicsView):
             self.pointertrailitem.setPath(path)
             self.pointertrailitem2.setPath(path)
 
+            self.viewChangeStream.emit(self)
+
 
         elif self._dragmode == self.DRAGPAN:
             hbar = self.horizontalScrollBar()
@@ -2859,13 +2862,13 @@ class NexusView(QtWidgets.QGraphicsView):
             self._dragx = x
             self._dragy = y
 
+            self.viewChangeStream.emit(self)
             event.accept()
 
         elif not self.scene().mode in ["presentation", "record"]:
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
 
-        self.viewChangeStream.emit(self)
 
 
     def mouseReleaseEvent(self, event):

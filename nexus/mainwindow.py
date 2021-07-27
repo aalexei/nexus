@@ -32,8 +32,11 @@ from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi
 import re, subprocess
 import apsw
 
-from http.server import HTTPServer, BaseHTTPRequestHandler
-
+import asyncio
+import tornado.ioloop
+import tornado.web
+import tornado.httpserver
+import tornado.template
 
 CONFIG = config.get_config()
 
@@ -461,8 +464,9 @@ class NexusApplication(QtWidgets.QApplication):
         QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-old-style-figures.ttf")
 
         self.windowMenu = menu
+        #self.toggleStreaminServer(True)
 
-        self.startStreamingServer()
+        self.streaming = False
 
         logging.debug('start')
 
@@ -623,23 +627,33 @@ class NexusApplication(QtWidgets.QApplication):
 
         return QtWidgets.QApplication.event(self, event)
 
-    def startStreamingServer(self):
-        self.view_image = QtGui.QImage()
-        self.streamin_ready_time = time.time()
+    def toggleStreaminServer(self, start):
+        if start:
+
+            logging.info('Starting streaming server...')
+            self.streaming = True
+            self.view_image = QtGui.QImage()
 
 
-        self.streaming_thread = QtCore.QThread()
-        self.streaming_daemon = StreamingDaemon(self)
-        self.streaming_daemon.moveToThread(self.streaming_thread)
+            self.streaming_thread = QtCore.QThread(parent=self)
+            self.streaming_daemon = StreamingDaemon(self)
+            self.streaming_daemon.moveToThread(self.streaming_thread)
 
-        self.streaming_thread.started.connect(self.streaming_daemon.run)
-        self.streaming_thread.start()
+            self.streaming_thread.started.connect(self.streaming_daemon.run)
+            self.streaming_thread.start()
+        else:
+            logging.info('Stopping streaming server...')
+            self.streaming = False
 
-    def stopStreamingServer(self):
-        self.streaming_thread.quit()
+            #self.streaming_daemon.stop()
+            #self.streaming_thread.quit()
+            #self.streaming_thread.wait()
 
     @QtCore.pyqtSlot(QtWidgets.QGraphicsView)
     def createViewImage(self, view):
+
+        if not self.streaming:
+            return
 
         # Get the size of your graphicsview
         rect = view.viewport().rect()
@@ -670,6 +684,8 @@ class NexusApplication(QtWidgets.QApplication):
         toc0 = time.time()
 
         self.view_image = image
+        self.streaming_ready_time = time.time()
+        logging.debug(f"Created image at {self.streaming_ready_time}")
 
         # convert QImage to bytes
         buffer = QtCore.QBuffer()
@@ -716,29 +732,53 @@ class NexusApplication(QtWidgets.QApplication):
 #----------------------------------------------------------------------
 HOST, PORT = '127.0.0.1', 12345
 
-class RequestHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.path.endswith('.mjpg'):
-            self.send_response(200)
-            self.send_header("Content-type", "multipart/x-mixed-replace; boundary=frame")
-            self.end_headers()
-            while True:
-                self.wfile.write(bytes("--frame",'utf-8'))
-                self.send_header('Content-type','image/png')
-                self.send_header('Content-length', str(len(self.server.app.view_bytes)))
-                self.end_headers()
-                # self.server.app.view_image.save(QtCore.QIOdevce(self.wfile))
-                self.wfile.write(self.server.app.view_bytes)
-                time.sleep(0.05)
-            return
-        else:
-            self.send_response(200)
-            self.send_header('Content-type','text/html')
-            self.end_headers()
-            self.wfile.write(bytes('<html><head></head><body style="background-color: rgba(0,0,0,0)!important;">','utf-8'))
-            self.wfile.write(bytes(f'<img src="http://{HOST}:{PORT}/streaming.mjpg"/>','utf-8'))
-            self.wfile.write(bytes('</body></html>','utf-8'))
-            return
+page_template = tornado.template.Template("""<html>
+<head></head>
+<body style="background-color: rgba(0,0,0,0)!important;">
+<img src="http://{{HOST}}:{{PORT}}/streaming"/>
+</body>
+</html>""")
+class HtmlPageHandler(tornado.web.RequestHandler):
+    async def get(self):
+        page = page_template.generate(HOST=HOST, PORT=PORT)
+        self.write(page)
+
+class StreamHandler(tornado.web.RequestHandler):
+
+    def initialize(self, app):
+        self.app = app
+
+    async def get(self):
+        #ioloop = tornado.ioloop.IOLoop.current()
+
+        self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, pre-check=0, post-check=0, max-age=0')
+        self.set_header('Pragma', 'no-cache')
+        self.set_header('Content-Type', 'multipart/x-mixed-replace;boundary=frame')
+        self.set_header('Connection', 'close')
+
+        self.served_image_timestamp = 0
+        interval = 0.1
+        while self.app.streaming:
+            # N.B. this is running in separate thread so give us a small buffer in comaring times
+            # to be sure to get the latest image
+            if self.served_image_timestamp < self.app.streaming_ready_time:
+                self.write("--frame")
+                self.write("Content-type: image/png\r\n")
+                self.write("Content-length: %s\r\n\r\n"%len(self.app.view_bytes))
+                self.write(self.app.view_bytes)
+                self.served_image_timestamp = time.time()
+                logging.debug(f"Served image at {self.served_image_timestamp}")
+                #self.flush()
+                #await asyncio.create_task(self.image_ready())
+                await asyncio.Task(self.flush)
+            else:
+                pass
+                #time.sleep(interval)
+                # await tornado.gen.Task(ioloop.add_timeout, ioloop.time() + interval)
+
+    async def image_ready(self):
+        while self.served_image_timestamp+1 > self.app.streaming_ready_time:
+            pass
 
 class StreamingDaemon(QtCore.QObject):
     def __init__(self, app):
@@ -746,10 +786,18 @@ class StreamingDaemon(QtCore.QObject):
         self.app = app
 
     def run(self):
-        self._server = HTTPServer((HOST, PORT), RequestHandler)
-        self._server.app = self.app
-        self._server.serve_forever()
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        server = tornado.web.Application([
+            (r'/', HtmlPageHandler),
+            (r'/streaming', StreamHandler, dict(app=self.app)),
+        ])
+        server.listen(PORT)
+        tornado.ioloop.IOLoop.current().start()
 
+    def stop(self):
+        ioloop = tornado.ioloop.IOLoop.instance()
+        ioloop.add_callback(ioloop.stop)
+        ioloop.close()
 
 #----------------------------------------------------------------------
 class MainWindow(QtWidgets.QMainWindow):
@@ -1644,6 +1692,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtWidgets.QAction(self, visible=False, triggered=self.openRecentFile)
             )
 
+        # ----------------------------------------------------------------------------------
+        self.runStreamingServerAct = QtWidgets.QAction(self.tr("Stream View"), self)
+        self.runStreamingServerAct.triggered.connect(app.toggleStreaminServer)
+        self.runStreamingServerAct.setCheckable(True)
+        self.runStreamingServerAct.setChecked(app.streaming)
+
+
     def createMenus(self):
 
         self.fileMenu = self.menuBar().addMenu(self.tr("&File"))
@@ -1710,6 +1765,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu.addAction(self.viewRotateAct)
         self.viewMenu.addAction(self.setBackgroundAct)
         self.viewMenu.addAction(self.hidePointerAct)
+        self.viewMenu.addAction(self.runStreamingServerAct)
         self.viewMenu.addSeparator()
         self.viewMenu.addAction(self.viewsAct)
         self.viewMenu.addAction(self.viewsFirstAct)
