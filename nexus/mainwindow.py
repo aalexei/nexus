@@ -32,9 +32,8 @@ from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi
 import re, subprocess
 import apsw
 
-from sanic import Sanic
-from sanic.response import text
-from sanic.views import HTTPMethodView
+from aiohttp import web
+import asyncio
 
 CONFIG = config.get_config()
 
@@ -736,11 +735,10 @@ page_template ="""<html>
 <img src="http://{{HOST}}:{{PORT}}/streaming"/>
 </body>
 </html>"""
-class Page(HTTPMethodView):
-    async def get(self, request):
-        return text("Hello world")
-        # page = page_template.generate(HOST=HOST, PORT=PORT)
-        # self.write(page)
+async def basepage(request):
+    return web.Response(text="Hello world")
+    # page = page_template.generate(HOST=HOST, PORT=PORT)
+    # self.write(page)
 
 # class StreamHandler(tornado.web.RequestHandler):
 
@@ -785,16 +783,15 @@ class StreamingDaemon(QtCore.QObject):
         self.app = app
 
     def run(self):
-        import asyncio
-        app = Sanic("My App", load_env=False)
-        app.add_route(Page.as_view(), "/")
+        app = web.Application()
+        app.add_routes([
+            web.get('/', basepage)
+        ])
+        loop = asyncio.new_event_loop()
+        runner = web.AppRunner(app)
+        loop.run_until_complete(runner.setup())
 
-        server = app.create_server(host="0.0.0.0", port=8000, return_asyncio_server=True)
-        loop = asyncio.get_event_loop()
-        task = asyncio.ensure_future(server)
-        loop.run_forever()
-        # app.run(host=HOST, port=PORT, access_log=False, loop=loop)
-        # TODO add debug=False parameter to run when stable
+        #web.run_app(app)
 
     # def stop(self):
     #     ioloop = tornado.ioloop.IOLoop.instance()
