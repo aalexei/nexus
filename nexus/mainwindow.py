@@ -32,8 +32,7 @@ from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi
 import re, subprocess
 import apsw
 
-from aiohttp import web
-import asyncio
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 CONFIG = config.get_config()
 
@@ -464,6 +463,7 @@ class NexusApplication(QtWidgets.QApplication):
         #self.toggleStreaminServer(True)
 
         self.streaming = False
+        self.streaming_ready_time = 0
 
         logging.debug('start')
 
@@ -655,7 +655,7 @@ class NexusApplication(QtWidgets.QApplication):
         # Get the size of your graphicsview
         rect = view.viewport().rect()
 
-        tic = time.time()
+        # tic = time.time()
 
         # ---- method 1 ----
         # Create a Image the same size as your graphicsview
@@ -678,67 +678,87 @@ class NexusApplication(QtWidgets.QApplication):
 
         #image.save('/tmp/screen.png')
         painter.end()
-        toc0 = time.time()
 
         self.view_image = image
         self.streaming_ready_time = time.time()
-        logging.debug(f"Created image at {self.streaming_ready_time}")
 
-        # convert QImage to bytes
-        buffer = QtCore.QBuffer()
-        buffer.open(QtCore.QIODevice.WriteOnly)
-        ok = image.save(buffer, "PNG")
-        self.view_bytes = buffer.data().data()
-
-        # # --- method 2 ---
-        # # Alternative (produces nicer picture, same duration ~0.1s)
-        # # 2-3 times faster to generate jpg instead of png ~0.03s
-        # # no transparency!
-        # image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
-        # image.fill(QtCore.Qt.transparent)
-        # oldbrush =  view.scene().backgroundBrush()
-        # brush = QtGui.QBrush(QtCore.Qt.transparent)
-        # view.scene().setBackgroundBrush(brush)
-        # view.viewport().render(image)
-        # view.scene().setBackgroundBrush(oldbrush)
-        # self.viewImage = image
-        # # image.save('/tmp/screen.png')
-
-        # # --- method 3 ---
+        # # convert QImage to bytes
         # buffer = QtCore.QBuffer()
-        # generator = QtSvg.QSvgGenerator()
-        # generator.setOutputDevice(buffer)
-        # generator.setSize(rect.size())
-        # generator.setViewBox(rect)
-        # painter = QtGui.QPainter(generator)
-        # painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        # oldbrush =  view.scene().backgroundBrush()
-        # brush = QtGui.QBrush(QtCore.Qt.transparent)
-        # view.scene().setBackgroundBrush(brush)
-        # #self.render(painter)
-        # view.viewport().render(painter)
-        # painter.end()
-        # view.scene().setBackgroundBrush(oldbrush)
-        # self.image_bytes = buffer.data().data()
-        # with open('/tmp/screen.svg','w') as fp:
-        #     fp.write(str(self.image_bytes))
-        # # # image.save('/tmp/screen.png')
+        # buffer.open(QtCore.QIODevice.WriteOnly)
+        # ok = image.save(buffer, "PNG")
+        # self.view_bytes = buffer.data().data()
 
-        toc = time.time()
-        print(f"gen image: {toc0-tic}, gen bytes: {toc-toc0}, tot: {toc-tic}")
+        # toc = time.time()
+        # logging.debug(f"gen image: {toc-tic:.2f}s")
 #----------------------------------------------------------------------
 HOST, PORT = '127.0.0.1', 12345
 
-page_template ="""<html>
-<head></head>
-<body style="background-color: rgba(0,0,0,0)!important;">
-<img src="http://{{HOST}}:{{PORT}}/streaming"/>
-</body>
-</html>"""
-async def basepage(request):
-    return web.Response(text="Hello world")
-    # page = page_template.generate(HOST=HOST, PORT=PORT)
-    # self.write(page)
+class RequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/":
+            self.send_response(200)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
+            self.wfile.write(bytes('<html><head></head><body style="background-color: rgba(0,0,0,0)!important;">','utf-8'))
+            self.wfile.write(bytes(f'<img src="http://{HOST}:{PORT}/stream.mjpg"/>','utf-8'))
+            self.wfile.write(bytes('</body></html>','utf-8'))
+            return
+
+        elif self.path == "/stream.mjpg":
+            self.send_response(200)
+            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, pre-check=0, post-check=0, max-age=0')
+            self.send_header('Pragma', 'no-cache')
+            # self.send_header('Connection', 'close')
+            self.send_header("Content-type", "multipart/x-mixed-replace; boundary=frame")
+            self.end_headers()
+            interval = 0.1
+            self.served_image_timestamp = time.time() + interval
+            while True:
+                if self.served_image_timestamp + interval < time.time() \
+                   and self.served_image_timestamp < self.server.app.streaming_ready_time + 3*interval:
+                    self.wfile.write(bytes("--frame",'utf-8'))
+                    self.send_header('Content-type','image/png')
+                    view_bytes = self.getImageBytes()
+                    self.send_header('Content-length', str(len(view_bytes)))
+                    self.end_headers()
+                    self.wfile.write(view_bytes)
+                    self.wfile.write(b'\r\n')
+                    self.served_image_timestamp = time.time()
+                else:
+                    time.sleep(interval)
+                    pass
+            return
+
+        else:
+            self.send_error(404)
+            self.end_headers()
+
+    def getImageBytes(self):
+
+        tic = time.time()
+        # convert QImage to bytes
+        buffer = QtCore.QBuffer()
+        buffer.open(QtCore.QIODevice.WriteOnly)
+        ok = self.server.app.view_image.save(buffer, "PNG")
+        view_bytes = buffer.data().data()
+        toc = time.time()
+        #logging.debug(f"gen bytes: {toc-tic:.2f}s")
+
+        return view_bytes
+
+
+
+class StreamingDaemon(QtCore.QObject):
+    def __init__(self, app):
+        super().__init__()
+        self.app = app
+
+    def run(self):
+        self._server = HTTPServer((HOST, PORT), RequestHandler)
+        self._server.app = self.app
+        self._server.serve_forever()
+
+
 
 # class StreamHandler(tornado.web.RequestHandler):
 
@@ -777,21 +797,21 @@ async def basepage(request):
 #         while self.served_image_timestamp+1 > self.app.streaming_ready_time:
 #             pass
 
-class StreamingDaemon(QtCore.QObject):
-    def __init__(self, app):
-        super().__init__()
-        self.app = app
+# class StreamingDaemon(QtCore.QObject):
+#     def __init__(self, app):
+#         super().__init__()
+#         self.app = app
 
-    def run(self):
-        app = web.Application()
-        app.add_routes([
-            web.get('/', basepage)
-        ])
-        loop = asyncio.new_event_loop()
-        runner = web.AppRunner(app)
-        loop.run_until_complete(runner.setup())
+#     def run(self):
+#         app = web.Application()
+#         app.add_routes([
+#             web.get('/', basepage)
+#         ])
+#         loop = asyncio.new_event_loop()
+#         runner = web.AppRunner(app)
+#         loop.run_until_complete(runner.setup())
 
-        #web.run_app(app)
+#         #web.run_app(app)
 
     # def stop(self):
     #     ioloop = tornado.ioloop.IOLoop.instance()
