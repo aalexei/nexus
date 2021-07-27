@@ -640,11 +640,16 @@ class NexusApplication(QtWidgets.QApplication):
             self.streaming_thread.start()
         else:
             logging.info('Stopping streaming server...')
+            server = self.streaming_daemon._server
             self.streaming = False
+            # self.streaming_daemon._server.shutdown()
 
-            #self.streaming_daemon.stop()
-            #self.streaming_thread.quit()
-            #self.streaming_thread.wait()
+            self.streaming_thread.quit()
+            # self.streaming_thread.terminate()
+            # self.streaming_thread.wait()
+            self.streaming_thread = None
+            self.streaming_daemon = None
+            server.shutdown()
 
     @QtCore.pyqtSlot(QtWidgets.QGraphicsView)
     def createViewImage(self, view):
@@ -920,6 +925,8 @@ class MainWindow(QtWidgets.QMainWindow):
         app.updateWindowMenu()
 
         self.view.viewChangeStream.connect(app.createViewImage)
+
+        self.editDialog.view.viewChangeStream.connect(app.createViewImage)
 
         self.presentationhiddenstems = []
 

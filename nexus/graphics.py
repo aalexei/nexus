@@ -1313,7 +1313,6 @@ class InputDialog(QtWidgets.QDialog):
         self.scene.transformationWidget.show()
 
 
-
 class MyEvent(QtWidgets.QGraphicsSceneMouseEvent):
 
     def setButtons(self, buttons):
@@ -1792,6 +1791,7 @@ Free, Mouse, Tablet, Gesture = 0,1,2,3
 ##----------------------------------------------------------------------
 class InkView(QtWidgets.QGraphicsView):
 ##----------------------------------------------------------------------
+    viewChangeStream = QtCore.pyqtSignal(QtWidgets.QGraphicsView)
 
     def __init__(self, scene, parent = None):
 
@@ -2030,6 +2030,8 @@ class InkView(QtWidgets.QGraphicsView):
 
             poly = QtGui.QPolygonF([QtCore.QPointF(*event.scenePos)])
 
+        self.viewChangeStream.emit(self)
+
     def pointerMoveEvent(self, event):
 
         scene = self.scene()
@@ -2041,6 +2043,9 @@ class InkView(QtWidgets.QGraphicsView):
                 poly = scene.tmpselect.polygon()
                 poly.append(QtCore.QPointF(*event.scenePos))
                 scene.tmpselect.setPolygon(poly)
+
+        self.viewChangeStream.emit(self)
+
 
     def pointerReleaseEvent(self, event):
         scene = self.scene()
@@ -2066,6 +2071,9 @@ class InkView(QtWidgets.QGraphicsView):
 
             scene.setSelectionWidget()
 
+        self.viewChangeStream.emit(self)
+
+
     #
     # Pen action
     #
@@ -2084,6 +2092,9 @@ class InkView(QtWidgets.QGraphicsView):
         point = [scenePos.x(),scenePos.y(), pressure, t]
         scene._tmppath = [point]
         scene.strokecoords = [point]
+
+        self.viewChangeStream.emit(self)
+
 
     def penMoveEvent(self, scenePos, pressure = 0.5):
 
@@ -2121,6 +2132,7 @@ class InkView(QtWidgets.QGraphicsView):
             scene._tmppath = [[x1,y1,z1,t1]]
 
         scene._lastScenePos = p2
+        self.viewChangeStream.emit(self)
 
     def penReleaseEvent(self, event):
 
@@ -2138,6 +2150,7 @@ class InkView(QtWidgets.QGraphicsView):
                 scene.removeItem(item)
             scene.removeItem(scene.tmpgroup)
 
+        self.viewChangeStream.emit(self)
 
     #
     # Eraser action
@@ -2154,10 +2167,13 @@ class InkView(QtWidgets.QGraphicsView):
         if item is not None and isinstance(item, InkItem):
             scene.removeItem(item)
 
+        self.viewChangeStream.emit(self)
+
     def eraserReleaseEvent(self, event):
         # All the action happens on move
         self.scene().refreshStem()
 
+        self.viewChangeStream.emit(self)
 
     def event(self, event):
 
@@ -2273,6 +2289,8 @@ class InkView(QtWidgets.QGraphicsView):
 
         self.setTransformationAnchor(anchor)
 
+        self.viewChangeStream.emit(self)
+
         return True
 
     def scaleView(self, scaleFactor):
@@ -2282,6 +2300,7 @@ class InkView(QtWidgets.QGraphicsView):
             return
 
         self.scale(scaleFactor, scaleFactor)
+        self.viewChangeStream.emit(self)
 
     def zoomIn(self):
         self.scaleView(1.15)
@@ -2332,10 +2351,14 @@ class InkView(QtWidgets.QGraphicsView):
             sb=self.verticalScrollBar()
             sb.setValue(sb.value()+distancey)
 
+        self.viewChangeStream.emit(self)
 
     def dropEvent(self, event):
         mimedata = event.mimeData()
 
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.viewChangeStream.emit(self)
 
 ##----------------------------------------------------------------------
 class NexusScene(QtWidgets.QGraphicsScene):
@@ -3059,6 +3082,9 @@ class NexusView(QtWidgets.QGraphicsView):
         self.setTransformationAnchor(anchor)
 
 
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.viewChangeStream.emit(self)
 
 
 ##----------------------------------------------------------------------
