@@ -32,11 +32,9 @@ from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi
 import re, subprocess
 import apsw
 
-import asyncio
-import tornado.ioloop
-import tornado.web
-import tornado.httpserver
-import tornado.template
+from sanic import Sanic
+from sanic.response import text
+from sanic.views import HTTPMethodView
 
 CONFIG = config.get_config()
 
@@ -732,53 +730,54 @@ class NexusApplication(QtWidgets.QApplication):
 #----------------------------------------------------------------------
 HOST, PORT = '127.0.0.1', 12345
 
-page_template = tornado.template.Template("""<html>
+page_template ="""<html>
 <head></head>
 <body style="background-color: rgba(0,0,0,0)!important;">
 <img src="http://{{HOST}}:{{PORT}}/streaming"/>
 </body>
-</html>""")
-class HtmlPageHandler(tornado.web.RequestHandler):
-    async def get(self):
-        page = page_template.generate(HOST=HOST, PORT=PORT)
-        self.write(page)
+</html>"""
+class Page(HTTPMethodView):
+    async def get(self, request):
+        return text("Hello world")
+        # page = page_template.generate(HOST=HOST, PORT=PORT)
+        # self.write(page)
 
-class StreamHandler(tornado.web.RequestHandler):
+# class StreamHandler(tornado.web.RequestHandler):
 
-    def initialize(self, app):
-        self.app = app
+#     def initialize(self, app):
+#         self.app = app
 
-    async def get(self):
-        #ioloop = tornado.ioloop.IOLoop.current()
+#     async def get(self):
+#         #ioloop = tornado.ioloop.IOLoop.current()
 
-        self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, pre-check=0, post-check=0, max-age=0')
-        self.set_header('Pragma', 'no-cache')
-        self.set_header('Content-Type', 'multipart/x-mixed-replace;boundary=frame')
-        self.set_header('Connection', 'close')
+#         self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, pre-check=0, post-check=0, max-age=0')
+#         self.set_header('Pragma', 'no-cache')
+#         self.set_header('Content-Type', 'multipart/x-mixed-replace;boundary=frame')
+#         self.set_header('Connection', 'close')
 
-        self.served_image_timestamp = 0
-        interval = 0.1
-        while self.app.streaming:
-            # N.B. this is running in separate thread so give us a small buffer in comaring times
-            # to be sure to get the latest image
-            if self.served_image_timestamp < self.app.streaming_ready_time:
-                self.write("--frame")
-                self.write("Content-type: image/png\r\n")
-                self.write("Content-length: %s\r\n\r\n"%len(self.app.view_bytes))
-                self.write(self.app.view_bytes)
-                self.served_image_timestamp = time.time()
-                logging.debug(f"Served image at {self.served_image_timestamp}")
-                #self.flush()
-                #await asyncio.create_task(self.image_ready())
-                await asyncio.Task(self.flush)
-            else:
-                pass
-                #time.sleep(interval)
-                # await tornado.gen.Task(ioloop.add_timeout, ioloop.time() + interval)
+#         self.served_image_timestamp = 0
+#         interval = 0.1
+#         while self.app.streaming:
+#             # N.B. this is running in separate thread so give us a small buffer in comaring times
+#             # to be sure to get the latest image
+#             if self.served_image_timestamp < self.app.streaming_ready_time:
+#                 self.write("--frame")
+#                 self.write("Content-type: image/png\r\n")
+#                 self.write("Content-length: %s\r\n\r\n"%len(self.app.view_bytes))
+#                 self.write(self.app.view_bytes)
+#                 self.served_image_timestamp = time.time()
+#                 logging.debug(f"Served image at {self.served_image_timestamp}")
+#                 #self.flush()
+#                 #await asyncio.create_task(self.image_ready())
+#                 await asyncio.Task(self.flush)
+#             else:
+#                 pass
+#                 #time.sleep(interval)
+#                 # await tornado.gen.Task(ioloop.add_timeout, ioloop.time() + interval)
 
-    async def image_ready(self):
-        while self.served_image_timestamp+1 > self.app.streaming_ready_time:
-            pass
+#     async def image_ready(self):
+#         while self.served_image_timestamp+1 > self.app.streaming_ready_time:
+#             pass
 
 class StreamingDaemon(QtCore.QObject):
     def __init__(self, app):
@@ -786,18 +785,21 @@ class StreamingDaemon(QtCore.QObject):
         self.app = app
 
     def run(self):
-        asyncio.set_event_loop(asyncio.new_event_loop())
-        server = tornado.web.Application([
-            (r'/', HtmlPageHandler),
-            (r'/streaming', StreamHandler, dict(app=self.app)),
-        ])
-        server.listen(PORT)
-        tornado.ioloop.IOLoop.current().start()
+        import asyncio
+        app = Sanic("My App", load_env=False)
+        app.add_route(Page.as_view(), "/")
 
-    def stop(self):
-        ioloop = tornado.ioloop.IOLoop.instance()
-        ioloop.add_callback(ioloop.stop)
-        ioloop.close()
+        server = app.create_server(host="0.0.0.0", port=8000, return_asyncio_server=True)
+        loop = asyncio.get_event_loop()
+        task = asyncio.ensure_future(server)
+        loop.run_forever()
+        # app.run(host=HOST, port=PORT, access_log=False, loop=loop)
+        # TODO add debug=False parameter to run when stable
+
+    # def stop(self):
+    #     ioloop = tornado.ioloop.IOLoop.instance()
+    #     ioloop.add_callback(ioloop.stop)
+    #     ioloop.close()
 
 #----------------------------------------------------------------------
 class MainWindow(QtWidgets.QMainWindow):
