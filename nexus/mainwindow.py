@@ -640,16 +640,16 @@ class NexusApplication(QtWidgets.QApplication):
             self.streaming_thread.start()
         else:
             logging.info('Stopping streaming server...')
-            server = self.streaming_daemon._server
+            # this will stop any current streaming
             self.streaming = False
-            # self.streaming_daemon._server.shutdown()
+            time.sleep(1)
 
-            self.streaming_thread.quit()
-            # self.streaming_thread.terminate()
-            # self.streaming_thread.wait()
+            # Tell the http process to stop
+            self.streaming_daemon._server.shutdown()
+
+            # Remove references to aid garbage collection?
             self.streaming_thread = None
             self.streaming_daemon = None
-            server.shutdown()
 
     @QtCore.pyqtSlot(QtWidgets.QGraphicsView)
     def createViewImage(self, view):
@@ -718,7 +718,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             interval = 0.1
             self.served_image_timestamp = time.time() + interval
-            while True:
+            while self.server.app.streaming:
                 if self.served_image_timestamp + interval < time.time() \
                    and self.served_image_timestamp < self.server.app.streaming_ready_time + 3*interval:
                     self.wfile.write(bytes("--frame",'utf-8'))
