@@ -2573,7 +2573,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
-        self.showFullScreen()
+        #self.showFullScreen()
+
 
         #self.view.centerOn(center)
         self.hidePointerAct.setEnabled(True)

@@ -485,7 +485,8 @@ class InputDialog(QtWidgets.QDialog):
             self.setTextMode()
 
         if  self.stem.scene().mode == "presentation":
-            self.showFullScreen()
+            #self.showFullScreen()
+            self.showMaximized()
         elif self.fullscreenwidget.isChecked():
             self.showMaximized()
         elif hasattr(self, 'inputgeometry') and not self.isVisible():
@@ -1921,7 +1922,7 @@ class InkView(QtWidgets.QGraphicsView):
                 self.pointerReleaseEvent(self._event)
 
         else:
-            logging.debug("I Unknown tablet event type: %d",eventtype)
+            logging.debug("Unknown tablet event type: %d",eventtype)
 
 
     def mousePressEvent(self, event):
@@ -2318,7 +2319,7 @@ class InkView(QtWidgets.QGraphicsView):
 
 
     def wheelEvent(self, event):
-        logging.debug('Wheel event')
+        # logging.debug('Wheel event')
         if (event.modifiers() & QtCore.Qt.ControlModifier) or  (event.modifiers() & QtCore.Qt.AltModifier):
             anchor = self.transformationAnchor()
             self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
@@ -3454,7 +3455,7 @@ def smoothInkPath(P):
     for ii in simplified:
         S.append(Ps[ii])
 
-    logging.debug("stroke simplification: %d -> %d (%.1f%%)  \t\tRate: %.2f ",len(P),len(S),len(S)/float(len(P))*100, rate)
+    # logging.debug("stroke simplification: %d -> %d (%.1f%%)  \t\tRate: %.2f ",len(P),len(S),len(S)/float(len(P))*100, rate)
 
     return S
 
