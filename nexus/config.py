@@ -65,10 +65,10 @@ default_config = {
 
     #
     # laser trail
-    #
-    "trail_outer_color": "#8000A000",
-    "trail_inner_color": "#80FFFFFF",
-    "trail_outer_width": 12,
+    # Colour format: #AARRGGBB
+    "trail_outer_color": "#EE00E000",
+    "trail_inner_color": "#BBFFFFFF",
+    "trail_outer_width": 14,
     "trail_inner_width": 4,
     "trail_pointer_factor": 1.5, # factor to increase pointer size by
 

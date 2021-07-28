@@ -2589,6 +2589,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
 
 
+
 ##----------------------------------------------------------------------
 class NexusView(QtWidgets.QGraphicsView):
 ##----------------------------------------------------------------------
@@ -2823,35 +2824,38 @@ class NexusView(QtWidgets.QGraphicsView):
             s = self.transform().m11()
             self._trailTimer.stop()
             ps = self.mapToScene(event.pos())
-            pn = ps*s
-            self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-point','x':pn.x(), 'y':pn.y()})
+            self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-point','x':ps.x(), 'y':ps.y()})
             if len(self.pointertrail)==0:
                 # if there's nothing in the queue add the point within a stroke list
-                self.pointertrail.append([pn])
+                self.pointertrail.append([ps])
             else:
                 # Append to last strokelist
-                self.pointertrail[-1].append(pn)
+                self.pointertrail[-1].append(ps)
 
             # create the graphics items for the pointer trail
             if self.pointertrailitem is None:
 
                 self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-                self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+                #self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
                 pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
-                pen.setWidthF(CONFIG['trail_outer_width'])
+                pen.setWidthF(CONFIG['trail_outer_width']/s)
                 pen.setCapStyle(QtCore.Qt.RoundCap)
                 self.pointertrailitem.setPen(pen)
-                self.pointertrailitem.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
+                TrailBlur = QtWidgets.QGraphicsBlurEffect()
+                TrailBlur.setBlurRadius(5.0/s)
+                self.pointertrailitem.setGraphicsEffect(TrailBlur)
                 self.scene().addItem(self.pointertrailitem)
             if self.pointertrailitem2 is None:
                 # inner collor
                 self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-                self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+                #self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
                 pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
-                pen.setWidthF(CONFIG['trail_inner_width'])
+                pen.setWidthF(CONFIG['trail_inner_width']/s)
                 pen.setCapStyle(QtCore.Qt.RoundCap)
                 self.pointertrailitem2.setPen(pen)
-                self.pointertrailitem2.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
+                TrailBlur = QtWidgets.QGraphicsBlurEffect()
+                TrailBlur.setBlurRadius(4.0/s)
+                self.pointertrailitem2.setGraphicsEffect(TrailBlur)
                 self.scene().addItem(self.pointertrailitem2)
 
             path = QtGui.QPainterPath()
@@ -2956,6 +2960,8 @@ class NexusView(QtWidgets.QGraphicsView):
             self.scene().removeItem(self.pointertrailitem2 )
             self.pointertrailitem2 = None
         self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-clear'})
+        self.viewChangeStream.emit(self)
+
 
 
 
