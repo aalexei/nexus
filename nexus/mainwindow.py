@@ -2578,7 +2578,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #self.view.centerOn(center)
         self.hidePointerAct.setEnabled(True)
-        self.hidePointerAct.setChecked(False) # force toggle on
+        self.hidePointerAct.setChecked(True)
         self.hidePointerAct.trigger()
 
         # (Use shift to actually move canvas)
