@@ -2674,20 +2674,11 @@ class NexusView(QtWidgets.QGraphicsView):
 
         self.fitInView(rect, QtCore.Qt.KeepAspectRatio)
 
-    def getViewCSR(self):
+    def getViewSides(self):
         '''
-        Get the center_x, center_y, scale and rotation of view
+        Get the left and right center points of view
         '''
-        matrix = Transform(self.transform())
-        x,y,rot,scale = matrix.getTRS()
         vrect = self.viewport().rect()
-        vc = vrect.center()
-
-        # srect = self.mapToScene(vrect) # this returns a Polygon!
-        
-        sc=self.mapToScene(vrect.center())
-        # s0=self.mapToScene(0,0)
-
 
         vleft = QtCore.QPoint(vrect.left(),vrect.top()+vrect.height()/2.0)
         # According to docs rect.right = rect.left+rect.width-1 so do it ourselves
@@ -2699,55 +2690,36 @@ class NexusView(QtWidgets.QGraphicsView):
         left = (sleft.x(), sleft.y())
         right = (sright.x(),sright.y())
 
-        # this is exactly the scale:
-        # distv = sqrt(vc.x()**2+vc.y()**2)
-        # dists = sqrt((sc.x()-s0.x())**2+(sc.y()-s0.y())**2)
-        # s2 = distv/dists
-        # As is this
-        # v1=self.mapFromScene(100,0)
-        # v0=self.mapFromScene(0,0)
-        # uv=sqrt((v1.x()-v0.x())**2+(v1.y()-v0.y())**2)/100
+        return {'left':left, 'right':right}
 
-        # this is the scale from scene of one view pixel
-        unit_scale = scale/vrect.width()
-        
-        # print('scale=',scale, 'vw', vrect.width(),'uv',uv, 'rot', rot)
 
-        print('sp:',sleft,sright)
-        return {'x':sc.x(), 'y':sc.y(), 's':unit_scale, 'r':rot,
-                'left':left, 'right':right}
-
-    def setViewCSR(self, param):
+    def viewSidesToCSR(self, sides):
         '''
-        Set the view based on the center x,y, scale and rotation
+        Get the center x,y, scale and rotation
         '''
-        L = param['left']
-        R = param['right']
+        L = sides['left']
+        R = sides['right']
 
         vrect = self.viewport().rect()
         cx = (L[0]+R[0])/2
         cy = (L[1]+R[1])/2
         s = vrect.width()/sqrt((R[0]-L[0])**2+(R[1]-L[1])**2)
         r = atan2(-(R[1]-L[1]), R[0]-L[0])
+
+        return cx, cy, s, r
+
+    def setViewSides(self, sides):
+        '''
+        Set the view based on the center x,y, scale and rotation
+        '''
+        cx, cy, s, r = self.viewSidesToCSR(sides)
+
         matrix = Transform().setTRS(0,0,r,s)
         self.setTransform(matrix)
         self.centerOn(cx, cy)
 
-        # cx=param['x']
-        # cy=param['y']
-        # rotation=param.get('r',0)
-        # scale=param.get('s',1)
-        # vrect = self.viewport().rect()
-        # matrix = Transform().setTRS(0,0,rotation, scale*vrect.width())
-        # self.setTransform(matrix)
-        # self.centerOn(cx, cy)
-
-        # if 'left' in param:
-        # else:
-        #     print("no left")
-
         # when recording, these events will be caught otherwise ignored
-        self.recordStateEvent.emit({'t':time.time(),'cmd':'view', 'cx':cx, 'cy':cy, 'scale':s, 'rot':r, 'left':L, 'right':R})
+        self.recordStateEvent.emit({'t':time.time(),'cmd':'view', 'left':sides['left'], 'right':sides['right']})
 
     def wheelEvent(self, event):
 

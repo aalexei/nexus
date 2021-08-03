@@ -2166,23 +2166,29 @@ class MainWindow(QtWidgets.QMainWindow):
         rho = 1.6
 
         ## initial point: location and scale
-        csr0 = self.view.getViewCSR()
-        c0 = QtCore.QPointF(csr0['x'],csr0['y'])
-        s0 = csr0['s']
-        rot0 = csr0['r']
+        sides0 = self.view.getViewSides()
+        x0,y0,s0,rot0 = self.view.viewSidesToCSR(sides0)
+        c0 = QtCore.QPointF(x0,y0)
+        lp0 = QtCore.QPointF(*sides0['left'])
+        rp0 = QtCore.QPointF(*sides0['right'])
+        width0 = sqrt((lp0.x()-rp0.x())**2+(lp0.y()-rp0.y())**2)
+
 
         ## final point: location and scale
-        csr1 = viewitem
-        c1 = QtCore.QPointF(csr1['x'],csr1['y'])
-        s1 = csr1['s']
-        rot1 = csr1['r']
+        x1,y1,s1,rot1 = self.view.viewSidesToCSR(viewitem)
+        c1 = QtCore.QPointF(x1,y1)
+        lp1 = QtCore.QPointF(*viewitem['left'])
+        rp1 = QtCore.QPointF(*viewitem['right'])
+        width1 = sqrt((lp1.x()-rp1.x())**2+(lp1.y()-rp1.y())**2)
 
         ## the algorithm below is in terms of the width of the field of view
         ## the natural width at scaling 1 will be 1
 
         ## the transform scale is inversely proportional with field of view
-        w0 = 1.0/float(s0)
-        w1 = 1.0/float(s1)
+        # w0 = 1.0/float(s0)
+        # w1 = 1.0/float(s1)
+        w0 = width0
+        w1 = width1
 
         ## we are moving along a 2D line from 0 to u1
         u1 = sqrt( (c1.x()-c0.x())**2 + (c1.y()-c0.y())**2 )
@@ -2225,20 +2231,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
         ## do all the calculations initially and cache the results
         self.viewsteps = []
-        for ii in range(totalsteps):
+        for ii in range(1,totalsteps):
             s = ii/float(totalsteps)*S
             us = w0*cosh(r0)*tanh(rho*s+r0)/rho**2 - w0*sinh(r0)/rho**2
             ws = w0*cosh(r0)/cosh(rho*s+r0)
+            print(ws)
+            tmpcentre = c0+uvector*us
+            tmplp = tmpcentre-QtCore.QPointF(1/2,0)*ws
+            tmprp = tmpcentre+QtCore.QPointF(1/2,0)*ws
 
-            tmpcentre =  c0+uvector*us
+            #sides = self.view.viewCSRToSides(tmpcentre.x(), tmpcentre.y(), s0/float(ws), ii*drot+rot0)
+            self.viewsteps.append({'left':(tmplp.x(),tmplp.y()), 'right':(tmprp.x(),tmprp.y())})
 
-            self.viewsteps.append({
-                'x':tmpcentre.x(), 'y':tmpcentre.y(),
-                'r':ii*drot+rot0,
-                's':1.0/float(ws),
-            })
-
-        self.viewsteps.append({'x':c1.x(), 'y':c1.y(), 's':s1, 'r':rot1})
+        self.viewsteps.append({'left':(lp1.x(),lp1.y()), 'right':(rp1.x(),rp1.y())})
+        #self.viewsteps.append(sides)
         self.viewcurrentstep = 0
 
         self.viewtimer = QtCore.QTimer()
@@ -2255,8 +2261,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.viewcurrentstep > len(self.viewsteps)-1:
             self.viewtimer.stop()
         else:
-            crs = self.viewsteps[self.viewcurrentstep]
-            self.view.setViewCSR(crs)
+            sides = self.viewsteps[self.viewcurrentstep]
+            self.view.setViewSides(sides)
             self.viewcurrentstep += 1
 
 
@@ -2470,10 +2476,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.view.recordStateEvent.connect(self.storeRecordingEvent)
         self.audiorecorder.record()
         t = time.time()
-        V = self.view.getViewCSR()
+        sides = self.view.getViewSides()
                                 
         self.event_stream.append({'t':t,'cmd':'start'})
-        self.event_stream.append({'t':t,'cmd':'view', 'cx':V['x'], 'cy':V['y'], 'scale':V['s'], 'rot':V['r']})
+        self.event_stream.append({'t':t,'cmd':'view', 'left':sides['left'], 'right':sides['right']})
 
         self.recStartAct.setChecked(True)
         self.recPauseAct.setChecked(False)
@@ -2520,7 +2526,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Generate frames
         fp = (self.tmprecdir/"timing.txt").open("w")
         F = 1
-        currentview = ()
+        currentview = {}
         currentpen = [[]]
         N = len(self.event_stream)
         # extra time accumulated on skipping frames:
@@ -2564,7 +2570,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if cmd == 'view':
                 # XXX needs fix for left and right
-                currentview = (e['cx'], e['cy'],e['scale'],e['rot'])#, e['left'], e['right'])
+                currentview = {'left':e['left'], 'right':e['right']}
             elif cmd=='pen-clear':
                 currentpen = [[]]
             elif cmd=='pen-up':
@@ -2581,7 +2587,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 framename = 'frame_{:04d}.png'.format(F)
                 fp.write('file {}\nduration {}\n'.format(framename,dt+skipped))
 
-                image = self.generateFrame(*currentview, penpoints=currentpen, left=e['left'], right=e['right'])
+                image = self.generateFrame(left=currentview['left'], right=currentpen['right'], penpoints=currentpen)
                 image.save((self.tmprecdir/framename).as_posix())
 
                 F+=1
@@ -2634,7 +2640,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # TODO probably should be moved to separate thread
         # TODO accomodate changing screens: store central point and width of HD view and addapt dynamically
         
-    def generateFrame(self, x, y, scale, rotation, penpoints, left=0, right=0):
+    def generateFrame(self, left, right, penpoints):
+
 
         # path = QtGui.QPainterPath()
         # for stroke in penpoints:
@@ -2658,7 +2665,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.view.setViewportUpdateMode(self.view.FullViewportUpdate)
         # self.view.resetCachedContent()
         
-        self.view.setViewCSR({'x':x,'y':y,'s':scale,'r':rotation,'left':left, 'right':right})
+        self.view.setViewSides({'left':left, 'right':right})
 
         W = 1920
         H = 1080
@@ -3546,8 +3553,7 @@ class ViewsWidget(QtWidgets.QWidget):
     def doubleClicked(self,  itemindex):
         node = self.viewsModel.itemFromIndex(itemindex)
 
-        #self.view.setViewCSR({k: node[k] for k in ('x','y','s','r')})
-        self.view.setViewCSR(node)
+        self.view.setViewSides({k: node[k] for k in ('left','right')})
 
         self.viewsModel.athome = False
         self.viewsModel.current = itemindex.row()
@@ -3556,13 +3562,9 @@ class ViewsWidget(QtWidgets.QWidget):
         '''
         Add the current view as a Views item
         '''
-        data = self.view.getViewCSR()
+        data = self.view.getViewSides()
 
         node = self.scene.graph.Node('View')
-        node['x'] = data['x']
-        node['y'] = data['y']
-        node['s'] = data['s']
-        node['r'] = data['r']
         node['left'] = data['left']
         node['right'] = data['right']
         # node.save(setchange=False)
@@ -3579,12 +3581,12 @@ class ViewsWidget(QtWidgets.QWidget):
         # TODO fix view rect
         # set the transformation on the viewRectItem
         #T = graphics.Transform(*self.node['transform'])
-        T = graphics.Transform().setTRS(node['x'], node['y'], node['r'], node['s'])
-        rectitem.setTransform(T)
+        # XXX T = graphics.Transform().setTRS(node['x'], node['y'], node['r'], node['s'])
+        # XXX rectitem.setTransform(T)
         rectitem.setVisible(False)
 
         # self.saveView()
-        icon = self.createPreview({k: node[k] for k in ('x','y','s','r','left','right')})
+        icon = self.createPreview({k: node[k] for k in ('left','right')})
         node['_icon'] = icon
 
         # TODO save view to graph
@@ -3622,10 +3624,10 @@ class ViewsWidget(QtWidgets.QWidget):
         #self.viewRectItem.hide()
 
         # remember current view
-        crs = self.view.getViewCSR()
+        sides = self.view.getViewSides()
 
         # set view to viewRectItem's view
-        self.view.setViewCSR(node)
+        self.view.setViewSides(node)
 
         # generate pixmap
         # TODO fix the aspect ratio of pixmap to 1080p
@@ -3633,7 +3635,7 @@ class ViewsWidget(QtWidgets.QWidget):
         pixmap = pixmap.scaled( self.ICONMAXSIZE, self.ICONMAXSIZE, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
 
         # restore view
-        self.view.setViewCSR(crs)
+        self.view.setViewSides(sides)
 
         icon = QtGui.QIcon(pixmap)
 
