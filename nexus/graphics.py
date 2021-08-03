@@ -2688,6 +2688,17 @@ class NexusView(QtWidgets.QGraphicsView):
         sc=self.mapToScene(vrect.center())
         # s0=self.mapToScene(0,0)
 
+
+        vleft = QtCore.QPoint(vrect.left(),vrect.top()+vrect.height()/2.0)
+        # According to docs rect.right = rect.left+rect.width-1 so do it ourselves
+        vright = QtCore.QPoint(vrect.left()+vrect.width(), vrect.top()+vrect.height()/2.0)
+
+        sleft = self.mapToScene(vleft)
+        sright = self.mapToScene(vright)
+
+        left = (sleft.x(), sleft.y())
+        right = (sright.x(),sright.y())
+
         # this is exactly the scale:
         # distv = sqrt(vc.x()**2+vc.y()**2)
         # dists = sqrt((sc.x()-s0.x())**2+(sc.y()-s0.y())**2)
@@ -2702,23 +2713,41 @@ class NexusView(QtWidgets.QGraphicsView):
         
         # print('scale=',scale, 'vw', vrect.width(),'uv',uv, 'rot', rot)
 
-        return {'x':sc.x(), 'y':sc.y(), 's':unit_scale, 'r':rot}
+        print('sp:',sleft,sright)
+        return {'x':sc.x(), 'y':sc.y(), 's':unit_scale, 'r':rot,
+                'left':left, 'right':right}
 
     def setViewCSR(self, param):
         '''
         Set the view based on the center x,y, scale and rotation
         '''
-        cx=param['x']
-        cy=param['y']
-        rotation=param.get('r',0)
-        scale=param.get('s',1)
+        L = param['left']
+        R = param['right']
+
         vrect = self.viewport().rect()
-        matrix = Transform().setTRS(0,0,rotation, scale*vrect.width())
+        cx = (L[0]+R[0])/2
+        cy = (L[1]+R[1])/2
+        s = vrect.width()/sqrt((R[0]-L[0])**2+(R[1]-L[1])**2)
+        r = atan2(-(R[1]-L[1]), R[0]-L[0])
+        matrix = Transform().setTRS(0,0,r,s)
         self.setTransform(matrix)
         self.centerOn(cx, cy)
 
+        # cx=param['x']
+        # cy=param['y']
+        # rotation=param.get('r',0)
+        # scale=param.get('s',1)
+        # vrect = self.viewport().rect()
+        # matrix = Transform().setTRS(0,0,rotation, scale*vrect.width())
+        # self.setTransform(matrix)
+        # self.centerOn(cx, cy)
+
+        # if 'left' in param:
+        # else:
+        #     print("no left")
+
         # when recording, these events will be caught otherwise ignored
-        self.recordStateEvent.emit({'t':time.time(),'cmd':'view', 'cx':cx, 'cy':cy, 'scale':scale, 'rot':rotation})
+        self.recordStateEvent.emit({'t':time.time(),'cmd':'view', 'cx':cx, 'cy':cy, 'scale':s, 'rot':r, 'left':L, 'right':R})
 
     def wheelEvent(self, event):
 

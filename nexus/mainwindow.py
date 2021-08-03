@@ -2563,7 +2563,8 @@ class MainWindow(QtWidgets.QMainWindow):
             dt = self.event_stream[i+1]['t']-e['t']
 
             if cmd == 'view':
-                currentview = (e['cx'], e['cy'],e['scale'],e['rot'])
+                # XXX needs fix for left and right
+                currentview = (e['cx'], e['cy'],e['scale'],e['rot'])#, e['left'], e['right'])
             elif cmd=='pen-clear':
                 currentpen = [[]]
             elif cmd=='pen-up':
@@ -2580,7 +2581,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 framename = 'frame_{:04d}.png'.format(F)
                 fp.write('file {}\nduration {}\n'.format(framename,dt+skipped))
 
-                image = self.generateFrame(*currentview, penpoints=currentpen)
+                image = self.generateFrame(*currentview, penpoints=currentpen, left=e['left'], right=e['right'])
                 image.save((self.tmprecdir/framename).as_posix())
 
                 F+=1
@@ -2633,7 +2634,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # TODO probably should be moved to separate thread
         # TODO accomodate changing screens: store central point and width of HD view and addapt dynamically
         
-    def generateFrame(self, x, y, scale, rotation, penpoints):
+    def generateFrame(self, x, y, scale, rotation, penpoints, left=0, right=0):
 
         # path = QtGui.QPainterPath()
         # for stroke in penpoints:
@@ -2657,7 +2658,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.view.setViewportUpdateMode(self.view.FullViewportUpdate)
         # self.view.resetCachedContent()
         
-        self.view.setViewCSR({'x':x,'y':y,'s':scale,'r':rotation})
+        self.view.setViewCSR({'x':x,'y':y,'s':scale,'r':rotation,'left':left, 'right':right})
 
         W = 1920
         H = 1080
@@ -3545,7 +3546,8 @@ class ViewsWidget(QtWidgets.QWidget):
     def doubleClicked(self,  itemindex):
         node = self.viewsModel.itemFromIndex(itemindex)
 
-        self.view.setViewCSR({k: node[k] for k in ('x','y','s','r')})
+        #self.view.setViewCSR({k: node[k] for k in ('x','y','s','r')})
+        self.view.setViewCSR(node)
 
         self.viewsModel.athome = False
         self.viewsModel.current = itemindex.row()
@@ -3561,6 +3563,8 @@ class ViewsWidget(QtWidgets.QWidget):
         node['y'] = data['y']
         node['s'] = data['s']
         node['r'] = data['r']
+        node['left'] = data['left']
+        node['right'] = data['right']
         # node.save(setchange=False)
 
         self.addView(node)
@@ -3580,7 +3584,7 @@ class ViewsWidget(QtWidgets.QWidget):
         rectitem.setVisible(False)
 
         # self.saveView()
-        icon = self.createPreview({k: node[k] for k in ('x','y','s','r')})
+        icon = self.createPreview({k: node[k] for k in ('x','y','s','r','left','right')})
         node['_icon'] = icon
 
         # TODO save view to graph
