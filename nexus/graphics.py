@@ -2681,7 +2681,7 @@ class NexusView(QtWidgets.QGraphicsView):
         vrect = self.viewport().rect()
 
         vleft = QtCore.QPoint(vrect.left(),vrect.top()+vrect.height()/2.0)
-        # According to docs rect.right = rect.left+rect.width-1 so do it ourselves
+        # According to docs for historical reasons rect.right = rect.left+rect.width-1 so do it ourselves
         vright = QtCore.QPoint(vrect.left()+vrect.width(), vrect.top()+vrect.height()/2.0)
 
         sleft = self.mapToScene(vleft)
@@ -2693,9 +2693,9 @@ class NexusView(QtWidgets.QGraphicsView):
         return {'left':left, 'right':right}
 
 
-    def viewSidesToCSR(self, sides):
+    def setViewSides(self, sides):
         '''
-        Get the center x,y, scale and rotation
+        Set the view based on the center x,y, scale and rotation
         '''
         L = sides['left']
         R = sides['right']
@@ -2705,14 +2705,6 @@ class NexusView(QtWidgets.QGraphicsView):
         cy = (L[1]+R[1])/2
         s = vrect.width()/sqrt((R[0]-L[0])**2+(R[1]-L[1])**2)
         r = atan2(-(R[1]-L[1]), R[0]-L[0])
-
-        return cx, cy, s, r
-
-    def setViewSides(self, sides):
-        '''
-        Set the view based on the center x,y, scale and rotation
-        '''
-        cx, cy, s, r = self.viewSidesToCSR(sides)
 
         matrix = Transform().setTRS(0,0,r,s)
         self.setTransform(matrix)

@@ -28,7 +28,7 @@ import webbrowser, tempfile
 
 import webbrowser, urllib.parse, logging
 from . import graphics, resources, interpreter, graphydb, nexusgraph, config
-from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi
+from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi, cos, sin
 import re, subprocess
 import apsw
 
@@ -2165,28 +2165,26 @@ class MainWindow(QtWidgets.QMainWindow):
         ## rho is a tradeoff between zooming and panning, higher values jump more
         rho = 1.6
 
-        ## initial point: location and scale
+        ## initial point
         sides0 = self.view.getViewSides()
-        x0,y0,s0,rot0 = self.view.viewSidesToCSR(sides0)
-        c0 = QtCore.QPointF(x0,y0)
         lp0 = QtCore.QPointF(*sides0['left'])
         rp0 = QtCore.QPointF(*sides0['right'])
+        c0 = (lp0+rp0)/2.0
         width0 = sqrt((lp0.x()-rp0.x())**2+(lp0.y()-rp0.y())**2)
+        rot0 = atan2(-(rp0-lp0).y(), (rp0-lp0).x())
 
 
-        ## final point: location and scale
-        x1,y1,s1,rot1 = self.view.viewSidesToCSR(viewitem)
-        c1 = QtCore.QPointF(x1,y1)
+        ## final point
         lp1 = QtCore.QPointF(*viewitem['left'])
         rp1 = QtCore.QPointF(*viewitem['right'])
+        c1 = (lp1+rp1)/2.0
         width1 = sqrt((lp1.x()-rp1.x())**2+(lp1.y()-rp1.y())**2)
+        rot1 = atan2(-(rp1-lp1).y(), (rp1-lp1).x())
 
         ## the algorithm below is in terms of the width of the field of view
         ## the natural width at scaling 1 will be 1
 
         ## the transform scale is inversely proportional with field of view
-        # w0 = 1.0/float(s0)
-        # w1 = 1.0/float(s1)
         w0 = width0
         w1 = width1
 
@@ -2235,16 +2233,16 @@ class MainWindow(QtWidgets.QMainWindow):
             s = ii/float(totalsteps)*S
             us = w0*cosh(r0)*tanh(rho*s+r0)/rho**2 - w0*sinh(r0)/rho**2
             ws = w0*cosh(r0)/cosh(rho*s+r0)
-            print(ws)
-            tmpcentre = c0+uvector*us
-            tmplp = tmpcentre-QtCore.QPointF(1/2,0)*ws
-            tmprp = tmpcentre+QtCore.QPointF(1/2,0)*ws
+            theta =  ii*drot+rot0
+            dw = QtCore.QPointF(cos(theta)/2.0,-sin(theta)/2.0)*ws
 
-            #sides = self.view.viewCSRToSides(tmpcentre.x(), tmpcentre.y(), s0/float(ws), ii*drot+rot0)
+            tmpcentre = c0+uvector*us
+            tmplp = tmpcentre-dw
+            tmprp = tmpcentre+dw
+
             self.viewsteps.append({'left':(tmplp.x(),tmplp.y()), 'right':(tmprp.x(),tmprp.y())})
 
         self.viewsteps.append({'left':(lp1.x(),lp1.y()), 'right':(rp1.x(),rp1.y())})
-        #self.viewsteps.append(sides)
         self.viewcurrentstep = 0
 
         self.viewtimer = QtCore.QTimer()
