@@ -1809,7 +1809,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def printViews(self, printer):
 
-        VIEWS = self.viewsModel.rowCount()
+        VIEWS = self.views.viewsModel.rowCount()
 
 
         painter = QtGui.QPainter(printer)
@@ -1832,7 +1832,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
         for ii in range(VIEWS):
-            viewitem = self.viewsModel.item(ii)
+            viewitem = self.views.viewsModel.item(ii)
 
             # XXX clean up this code .. doesn't do rotations
             matrix = viewitem.viewInverseTransform()
@@ -2746,9 +2746,9 @@ class MainWindow(QtWidgets.QMainWindow):
         Toggle the home view
         """
 
-        if self.viewsModel.athome is None:
+        if self.views.viewsModel.athome is None:
             # store where we are and switch to homeview
-            self.views.viewsModel.athome = self.viewsModel.currentView()
+            self.views.viewsModel.athome = self.views.viewsModel.currentView()
             self.jumpToView(self.views.viewsModel.homeView())
 
         else:
