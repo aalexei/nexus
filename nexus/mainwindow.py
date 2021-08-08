@@ -2640,7 +2640,6 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def generateFrame(self, left, right, penpoints):
 
-
         # path = QtGui.QPainterPath()
         # for stroke in penpoints:
         #     if len(stroke)==0:
@@ -3025,204 +3024,204 @@ class ViewsModel(QtCore.QAbstractListModel):
     def setHomeView(self,  viewnumber):
         self.home = self._cleanlimits(viewnumber)
 
-class ViewsModelold(QtGui.QStandardItemModel):
+# class ViewsModelold(QtGui.QStandardItemModel):
 
-    current = 0
-    home = 0 # home is the first view by default
-    athome = None  # the location of the previous view will be stored here on switch
+#     current = 0
+#     home = 0 # home is the first view by default
+#     athome = None  # the location of the previous view will be stored here on switch
 
-    reordered = QtCore.pyqtSignal()
+#     reordered = QtCore.pyqtSignal()
 
-    def _cleanlimits(self,  viewnumber):
-        '''
-        clean up limits for requested view number
-        '''
-        # NB if no items maxview will be -1
-        maxview = self.rowCount()-1
-        return max(min(viewnumber, maxview), 0)
+#     def _cleanlimits(self,  viewnumber):
+#         '''
+#         clean up limits for requested view number
+#         '''
+#         # NB if no items maxview will be -1
+#         maxview = self.rowCount()-1
+#         return max(min(viewnumber, maxview), 0)
 
-    def currentView(self):
-        '''
-        Return current view in presentation
-        '''
-        return self.item(self.current)
+#     def currentView(self):
+#         '''
+#         Return current view in presentation
+#         '''
+#         return self.item(self.current)
 
-    def firstView(self):
-        '''
-        reset view to first one
-        '''
-        self.current = 0
-        return self.currentView()
+#     def firstView(self):
+#         '''
+#         reset view to first one
+#         '''
+#         self.current = 0
+#         return self.currentView()
 
-    def setCurrentView(self,  viewnumber):
-        '''
-        Set current view for presentations
-        '''
-        self.current = self._cleanlimits(viewnumber)
+#     def setCurrentView(self,  viewnumber):
+#         '''
+#         Set current view for presentations
+#         '''
+#         self.current = self._cleanlimits(viewnumber)
 
-    def nextView(self):
+#     def nextView(self):
 
-        self.current = self._cleanlimits(self.current+1)
-        return self.currentView()
+#         self.current = self._cleanlimits(self.current+1)
+#         return self.currentView()
 
-    def previousView(self):
+#     def previousView(self):
 
-        self.current = self._cleanlimits(self.current-1)
-        return self.currentView()
+#         self.current = self._cleanlimits(self.current-1)
+#         return self.currentView()
 
-    def homeView(self):
-        '''
-        Return special "home" view slide
-        '''
-        return self.item(self.home)
+#     def homeView(self):
+#         '''
+#         Return special "home" view slide
+#         '''
+#         return self.item(self.home)
 
-    def setHomeView(self,  viewnumber):
-        self.home = self._cleanlimits(viewnumber)
+#     def setHomeView(self,  viewnumber):
+#         self.home = self._cleanlimits(viewnumber)
 
-    def dropMimeData(self, data, action, targetrow, targetcolumn, parent ):
+#     def dropMimeData(self, data, action, targetrow, targetcolumn, parent ):
 
-        if data.hasFormat('application/x-qabstractitemmodeldatalist'):
-            bytearray = data.data('application/x-qabstractitemmodeldatalist')
-            ds = QtCore.QDataStream(bytearray)
+#         if data.hasFormat('application/x-qabstractitemmodeldatalist'):
+#             bytearray = data.data('application/x-qabstractitemmodeldatalist')
+#             ds = QtCore.QDataStream(bytearray)
 
-            ## parse the internal drag and drop format to find the source items
-            ## we just need the rows
-            rows = []
-            while not ds.atEnd():
-                row = ds.readInt32()
-                rows.append(row)
-                column = ds.readInt32()
-                map_items = ds.readInt32()
-                for i in range(map_items):
-                    key = ds.readInt32()
-                    value = ds.readQVariant()
+#             ## parse the internal drag and drop format to find the source items
+#             ## we just need the rows
+#             rows = []
+#             while not ds.atEnd():
+#                 row = ds.readInt32()
+#                 rows.append(row)
+#                 column = ds.readInt32()
+#                 map_items = ds.readInt32()
+#                 for i in range(map_items):
+#                     key = ds.readInt32()
+#                     value = ds.readQVariant()
 
-            ## rows will be in the order of the selection ... keep them in list order
-            rows.sort()
+#             ## rows will be in the order of the selection ... keep them in list order
+#             rows.sort()
 
-            ## grab a row independent reference to each item
-            sourceitems = []
-            for row in rows:
-                sourceitems.append( self.item(row ) )
+#             ## grab a row independent reference to each item
+#             sourceitems = []
+#             for row in rows:
+#                 sourceitems.append( self.item(row ) )
 
-            ## insert marker so we keep track of where to add items
-            if targetrow == -1:
-                targetrow = self.rowCount()
-            #target = ViewsItem(scene=self.scene)
-            target = QtGui.QStandardItem()
-            self.insertRow(targetrow, target)
+#             ## insert marker so we keep track of where to add items
+#             if targetrow == -1:
+#                 targetrow = self.rowCount()
+#             #target = ViewsItem(scene=self.scene)
+#             target = QtGui.QStandardItem()
+#             self.insertRow(targetrow, target)
 
-            ## move items to new home
-            for item in sourceitems:
-                tmp = self.takeRow( item.row() )
-                self.insertRow(target.row(), tmp)
+#             ## move items to new home
+#             for item in sourceitems:
+#                 tmp = self.takeRow( item.row() )
+#                 self.insertRow(target.row(), tmp)
 
-            ## remove marker
-            self.takeRow( target.row() )
-            self.reordered.emit()
+#             ## remove marker
+#             self.takeRow( target.row() )
+#             self.reordered.emit()
 
-            return True
+#             return True
 
-        else:
-            return False
+#         else:
+#             return False
 
-class ViewsItem(QtGui.QStandardItem):
+# class ViewsItem(QtGui.QStandardItem):
 
-    ICONMAXSIZE = 300
+#     ICONMAXSIZE = 300
 
-    def __init__(self, node, scene=None):
-        super().__init__()
-        self.node = node
+#     def __init__(self, node, scene=None):
+#         super().__init__()
+#         self.node = node
 
-        self.setDropEnabled(False)
-        # self.viewRectItem = None
-        rectitem = ViewRectangle(self)
-        scene.addItem(rectitem)
-        self.viewRectItem = rectitem
+#         self.setDropEnabled(False)
+#         # self.viewRectItem = None
+#         rectitem = ViewRectangle(self)
+#         scene.addItem(rectitem)
+#         self.viewRectItem = rectitem
 
-        # set the transformation on the viewRectItem
-        T = graphics.Transform(*self.node['transform'])
-        self.viewRectItem.setTransform(T)
-        self.viewRectItem.setVisible(False)
+#         # set the transformation on the viewRectItem
+#         T = graphics.Transform(*self.node['transform'])
+#         self.viewRectItem.setTransform(T)
+#         self.viewRectItem.setVisible(False)
 
-    def setView(self, view):
+#     def setView(self, view):
 
-        invmatrix = view.transform()
-        matrix = invmatrix.inverted()[0]
-        centrePoint = view.mapToScene(view.viewport().rect().center())
+#         invmatrix = view.transform()
+#         matrix = invmatrix.inverted()[0]
+#         centrePoint = view.mapToScene(view.viewport().rect().center())
 
-        # XXX store centre, scale, and rotation
-        dx,dy,r,s = graphics.Transform(matrix).getTRS()
-        matrix = graphics.Transform().setTRS(centrePoint.x(),centrePoint.y(),r,s)
-        self.viewRectItem.setTransform(matrix)
+#         # XXX store centre, scale, and rotation
+#         dx,dy,r,s = graphics.Transform(matrix).getTRS()
+#         matrix = graphics.Transform().setTRS(centrePoint.x(),centrePoint.y(),r,s)
+#         self.viewRectItem.setTransform(matrix)
 
-        self.saveView()
-        self.createPreview(view)
+#         self.saveView()
+#         self.createPreview(view)
 
-    def saveView(self):
-        self.node['transform'] = self.viewTransform().tolist()
-        self.node.save(setchange=False)
+#     def saveView(self):
+#         self.node['transform'] = self.viewTransform().tolist()
+#         self.node.save(setchange=False)
 
-    def createPreview(self, view=None, icon=None):
+#     def createPreview(self, view=None, icon=None):
 
-        if view is None:
-            # try and get view from viewrectItem
-            # XXX how to get right view?
-            view = self.viewRectItem.scene().views()[0]
+#         if view is None:
+#             # try and get view from viewrectItem
+#             # XXX how to get right view?
+#             view = self.viewRectItem.scene().views()[0]
 
 
-        if icon is None:
-            # take a snapshot of the view
+#         if icon is None:
+#             # take a snapshot of the view
 
-            # temporarily deselect selected items
-            selected = self.viewRectItem.scene().selectedItems()
-            for item in selected:
-                item.setSelected(False)
+#             # temporarily deselect selected items
+#             selected = self.viewRectItem.scene().selectedItems()
+#             for item in selected:
+#                 item.setSelected(False)
 
-            # remember the visibility of viewrect and hide it
-            # XXX need to hide them all
-            vis = self.viewRectItem.isVisible()
-            self.viewRectItem.hide()
+#             # remember the visibility of viewrect and hide it
+#             # XXX need to hide them all
+#             vis = self.viewRectItem.isVisible()
+#             self.viewRectItem.hide()
 
-            # remember current view
-            matrix0 = view.transform()
-            center0 = view.mapToScene(view.viewport().rect().center())
+#             # remember current view
+#             matrix0 = view.transform()
+#             center0 = view.mapToScene(view.viewport().rect().center())
 
-            # set view to viewRectItem's view
-            matrix = self.viewInverseTransform()
-            center = self.viewCentre()
-            view.setTransform(matrix)
-            view.centerOn(center)
+#             # set view to viewRectItem's view
+#             matrix = self.viewInverseTransform()
+#             center = self.viewCentre()
+#             view.setTransform(matrix)
+#             view.centerOn(center)
 
-            # generate pixmap
-            pixmap = view.grab()
-            pixmap = pixmap.scaled( self.ICONMAXSIZE, self.ICONMAXSIZE, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+#             # generate pixmap
+#             pixmap = view.grab()
+#             pixmap = pixmap.scaled( self.ICONMAXSIZE, self.ICONMAXSIZE, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
 
-            # restore view
-            view.setTransform(matrix0)
-            view.centerOn(center0)
+#             # restore view
+#             view.setTransform(matrix0)
+#             view.centerOn(center0)
 
-            icon = QtGui.QIcon(pixmap)
+#             icon = QtGui.QIcon(pixmap)
 
-            # restore visibility
-            self.viewRectItem.setVisible(vis)
+#             # restore visibility
+#             self.viewRectItem.setVisible(vis)
 
-            # restore selected state
-            for item in selected:
-                item.setSelected(True)
+#             # restore selected state
+#             for item in selected:
+#                 item.setSelected(True)
 
-        self.setIcon(icon)
+#         self.setIcon(icon)
 
-    def viewTransform(self):
-        return graphics.Transform(self.viewRectItem.sceneTransform())
+#     def viewTransform(self):
+#         return graphics.Transform(self.viewRectItem.sceneTransform())
 
-    def viewInverseTransform(self):
-        ## convenience function
-        return graphics.Transform(self.viewRectItem.sceneTransform().inverted()[0])
+#     def viewInverseTransform(self):
+#         ## convenience function
+#         return graphics.Transform(self.viewRectItem.sceneTransform().inverted()[0])
 
-    def viewCentre(self):
-        ## convenience function (point contained in sceneTransform())
-        return self.viewRectItem.scenePos()
+#     def viewCentre(self):
+#         ## convenience function (point contained in sceneTransform())
+#         return self.viewRectItem.scenePos()
 
 
 #----------------------------------------------------------------------
@@ -3495,44 +3494,38 @@ class ViewsWidget(QtWidgets.QWidget):
         self.toolbar.addAction(self.resetViewAct)
         self.toolbar.addAction(self.deleteViewAct)
 
-
         g = self.scene.graph
 
-        # load the chain of views from the graphdb
-        views = g.fetch('[n:View]')
+        # load all views in graphdb
+        allviews = g.fetch('[n:View]')
 
         # first view found without an incomming transition is the rootview
-        rootviews = []
-        for view in views:
+        views = []
+        for view in allviews:
             if len(view.inE('e.kind = "Transition"')) == 0:
-                rootviews.append(view)
+                views.append(view)
+                break
 
+        if len(views) > 0:
+            # now collect chain
+            nextview = views[0]
+            while True:
+                nextview = nextview.outN('e.kind = "Transition"').one
+                if nextview is not None:
+                    views.append(nextview)
+                else:
+                    break
 
         # check for orphaned views
-        if len(rootviews) == 0:
-            viewnode = None
-        else:
-            logging.warn("Found multiple root views, choosing one, deleting rest.")
-            # find first with outgoing Transition or take last
-            for view in rootviews:
-                if len(view.outE('e.kind = "Transition"'))>0:
-                    viewnode = view
-                    break
-                else:
-                    viewnode = view
-            # remove unused ones
-            for view in rootviews:
-                if view != viewnode:
-                    view.delete(setchange=False)
+        for view in allviews:
+            if view not in views:
+                logging.warn("Found view not in chain")
+                #view.delete(setchange=False)
 
-        # while viewnode is not None:
-        #     item = ViewsItem(viewnode, scene=self.scene)
-        #     #item.fromxml(viewxml, self.view)
-        #     self.viewsModel.appendRow(item)
-        #     item.createPreview(view=self.view)
-
-        #     viewnode = viewnode.outN('e.kind = "Transition"').one
-
+        # Now add the views we found to the widget
+        for view in views:
+            #print(view.data)
+            self.addView(view)
 
     def locationChanged(self, loc):
         '''
@@ -3576,6 +3569,21 @@ class ViewsWidget(QtWidgets.QWidget):
         node['_rect'] = rectitem
         #self.viewRectItem = rectitem
 
+        # transition from old-style views pre v0.86
+        if 'transform' in node:
+            T = graphics.Transform(*node['transform'])
+
+            # The last keyframes were based on Apple monitor
+            # New format is width independent
+            WIDTH = 2560
+            HEIGHT = 1440
+            left = T.map(QtCore.QPointF(-WIDTH/2,0))
+            right = T.map(QtCore.QPointF(WIDTH/2,0))
+            node['left'] = (left.x(),left.y())
+            node['right'] = (right.x(),right.y())
+            del node['transform']
+
+
         # TODO fix view rect
         # set the transformation on the viewRectItem
         #T = graphics.Transform(*self.node['transform'])
@@ -3602,7 +3610,7 @@ class ViewsWidget(QtWidgets.QWidget):
             self.viewsModel.addRow(node, row)
 
 
-        self.relinkViews()
+        #self.relinkViews()
 
         self.viewsListView.clearSelection()
         # self.viewsListView.setCurrentIndex(0)
