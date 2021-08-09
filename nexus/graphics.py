@@ -1,5 +1,5 @@
 ##
-## Copyright 2010-2019 Alexei Gilchrist
+## Copyright 2010-2021 Alexei Gilchrist
 ##
 ## This file is part of Nexus.
 ##
@@ -44,7 +44,7 @@ EraserMode = 3
 # Mouse press states
 MPRESS, MMOVE, MLONG, MDOUBLE, MADD = 1,2,3,4,5
 
-VERSION=0.82
+VERSION=0.85
 
 ##----------------------------------------------------------------------
 class Transform(QtGui.QTransform):
@@ -369,6 +369,8 @@ class InputDialog(QtWidgets.QDialog):
         self.fullscreenwidget.setCheckState(False)
         dlayout.addRow("Maximize dialog", self.fullscreenwidget)
 
+
+
     def setDialog(self, stem):
 
         if hasattr(self, 'scene'):
@@ -483,7 +485,8 @@ class InputDialog(QtWidgets.QDialog):
             self.setTextMode()
 
         if  self.stem.scene().mode == "presentation":
-            self.showFullScreen()
+            #self.showFullScreen()
+            self.showMaximized()
         elif self.fullscreenwidget.isChecked():
             self.showMaximized()
         elif hasattr(self, 'inputgeometry') and not self.isVisible():
@@ -1311,7 +1314,6 @@ class InputDialog(QtWidgets.QDialog):
         self.scene.transformationWidget.show()
 
 
-
 class MyEvent(QtWidgets.QGraphicsSceneMouseEvent):
 
     def setButtons(self, buttons):
@@ -1790,6 +1792,7 @@ Free, Mouse, Tablet, Gesture = 0,1,2,3
 ##----------------------------------------------------------------------
 class InkView(QtWidgets.QGraphicsView):
 ##----------------------------------------------------------------------
+    viewChangeStream = QtCore.pyqtSignal(QtWidgets.QGraphicsView)
 
     def __init__(self, scene, parent = None):
 
@@ -1919,7 +1922,7 @@ class InkView(QtWidgets.QGraphicsView):
                 self.pointerReleaseEvent(self._event)
 
         else:
-            logging.debug("I Unknown tablet event type: %d",eventtype)
+            logging.debug("Unknown tablet event type: %d",eventtype)
 
 
     def mousePressEvent(self, event):
@@ -2028,6 +2031,8 @@ class InkView(QtWidgets.QGraphicsView):
 
             poly = QtGui.QPolygonF([QtCore.QPointF(*event.scenePos)])
 
+        self.viewChangeStream.emit(self)
+
     def pointerMoveEvent(self, event):
 
         scene = self.scene()
@@ -2039,6 +2044,9 @@ class InkView(QtWidgets.QGraphicsView):
                 poly = scene.tmpselect.polygon()
                 poly.append(QtCore.QPointF(*event.scenePos))
                 scene.tmpselect.setPolygon(poly)
+
+        self.viewChangeStream.emit(self)
+
 
     def pointerReleaseEvent(self, event):
         scene = self.scene()
@@ -2064,6 +2072,9 @@ class InkView(QtWidgets.QGraphicsView):
 
             scene.setSelectionWidget()
 
+        self.viewChangeStream.emit(self)
+
+
     #
     # Pen action
     #
@@ -2082,6 +2093,9 @@ class InkView(QtWidgets.QGraphicsView):
         point = [scenePos.x(),scenePos.y(), pressure, t]
         scene._tmppath = [point]
         scene.strokecoords = [point]
+
+        self.viewChangeStream.emit(self)
+
 
     def penMoveEvent(self, scenePos, pressure = 0.5):
 
@@ -2119,6 +2133,7 @@ class InkView(QtWidgets.QGraphicsView):
             scene._tmppath = [[x1,y1,z1,t1]]
 
         scene._lastScenePos = p2
+        self.viewChangeStream.emit(self)
 
     def penReleaseEvent(self, event):
 
@@ -2136,6 +2151,7 @@ class InkView(QtWidgets.QGraphicsView):
                 scene.removeItem(item)
             scene.removeItem(scene.tmpgroup)
 
+        self.viewChangeStream.emit(self)
 
     #
     # Eraser action
@@ -2152,10 +2168,13 @@ class InkView(QtWidgets.QGraphicsView):
         if item is not None and isinstance(item, InkItem):
             scene.removeItem(item)
 
+        self.viewChangeStream.emit(self)
+
     def eraserReleaseEvent(self, event):
         # All the action happens on move
         self.scene().refreshStem()
 
+        self.viewChangeStream.emit(self)
 
     def event(self, event):
 
@@ -2271,6 +2290,8 @@ class InkView(QtWidgets.QGraphicsView):
 
         self.setTransformationAnchor(anchor)
 
+        self.viewChangeStream.emit(self)
+
         return True
 
     def scaleView(self, scaleFactor):
@@ -2280,6 +2301,7 @@ class InkView(QtWidgets.QGraphicsView):
             return
 
         self.scale(scaleFactor, scaleFactor)
+        self.viewChangeStream.emit(self)
 
     def zoomIn(self):
         self.scaleView(1.15)
@@ -2297,7 +2319,7 @@ class InkView(QtWidgets.QGraphicsView):
 
 
     def wheelEvent(self, event):
-        logging.debug('Wheel event')
+        # logging.debug('Wheel event')
         if (event.modifiers() & QtCore.Qt.ControlModifier) or  (event.modifiers() & QtCore.Qt.AltModifier):
             anchor = self.transformationAnchor()
             self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
@@ -2330,10 +2352,14 @@ class InkView(QtWidgets.QGraphicsView):
             sb=self.verticalScrollBar()
             sb.setValue(sb.value()+distancey)
 
+        self.viewChangeStream.emit(self)
 
     def dropEvent(self, event):
         mimedata = event.mimeData()
 
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.viewChangeStream.emit(self)
 
 ##----------------------------------------------------------------------
 class NexusScene(QtWidgets.QGraphicsScene):
@@ -2563,6 +2589,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
 
 
+
 ##----------------------------------------------------------------------
 class NexusView(QtWidgets.QGraphicsView):
 ##----------------------------------------------------------------------
@@ -2589,6 +2616,8 @@ class NexusView(QtWidgets.QGraphicsView):
 
     # send position and pen events for recording
     recordStateEvent = QtCore.pyqtSignal(dict)
+
+    viewChangeStream = QtCore.pyqtSignal(QtWidgets.QGraphicsView)
 
     def __init__(self, scene, parent = None):
 
@@ -2649,6 +2678,8 @@ class NexusView(QtWidgets.QGraphicsView):
             matrix.translate(point.x(),point.y())
 
         self.setTransform(matrix,False)
+
+
 
     def zoomIn(self):
         self.scaleView(1.15)
@@ -2753,6 +2784,8 @@ class NexusView(QtWidgets.QGraphicsView):
             sb.setValue(sb.value()+distancey)
 
         event.accept()
+        self.viewChangeStream.emit(self)
+
 
 
     def mousePressEvent(self, event):
@@ -2802,6 +2835,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
             self._dragy = event.pos().y()
 
+            self.viewChangeStream.emit(self)
             event.accept()
 
         elif self._dragmode == self.DRAGPAN and self.scene().mode in ["presentation", "record"]:
@@ -2809,36 +2843,38 @@ class NexusView(QtWidgets.QGraphicsView):
             s = self.transform().m11()
             self._trailTimer.stop()
             ps = self.mapToScene(event.pos())
-            # pn = ps # XXX clean up if not using pn
-            pn = ps*s
-            self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-point','x':pn.x(), 'y':pn.y()})
+            self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-point','x':ps.x(), 'y':ps.y()})
             if len(self.pointertrail)==0:
                 # if there's nothing in the queue add the point within a stroke list
-                self.pointertrail.append([pn])
+                self.pointertrail.append([ps])
             else:
                 # Append to last strokelist
-                self.pointertrail[-1].append(pn)
+                self.pointertrail[-1].append(ps)
 
             # create the graphics items for the pointer trail
             if self.pointertrailitem is None:
 
                 self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-                self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+                #self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
                 pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
-                pen.setWidthF(CONFIG['trail_outer_width'])
+                pen.setWidthF(CONFIG['trail_outer_width']/s)
                 pen.setCapStyle(QtCore.Qt.RoundCap)
                 self.pointertrailitem.setPen(pen)
-                self.pointertrailitem.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
+                TrailBlur = QtWidgets.QGraphicsBlurEffect()
+                TrailBlur.setBlurRadius(5.0/s)
+                self.pointertrailitem.setGraphicsEffect(TrailBlur)
                 self.scene().addItem(self.pointertrailitem)
             if self.pointertrailitem2 is None:
                 # inner collor
                 self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-                self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+                #self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
                 pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
-                pen.setWidthF(CONFIG['trail_inner_width'])
+                pen.setWidthF(CONFIG['trail_inner_width']/s)
                 pen.setCapStyle(QtCore.Qt.RoundCap)
                 self.pointertrailitem2.setPen(pen)
-                self.pointertrailitem2.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
+                TrailBlur = QtWidgets.QGraphicsBlurEffect()
+                TrailBlur.setBlurRadius(4.0/s)
+                self.pointertrailitem2.setGraphicsEffect(TrailBlur)
                 self.scene().addItem(self.pointertrailitem2)
 
             path = QtGui.QPainterPath()
@@ -2853,6 +2889,8 @@ class NexusView(QtWidgets.QGraphicsView):
                     path2.lineTo(p)
             self.pointertrailitem.setPath(path)
             self.pointertrailitem2.setPath(path)
+
+            self.viewChangeStream.emit(self)
 
 
         elif self._dragmode == self.DRAGPAN:
@@ -2871,11 +2909,13 @@ class NexusView(QtWidgets.QGraphicsView):
             self._dragx = x
             self._dragy = y
 
+            self.viewChangeStream.emit(self)
             event.accept()
 
         elif not self.scene().mode in ["presentation", "record"]:
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
+
 
 
     def mouseReleaseEvent(self, event):
@@ -2900,6 +2940,8 @@ class NexusView(QtWidgets.QGraphicsView):
             self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseReleaseEvent(self, event)
             self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-up'})
+
+        self.viewChangeStream.emit(self)
 
     def mouseDoubleClickEvent(self, event):
 
@@ -2937,6 +2979,8 @@ class NexusView(QtWidgets.QGraphicsView):
             self.scene().removeItem(self.pointertrailitem2 )
             self.pointertrailitem2 = None
         self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-clear'})
+        self.viewChangeStream.emit(self)
+
 
 
 
@@ -3058,7 +3102,15 @@ class NexusView(QtWidgets.QGraphicsView):
             M.translate(D.x(),D.y())
             self.setTransform(M, False)
 
+            self.viewChangeStream.emit(self)
+
+
         self.setTransformationAnchor(anchor)
+
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.viewChangeStream.emit(self)
 
 
 ##----------------------------------------------------------------------
@@ -3197,7 +3249,7 @@ class BackgroundDialog(QtWidgets.QDialog):
     def setColor(self):
 
         brush = self.scene.backgroundBrush()
-        col = QtWidgets.QColorDialog.getColor(brush.color() )
+        col = QtWidgets.QColorDialog.getColor(brush.color(), options=QtWidgets.QColorDialog.ShowAlphaChannel )
         if col.isValid():
 
             pix = QtGui.QPixmap(16,16)
@@ -3428,7 +3480,7 @@ def smoothInkPath(P):
     for ii in simplified:
         S.append(Ps[ii])
 
-    logging.debug("stroke simplification: %d -> %d (%.1f%%)  \t\tRate: %.2f ",len(P),len(S),len(S)/float(len(P))*100, rate)
+    # logging.debug("stroke simplification: %d -> %d (%.1f%%)  \t\tRate: %.2f ",len(P),len(S),len(S)/float(len(P))*100, rate)
 
     return S
 

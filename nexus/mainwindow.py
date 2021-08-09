@@ -1,5 +1,5 @@
 ##
-## Copyright 2010-2019 Alexei Gilchrist
+## Copyright 2010-2021 Alexei Gilchrist
 ##
 ## This file is part of Nexus.
 ##
@@ -32,7 +32,7 @@ from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi, cos, sin
 import re, subprocess
 import apsw
 
-
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 CONFIG = config.get_config()
 
@@ -491,6 +491,10 @@ class NexusApplication(QtWidgets.QApplication):
         QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-old-style-figures.ttf")
 
         self.windowMenu = menu
+        #self.toggleStreaminServer(True)
+
+        self.streaming = False
+        self.streaming_ready_time = 0
 
         logging.debug('start')
 
@@ -520,6 +524,8 @@ class NexusApplication(QtWidgets.QApplication):
                 act.setEnabled(False)
             act.triggered.connect(window.activateWindowViaMenu)
             self.windowMenu.addAction(act)
+
+
 
     def windowFullScreen(self):
         window = self.activeWindow()
@@ -559,6 +565,10 @@ class NexusApplication(QtWidgets.QApplication):
         w.show()
         w.raise_()
         w.activateWindow()
+
+        # try out transparancy
+        # w.setWindowFlag(QtCore.Qt.FramelessWindowHint)
+        # w.setAttribute(QtCore.Qt.WA_TranslucentBackground, True)
 
         return w
 
@@ -644,6 +654,205 @@ class NexusApplication(QtWidgets.QApplication):
                 self.raiseOrOpen(canonicalFilePath)
 
         return QtWidgets.QApplication.event(self, event)
+
+    def toggleStreaminServer(self, start):
+        if start:
+
+            logging.info('Starting streaming server...')
+            self.streaming = True
+            self.view_image = QtGui.QImage()
+
+
+            self.streaming_thread = QtCore.QThread(parent=self)
+            self.streaming_daemon = StreamingDaemon(self)
+            self.streaming_daemon.moveToThread(self.streaming_thread)
+
+            self.streaming_thread.started.connect(self.streaming_daemon.run)
+            self.streaming_thread.start()
+        else:
+            logging.info('Stopping streaming server...')
+            # this will stop any current streaming
+            self.streaming = False
+            time.sleep(1)
+
+            # Tell the http process to stop
+            self.streaming_daemon._server.shutdown()
+
+            # Remove references to aid garbage collection?
+            self.streaming_thread = None
+            self.streaming_daemon = None
+
+    @QtCore.pyqtSlot(QtWidgets.QGraphicsView)
+    def createViewImage(self, view):
+
+        if not self.streaming:
+            return
+
+        # Get the size of your graphicsview
+        rect = view.viewport().rect()
+
+        # tic = time.time()
+
+        # ---- method 1 ----
+        # Create a Image the same size as your graphicsview
+        # make larger based on retina?
+        #image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
+        image = QtGui.QImage(1920,1080, QtGui.QImage.Format_ARGB32_Premultiplied)
+        image.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(image)
+
+        oldbrush =  view.scene().backgroundBrush()
+        brush = QtGui.QBrush(QtCore.Qt.transparent)
+        view.scene().setBackgroundBrush(brush)
+
+        # Render the graphicsview onto the image and save it out.
+        view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+        view.render(painter, QtCore.QRectF(image.rect()), rect)
+
+        # return previous background
+        view.scene().setBackgroundBrush(oldbrush)
+
+        #image.save('/tmp/screen.png')
+        painter.end()
+
+        self.view_image = image
+        self.streaming_ready_time = time.time()
+
+        # # convert QImage to bytes
+        # buffer = QtCore.QBuffer()
+        # buffer.open(QtCore.QIODevice.WriteOnly)
+        # ok = image.save(buffer, "PNG")
+        # self.view_bytes = buffer.data().data()
+
+        # toc = time.time()
+        # logging.debug(f"gen image: {toc-tic:.2f}s")
+#----------------------------------------------------------------------
+HOST, PORT = '127.0.0.1', 12345
+
+class RequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/":
+            self.send_response(200)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
+            self.wfile.write(bytes('<html><head></head><body style="background-color: rgba(0,0,0,0)!important;">','utf-8'))
+            self.wfile.write(bytes(f'<img src="http://{HOST}:{PORT}/stream.mjpg"/>','utf-8'))
+            self.wfile.write(bytes('</body></html>','utf-8'))
+            return
+
+        elif self.path == "/stream.mjpg":
+            self.send_response(200)
+            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, pre-check=0, post-check=0, max-age=0')
+            self.send_header('Pragma', 'no-cache')
+            # self.send_header('Connection', 'close')
+            self.send_header("Content-type", "multipart/x-mixed-replace; boundary=frame")
+            self.end_headers()
+            interval = 0.1
+            self.served_image_timestamp = time.time() + interval
+            while self.server.app.streaming:
+                if self.served_image_timestamp + interval < time.time() \
+                   and self.served_image_timestamp < self.server.app.streaming_ready_time + 3*interval:
+                    self.wfile.write(bytes("--frame",'utf-8'))
+                    self.send_header('Content-type','image/png')
+                    view_bytes = self.getImageBytes()
+                    self.send_header('Content-length', str(len(view_bytes)))
+                    self.end_headers()
+                    self.wfile.write(view_bytes)
+                    self.wfile.write(b'\r\n')
+                    self.served_image_timestamp = time.time()
+                else:
+                    time.sleep(interval)
+                    pass
+            return
+
+        else:
+            self.send_error(404)
+            self.end_headers()
+
+    def getImageBytes(self):
+
+        tic = time.time()
+        # convert QImage to bytes
+        buffer = QtCore.QBuffer()
+        buffer.open(QtCore.QIODevice.WriteOnly)
+        ok = self.server.app.view_image.save(buffer, "PNG")
+        view_bytes = buffer.data().data()
+        toc = time.time()
+        #logging.debug(f"gen bytes: {toc-tic:.2f}s")
+
+        return view_bytes
+
+
+
+class StreamingDaemon(QtCore.QObject):
+    def __init__(self, app):
+        super().__init__()
+        self.app = app
+
+    def run(self):
+        self._server = HTTPServer((HOST, PORT), RequestHandler)
+        self._server.app = self.app
+        self._server.serve_forever()
+
+
+
+# class StreamHandler(tornado.web.RequestHandler):
+
+#     def initialize(self, app):
+#         self.app = app
+
+#     async def get(self):
+#         #ioloop = tornado.ioloop.IOLoop.current()
+
+#         self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, pre-check=0, post-check=0, max-age=0')
+#         self.set_header('Pragma', 'no-cache')
+#         self.set_header('Content-Type', 'multipart/x-mixed-replace;boundary=frame')
+#         self.set_header('Connection', 'close')
+
+#         self.served_image_timestamp = 0
+#         interval = 0.1
+#         while self.app.streaming:
+#             # N.B. this is running in separate thread so give us a small buffer in comaring times
+#             # to be sure to get the latest image
+#             if self.served_image_timestamp < self.app.streaming_ready_time:
+#                 self.write("--frame")
+#                 self.write("Content-type: image/png\r\n")
+#                 self.write("Content-length: %s\r\n\r\n"%len(self.app.view_bytes))
+#                 self.write(self.app.view_bytes)
+#                 self.served_image_timestamp = time.time()
+#                 logging.debug(f"Served image at {self.served_image_timestamp}")
+#                 #self.flush()
+#                 #await asyncio.create_task(self.image_ready())
+#                 await asyncio.Task(self.flush)
+#             else:
+#                 pass
+#                 #time.sleep(interval)
+#                 # await tornado.gen.Task(ioloop.add_timeout, ioloop.time() + interval)
+
+#     async def image_ready(self):
+#         while self.served_image_timestamp+1 > self.app.streaming_ready_time:
+#             pass
+
+# class StreamingDaemon(QtCore.QObject):
+#     def __init__(self, app):
+#         super().__init__()
+#         self.app = app
+
+#     def run(self):
+#         app = web.Application()
+#         app.add_routes([
+#             web.get('/', basepage)
+#         ])
+#         loop = asyncio.new_event_loop()
+#         runner = web.AppRunner(app)
+#         loop.run_until_complete(runner.setup())
+
+#         #web.run_app(app)
+
+    # def stop(self):
+    #     ioloop = tornado.ioloop.IOLoop.instance()
+    #     ioloop.add_callback(ioloop.stop)
+    #     ioloop.close()
 
 #----------------------------------------------------------------------
 class MainWindow(QtWidgets.QMainWindow):
@@ -745,6 +954,10 @@ class MainWindow(QtWidgets.QMainWindow):
         app = QtWidgets.QApplication.instance()
         app.updateWindowMenu()
 
+        self.view.viewChangeStream.connect(app.createViewImage)
+
+        self.editDialog.view.viewChangeStream.connect(app.createViewImage)
+
         self.presentationhiddenstems = []
 
         self.createToolBars()
@@ -752,6 +965,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.updateRecentFilesMenu()
 
         self.setMode()
+
 
 
     def setDefaultSettings(self):
@@ -1534,6 +1748,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtWidgets.QAction(self, visible=False, triggered=self.openRecentFile)
             )
 
+        # ----------------------------------------------------------------------------------
+        self.runStreamingServerAct = QtWidgets.QAction(self.tr("Stream View"), self)
+        self.runStreamingServerAct.triggered.connect(app.toggleStreaminServer)
+        self.runStreamingServerAct.setCheckable(True)
+        self.runStreamingServerAct.setChecked(app.streaming)
+
+
     def createMenus(self):
 
         self.fileMenu = self.menuBar().addMenu(self.tr("&File"))
@@ -1600,6 +1821,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu.addAction(self.viewRotateAct)
         self.viewMenu.addAction(self.setBackgroundAct)
         self.viewMenu.addAction(self.hidePointerAct)
+        self.viewMenu.addAction(self.runStreamingServerAct)
         self.viewMenu.addSeparator()
         self.viewMenu.addAction(self.viewsAct)
         self.viewMenu.addAction(self.viewsFirstAct)
@@ -2378,11 +2600,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
-        self.showFullScreen()
+        #self.showFullScreen()
+
 
         #self.view.centerOn(center)
         self.hidePointerAct.setEnabled(True)
-        self.hidePointerAct.setChecked(False) # force toggle on
+        self.hidePointerAct.setChecked(True)
         self.hidePointerAct.trigger()
 
         # (Use shift to actually move canvas)
@@ -2820,7 +3043,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 item['rect'].setVisible(vis)
             else:
                 item['rect'].setVisible(False)
-
 
 
 class FilterEdit(QtWidgets.QLineEdit):
