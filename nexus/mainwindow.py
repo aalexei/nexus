@@ -3942,14 +3942,20 @@ class ViewsWidget(QtWidgets.QWidget):
         pass
    
     def resetView(self):
-
-        # XXX this should be in NexusView .. only raise a signal here
-        # XXX use grabView() code instead and replace item
+        '''
+        Resets the view node and item to the currently selected parameters of the graphicsview
+        '''
 
         itemindex = self.viewsListView.selectedIndexes()[0]
-        item = self.viewsModel.itemFromIndex(itemindex)
+        node = self.viewsModel.itemFromIndex(itemindex)
 
-        item.setView(self.view)
+        sides = self.view.getViewSides()
+        node['left'] = sides['left']
+        node['right'] = sides['right']
+        icon = self.createPreview({k: sides[k] for k in ('left','right')})
+        node['_icon'] = icon
+        # node.save()
+        self.viewsModel.dataChanged.emit(itemindex, itemindex)
 
     def deleteView(self):
 
