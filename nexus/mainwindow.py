@@ -361,6 +361,37 @@ def convert_to_full_tree(g):
     g2.savesetting('version', graphics.VERSION)
     return g2
 
+
+def createViewImage(view, width, height, removebackground=False):
+
+    # Get the size of your graphicsview
+    rect = view.viewport().rect()
+    # adjust height so same proportions as target
+    dh = rect.height()-int(rect.width()*height/width)
+    rect.setTop(rect.top()+dh/2)
+    rect.setBottom(rect.bottom()-dh/2)
+
+    image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32_Premultiplied)
+    image.fill(QtCore.Qt.transparent)
+
+    if removebackground:
+        # make the scene background transparent
+        oldbrush =  view.scene().backgroundBrush()
+        brush = QtGui.QBrush(QtCore.Qt.transparent)
+        view.scene().setBackgroundBrush(brush)
+
+    painter = QtGui.QPainter(image)
+    view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+    view.render(painter, QtCore.QRectF(image.rect()), rect)
+    painter.end()
+
+    if removebackground:
+        # return previous background
+        view.scene().setBackgroundBrush(oldbrush)
+
+    return image
+
+
 #----------------------------------------------------------------------
 class NewOrOpenDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
@@ -2585,7 +2616,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 framename = 'frame_{:04d}.png'.format(F)
                 fp.write('file {}\nduration {}\n'.format(framename,dt+skipped))
 
-                image = self.generateFrame(left=currentview['left'], right=currentpen['right'], penpoints=currentpen)
+                image = self.generateFrame(left=currentview['left'], right=currentview['right'], penpoints=currentpen)
                 image.save((self.tmprecdir/framename).as_posix())
 
                 F+=1
@@ -2666,35 +2697,40 @@ class MainWindow(QtWidgets.QMainWindow):
 
         W = 1920
         H = 1080
+
+        image = createViewImage(self.view, W, H)
+
         viewrect = self.view.viewport().rect()
         dx = (viewrect.width()-W)/2
         dy = (viewrect.height()-H)/2
 
-        image = QtGui.QImage(W,H, QtGui.QImage.Format_ARGB32)
-        image.fill(QtCore.Qt.transparent)
-        painter = QtGui.QPainter(image)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-        painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
-        self.view.render(painter, QtCore.QRectF(), QtCore.QRect(dx,dy,W,H), QtCore.Qt.KeepAspectRatio)
+        # XXX need to add the pen strokes
+        # image = QtGui.QImage(W,H, QtGui.QImage.Format_ARGB32)
+        # image.fill(QtCore.Qt.transparent)
+        # painter = QtGui.QPainter(image)
+        # painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        # painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+        # self.view.render(painter, QtCore.QRectF(), QtCore.QRect(dx,dy,W,H), QtCore.Qt.KeepAspectRatio)
 
         ## Ideally the pen would be draw here but the transformations are a mess
         ## Needs a complete overhaul to accomodate different res screens anyway
-        vc = viewrect.center()
-        s = W/(4*viewrect.width())
-        c = QtCore.QPointF(W/2,H/2)
-        tc = QtCore.QPointF(x,y)
-        for stroke in penpoints:
-            if len(stroke)==0:
-                continue
+        # vc = viewrect.center()
+        # s = W/(4*viewrect.width())
+        # c = QtCore.QPointF(W/2,H/2)
+        # tc = QtCore.QPointF(x,y)
+        # for stroke in penpoints:
+        #     if len(stroke)==0:
+        #         continue
 
-            #stroke2=[s*(self.view.mapFromScene(QtCore.QPointF(sx,sy))-vp) for sx,sy in stroke]
-            stroke2=[s*(self.view.mapFromScene(sp)-vc)+c-2*tc for sp in stroke]
-            print(dx,dy, tc, vc)
-            #print(stroke2[:3])
-            #print(vp,s)
-            painter.drawPolyline(QtGui.QPolygonF(stroke2))
+        #     #stroke2=[s*(self.view.mapFromScene(QtCore.QPointF(sx,sy))-vp) for sx,sy in stroke]
+        #     stroke2=[s*(self.view.mapFromScene(sp)-vc)+c-2*tc for sp in stroke]
+        #     print(dx,dy, tc, vc)
+        #     #print(stroke2[:3])
+        #     #print(vp,s)
+        #     painter.drawPolyline(QtGui.QPolygonF(stroke2))
 
-        painter.end()
+        # painter.end()
+
 
 
         return image
@@ -3426,10 +3462,15 @@ class ViewsListView(QtWidgets.QListView):
 
     def setViewIconSize(self):
         if self.orientation == self.Vertical:
-            size = self.size().width()
+            # size = self.size().width()
+            width = self.size().width()
+            height = width*270/380
         else:
-            size = self.size().height()
-        self.setIconSize(QtCore.QSize(size-12,size-12))
+            # size = self.size().height()
+            height = self.size().height()
+            width = height*380/270
+        #self.setIconSize(QtCore.QSize(size-12,size-12))
+        self.setIconSize(QtCore.QSize(width-2,height-2))
 
     def resetOrientation(self):
 
@@ -3448,7 +3489,8 @@ class ViewsListView(QtWidgets.QListView):
 #----------------------------------------------------------------------
 class ViewsWidget(QtWidgets.QWidget):
 
-    ICONMAXSIZE = 300
+    ICONMAXWIDTH = 480
+    ICONMAXHEIGHT = 270
 
     def __init__(self, parent, toolbar):
         super().__init__(parent)
@@ -3635,15 +3677,17 @@ class ViewsWidget(QtWidgets.QWidget):
         # set view to viewRectItem's view
         self.view.setViewSides(node)
 
-        # generate pixmap
-        # TODO fix the aspect ratio of pixmap to 1080p
-        pixmap = self.view.grab()
-        pixmap = pixmap.scaled( self.ICONMAXSIZE, self.ICONMAXSIZE, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        image = createViewImage(self.view, self.ICONMAXWIDTH, self.ICONMAXHEIGHT)
+        # # generate pixmap
+        # # TODO fix the aspect ratio of pixmap to 1080p
+        # pixmap = self.view.grab()
+        # pixmap = pixmap.scaled( self.ICONMAXSIZE, self.ICONMAXSIZE, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
 
         # restore view
         self.view.setViewSides(sides)
 
-        icon = QtGui.QIcon(pixmap)
+        # icon = QtGui.QIcon(pixmap)
+        icon = QtGui.QIcon(QtGui.QPixmap.fromImage(image))
 
         # restore visibility
         # self.viewRectItem.setVisible(vis)
