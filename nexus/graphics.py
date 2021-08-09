@@ -2809,6 +2809,7 @@ class NexusView(QtWidgets.QGraphicsView):
             s = self.transform().m11()
             self._trailTimer.stop()
             ps = self.mapToScene(event.pos())
+            # pn = ps # XXX clean up if not using pn
             pn = ps*s
             self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-point','x':pn.x(), 'y':pn.y()})
             if len(self.pointertrail)==0:

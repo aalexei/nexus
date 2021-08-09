@@ -2671,6 +2671,8 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def generateFrame(self, left, right, penpoints):
 
+        self.view.setViewSides({'left':left, 'right':right})
+
         # path = QtGui.QPainterPath()
         # for stroke in penpoints:
         #     if len(stroke)==0:
@@ -2693,7 +2695,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.view.setViewportUpdateMode(self.view.FullViewportUpdate)
         # self.view.resetCachedContent()
         
-        self.view.setViewSides({'left':left, 'right':right})
 
         W = 1920
         H = 1080
@@ -2723,8 +2724,9 @@ class MainWindow(QtWidgets.QMainWindow):
         #         continue
 
         #     #stroke2=[s*(self.view.mapFromScene(QtCore.QPointF(sx,sy))-vp) for sx,sy in stroke]
-        #     stroke2=[s*(self.view.mapFromScene(sp)-vc)+c-2*tc for sp in stroke]
-        #     print(dx,dy, tc, vc)
+        #     #stroke2=[s*(self.view.mapFromScene(sp)-vc)+c-2*tc for sp in stroke]
+        #     #stroke2=[self.view.mapFromScene(sp) for sp in stroke]
+        #     #print(dx,dy, tc, vc)
         #     #print(stroke2[:3])
         #     #print(vp,s)
         #     painter.drawPolyline(QtGui.QPolygonF(stroke2))
@@ -3611,6 +3613,7 @@ class ViewsWidget(QtWidgets.QWidget):
         node['_rect'] = rectitem
         #self.viewRectItem = rectitem
 
+        # DEPRECATED[v0.86]
         # transition from old-style views pre v0.86
         if 'transform' in node:
             T = graphics.Transform(*node['transform'])
