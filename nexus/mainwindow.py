@@ -3235,6 +3235,15 @@ class ViewsModel(QtCore.QAbstractListModel):
         else:
             self.views.insert(after+1, item)
         self.layoutChanged.emit()
+    def removeItem(self, node):
+        self.views.remove(node)
+        self.layoutChanged.emit()
+
+    def item(self, row):
+        '''
+        Convenience to bypass QTs overly complicated indexes
+        '''
+        return self.views[row]
 
     def itemFromIndex(self, index):
         return self.views[index.row()]
@@ -3676,7 +3685,12 @@ class ViewsListView(QtWidgets.QListView):
         self.setHorizontalScrollMode(self.ScrollPerPixel)
 
         # NOTE: the dragDropMode must be set AFTER the viewMode!!!
+        self.setAcceptDrops(True)
+        self.setDragEnabled(True)
         self.setDragDropMode( self.InternalMove )
+
+        # TODO implement re-ordering:
+        # https://stackoverflow.com/a/66867145
 
 
     def resizeEvent(self, event):
@@ -3760,38 +3774,61 @@ class ViewsWidget(QtWidgets.QWidget):
         self.toolbar.addAction(self.resetViewAct)
         self.toolbar.addAction(self.deleteViewAct)
 
+        self.resetViewsFromGraph()
+
+    def resetViewsFromGraph(self):
+        # first clear the existing data
+        self.viewsModel.views.clear()
+
         g = self.scene.graph
 
         # load all views in graphdb
-        allviews = g.fetch('[n:View]')
+        allviewnodes = g.fetch('[n:View]')
 
         # first view found without an incomming transition is the rootview
-        views = []
-        for view in allviews:
-            if len(view.inE('e.kind = "Transition"')) == 0:
-                views.append(view)
+        viewnodes = []
+        for viewnode in allviewnodes:
+            if len(viewnode.inE('e.kind = "Transition"')) == 0:
+                viewnodes.append(viewnode)
                 break
 
-        if len(views) > 0:
+        if len(viewnodes) > 0:
             # now collect chain
-            nextview = views[0]
+            nextview = viewnodes[0]
             while True:
                 nextview = nextview.outN('e.kind = "Transition"').one
                 if nextview is not None:
-                    views.append(nextview)
+                    viewnodes.append(nextview)
                 else:
                     break
 
-        # check for orphaned views
-        for view in allviews:
-            if view not in views:
-                logging.warn("Found view not in chain")
-                #view.delete(setchange=False)
+        # check for orphaned viewnodes
+        for viewnode in allviewnodes:
+            if viewnode not in viewnodes:
+                logging.warn("Found view not in chain, deleting.")
+                #YYY viewnode.delete(setchange=False)
 
-        # Now add the views we found to the widget
-        for view in views:
-            #print(view.data)
-            self.addView(view)
+
+        # DEPRECATED[v0.86]
+        for viewnode in viewnodes:
+            # transition from old-style viewnodes pre v0.86
+            if 'transform' in viewnode:
+                T = graphics.Transform(*viewnode['transform'])
+
+                # The last keyframes were based on Apple monitor
+                # New format is width independent
+                WIDTH = 2560
+                HEIGHT = 1440
+                left = T.map(QtCore.QPointF(-WIDTH/2,0))
+                right = T.map(QtCore.QPointF(WIDTH/2,0))
+                viewnode['left'] = (left.x(),left.y())
+                viewnode['right'] = (right.x(),right.y())
+                del viewnode['transform']
+                #YYY viewnode.save()
+
+        # Now add the viewnodes we found to the widget
+        for viewnode in viewnodes:
+            self.addView(viewnode)
 
     def locationChanged(self, loc):
         '''
@@ -3807,6 +3844,7 @@ class ViewsWidget(QtWidgets.QWidget):
 
         self.viewsListView.resetOrientation()
 
+
     def doubleClicked(self,  itemindex):
         node = self.viewsModel.itemFromIndex(itemindex)
 
@@ -3819,37 +3857,26 @@ class ViewsWidget(QtWidgets.QWidget):
         '''
         Add the current view as a Views item
         '''
-        data = self.view.getViewSides()
+        sides = self.view.getViewSides()
 
+        # create a new View node and set the sides
         node = self.scene.graph.Node('View')
-        node['left'] = data['left']
-        node['right'] = data['right']
-        # node.save(setchange=False)
+        node['left'] = sides['left']
+        node['right'] = sides['right']
+        #YYY node.save(setchange=False)
 
         self.addView(node)
+        self.relinkViews()
 
     def addView(self, node):
 
+        #
+        # Add a rectagle to scene to shoe view extent
+        #
         rectitem = ViewRectangle(self.scene)
         self.scene.addItem(rectitem)
         node['_rect'] = rectitem
         #self.viewRectItem = rectitem
-
-        # DEPRECATED[v0.86]
-        # transition from old-style views pre v0.86
-        if 'transform' in node:
-            T = graphics.Transform(*node['transform'])
-
-            # The last keyframes were based on Apple monitor
-            # New format is width independent
-            WIDTH = 2560
-            HEIGHT = 1440
-            left = T.map(QtCore.QPointF(-WIDTH/2,0))
-            right = T.map(QtCore.QPointF(WIDTH/2,0))
-            node['left'] = (left.x(),left.y())
-            node['right'] = (right.x(),right.y())
-            del node['transform']
-
 
         # TODO fix view rect
         # set the transformation on the viewRectItem
@@ -3858,7 +3885,9 @@ class ViewsWidget(QtWidgets.QWidget):
         # XXX rectitem.setTransform(T)
         rectitem.setVisible(False)
 
-        # self.saveView()
+        #
+        # Add an icon for the view
+        #
         icon = self.createPreview({k: node[k] for k in ('left','right')})
         node['_icon'] = icon
 
@@ -3866,6 +3895,9 @@ class ViewsWidget(QtWidgets.QWidget):
         # if not self.window().viewsFramesAct.isChecked():
         #     item.viewRectItem.setVisible(False)
 
+        #
+        # Add this view after any selected views or append
+        #
         selected = self.viewsListView.selectedIndexes()
         if len(selected) == 0:
             self.viewsModel.addRow(node)
@@ -3876,13 +3908,10 @@ class ViewsWidget(QtWidgets.QWidget):
 
             self.viewsModel.addRow(node, row)
 
-
-        #self.relinkViews()
-
+        # TODO update selection in nicer way
         self.viewsListView.clearSelection()
         # self.viewsListView.setCurrentIndex(0)
-        # TODO update selection
-       
+
 
     def createPreview(self, node):
 
@@ -3923,9 +3952,50 @@ class ViewsWidget(QtWidgets.QWidget):
 
         return icon
        
-
     def relinkViews(self):
-        # ensure all views are daisy chained correctly
+        '''
+        Ensure all the view nodes are daisy chained correctly
+        '''
+
+        # set overall changeset
+        batch = graphydb.generateUUID()
+
+        rows = self.viewsModel.rowCount(0)
+
+        # Check first view node is sensible
+        # There should be no incomming edges
+        node = self.viewsModel.item(0)
+        in_edges = node.inE('e.kind="Transition"')
+        if len(in_edges)>0:
+            print(in_edges)
+            logging.error('First view has incomming edge, reloading all views from graph.')
+            #YYY self.resetViewsFromGraph()
+            raise Exception("First view has incomming edge")
+
+        # Check last view node is sensible
+        # There should be no outgoing edges
+        node = self.viewsModel.item(rows-1)
+        out_edges = node.outE('e.kind="Transition"')
+        if len(out_edges)>0:
+            print(out_edges)
+            logging.error('Last view has outgoing edge, reloading all views from graph.')
+            #YYY self.resetViewsFromGraph()
+            raise Exception("Last view has outgoing edge")
+
+        # Check for row in 0..rows-2
+        # Should link to next view only
+        for row in range(rows-1):
+            node = self.viewsModel.item(row)
+            nextnode = self.viewsModel.item(row+1)
+            es = node.outE('e.kind="Transition"')
+            if len(es)!=1 or es[0]!=nextnode:
+                self.scene.graph.Edge(node, "Transition", nextnode)#.save(setchange=True, batch=batch)
+                #YYY es.delete(setchange=True, batch=batch)
+
+
+        # TODO update only changed views?
+        self.viewsModel.dataChanged.emit(self.viewsModel.createIndex(0,0), self.viewsModel.createIndex(rows,0))
+
         # rows = self.viewsModel.rowCount()
         # if rows == 0:
         #     # Nothing to do
@@ -3939,8 +4009,7 @@ class ViewsWidget(QtWidgets.QWidget):
         #     item0 = self.viewsModel.item(r-1)
         #     item1 = self.viewsModel.item(r)
         #     self.scene.graph.Edge(item0.node, "Transition", item1.node).save(setchange=False)
-        pass
-   
+
     def resetView(self):
         '''
         Resets the view node and item to the currently selected parameters of the graphicsview
@@ -3954,7 +4023,7 @@ class ViewsWidget(QtWidgets.QWidget):
         node['right'] = sides['right']
         icon = self.createPreview({k: sides[k] for k in ('left','right')})
         node['_icon'] = icon
-        # node.save()
+        #YYY node.save()
         self.viewsModel.dataChanged.emit(itemindex, itemindex)
 
     def deleteView(self):
@@ -3969,16 +4038,17 @@ class ViewsWidget(QtWidgets.QWidget):
             minindex = max
 
         for item in itemstodelete:
-            item.node.delete(disconnect=True, setchange=False)
-            self.scene.removeItem(item.viewRectItem)
-            self.viewsModel.removeRow(item.row())
+            #YYY item.node.delete(disconnect=True, setchange=False)
+            self.scene.removeItem(item['_rect'])
+            self.viewsModel.removeItem(item)
 
         self.relinkViews()
 
         if len(rows)>0:
+            # make sure row before frst deleted one is shown
             row = rows[0]-1
             if row >= 0:
-                index = self.viewsModel.item(row).index()
+                index = self.viewsModel.createIndex(row,0)
                 self.viewsListView.scrollTo(index)
                 self.viewsListView.setCurrentIndex(index)
 
