@@ -2103,7 +2103,7 @@ class MainWindow(QtWidgets.QMainWindow):
             matrixinv, dummy = tmpmatrix.inverted()
 
             ## should max out the rect item in target rect?
-            sourceRect = QtCore.QRectF(0, 0, ViewRectangle.VIEWW, ViewRectangle.VIEWH)
+            sourceRect = QtCore.QRectF(0, 0, ViewRectangle.WIDTH, ViewRectangle.HEIGHT)
             sourceRect.translate(-sourceRect.width()/2.0, -sourceRect.height()/2.0)
 
             sourceRect = matrixinv.mapRect(sourceRect)
@@ -3040,9 +3040,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for item in self.views.viewsModel.views:
             if vis and item in selecteditems:
-                item['rect'].setVisible(vis)
+                item['_rect'].setVisible(vis)
             else:
-                item['rect'].setVisible(False)
+                item['_rect'].setVisible(False)
 
 
 class FilterEdit(QtWidgets.QLineEdit):
@@ -3500,15 +3500,21 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem):
     '''
 
     # viewChanged = QtCore.pyqtSignal()
+    # Nominal Full HD size
+    WIDTH = 1920
+    HEIGHT = 1080
 
     def __init__(self, viewItem):
 
         self.viewitem = viewItem
 
-        self.VIEWW, self.VIEWH = CONFIG['view_rect_size']
+        # self.VIEWW, self.VIEWH = CONFIG['view_rect_size']
 
         path = QtGui.QPainterPath()
-        rect = QtCore.QRectF(-self.VIEWW/2.0,-self.VIEWH/2.0,self.VIEWW,self.VIEWH)
+        #rect = QtCore.QRectF(-self.VIEWW/2.0,-self.VIEWH/2.0,self.VIEWW,self.VIEWH)
+        rect = QtCore.QRectF(-self.WIDTH/2.0,-self.HEIGHT/2.0,self.WIDTH,self.HEIGHT)
+        rect2 = QtCore.QRectF(-self.WIDTH/2.0,-self.WIDTH*3/4/2.0,self.WIDTH,self.WIDTH*3/4)
+        path.addRect(rect2)
         path.addRect(rect)
         super().__init__(path)
 
@@ -3543,16 +3549,16 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem):
             self.pivot = QtCore.QPointF(0,0)
 
         elif event.source == "tNE":
-            self.pivot = QtCore.QPointF(-self.VIEWW/2.0,self.VIEWH/2.0)
+            self.pivot = QtCore.QPointF(-self.WIDTH/2.0,self.HEIGHT/2.0)
 
         elif event.source == "tNW":
-            self.pivot = QtCore.QPointF(self.VIEWW/2.0,self.VIEWH/2.0)
+            self.pivot = QtCore.QPointF(self.WIDTH/2.0,self.HEIGHT/2.0)
 
         elif event.source == "tSW":
-            self.pivot = QtCore.QPointF(self.VIEWW/2.0,-self.VIEWH/2.0)
+            self.pivot = QtCore.QPointF(self.WIDTH/2.0,-self.HEIGHT/2.0)
 
         elif event.source == "tSE":
-            self.pivot = QtCore.QPointF(-self.VIEWW/2.0,-self.VIEWH/2.0)
+            self.pivot = QtCore.QPointF(-self.WIDTH/2.0,-self.HEIGHT/2.0)
 
         else:
             self.pivot = QtCore.QPointF(0,0)
@@ -3614,13 +3620,13 @@ class ViewRectangleHandle(QtWidgets.QGraphicsRectItem):
         W = 200
 
         if id=='tNE':
-            X,Y = parent.VIEWW/2.0-W, -parent.VIEWH/2.0
+            X,Y = parent.WIDTH/2.0-W, -parent.HEIGHT/2.0
         elif id=='tSE':
-            X,Y = parent.VIEWW/2.0-W, parent.VIEWH/2.0-W
+            X,Y = parent.WIDTH/2.0-W, parent.HEIGHT/2.0-W
         elif id=='tSW':
-            X,Y = -parent.VIEWW/2.0, parent.VIEWH/2.0-W
+            X,Y = -parent.WIDTH/2.0, parent.HEIGHT/2.0-W
         else:
-            X,Y = -parent.VIEWW/2.0, -parent.VIEWH/2.0
+            X,Y = -parent.WIDTH/2.0, -parent.HEIGHT/2.0
 
         super().__init__(X, Y, W, W, parent)
 
@@ -3871,13 +3877,22 @@ class ViewsWidget(QtWidgets.QWidget):
     def addView(self, node):
 
         #
-        # Add a rectagle to scene to shoe view extent
+        # Add a rectagle to scene to show view extent
         #
         rectitem = ViewRectangle(self.scene)
         self.scene.addItem(rectitem)
         node['_rect'] = rectitem
         #self.viewRectItem = rectitem
 
+        L = node['left']
+        R = node['right']
+        cx = (L[0]+R[0])/2
+        cy = (L[1]+R[1])/2
+        s = rectitem.WIDTH/sqrt((R[0]-L[0])**2+(R[1]-L[1])**2)
+        r = atan2(-(R[1]-L[1]), R[0]-L[0])
+
+        matrix = graphics.Transform().setTRS(cx,cy,r,1/s)
+        rectitem.setTransform(matrix)
         # TODO fix view rect
         # set the transformation on the viewRectItem
         #T = graphics.Transform(*self.node['transform'])
