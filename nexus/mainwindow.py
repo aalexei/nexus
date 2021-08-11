@@ -3849,7 +3849,7 @@ class ViewsWidget(QtWidgets.QWidget):
         for viewnode in allviewnodes:
             if viewnode not in viewnodes:
                 logging.warn("Found view not in chain, deleting.")
-                #YYY viewnode.delete(setchange=False)
+                viewnode.delete(setchange=False)
 
 
         # DEPRECATED[v0.86]
@@ -3867,7 +3867,7 @@ class ViewsWidget(QtWidgets.QWidget):
                 viewnode['left'] = (left.x(),left.y())
                 viewnode['right'] = (right.x(),right.y())
                 del viewnode['transform']
-                #YYY viewnode.save()
+                viewnode.save(setchange=False)
 
         # Now add the viewnodes we found to the widget
         for viewnode in viewnodes:
@@ -3906,7 +3906,7 @@ class ViewsWidget(QtWidgets.QWidget):
         node = self.scene.graph.Node('View')
         node['left'] = sides['left']
         node['right'] = sides['right']
-        #YYY node.save(setchange=False)
+        node.save(setchange=False)
 
         self.addView(node)
         self.relinkViews()
@@ -3920,7 +3920,7 @@ class ViewsWidget(QtWidgets.QWidget):
             if node['uid'] == d['uid']:
                 node['left'] = d['left']
                 node['right'] = d['right']
-                #YYY node.save()
+                node.save(setchange=False)
 
                 icon = self.createPreview(d)
                 node['_icon'] = icon
@@ -4027,9 +4027,6 @@ class ViewsWidget(QtWidgets.QWidget):
         Ensure all the view nodes are daisy chained correctly
         '''
 
-        # set overall changeset
-        batch = graphydb.generateUUID()
-
         rows = self.viewsModel.rowCount(0)
 
         # Check first view node is sensible
@@ -4039,8 +4036,7 @@ class ViewsWidget(QtWidgets.QWidget):
         if len(in_edges)>0:
             print(in_edges)
             logging.error('First view has incomming edge, reloading all views from graph.')
-            #YYY self.resetViewsFromGraph()
-            raise Exception("First view has incomming edge")
+            self.resetViewsFromGraph()
 
         # Check last view node is sensible
         # There should be no outgoing edges
@@ -4049,8 +4045,7 @@ class ViewsWidget(QtWidgets.QWidget):
         if len(out_edges)>0:
             print(out_edges)
             logging.error('Last view has outgoing edge, reloading all views from graph.')
-            #YYY self.resetViewsFromGraph()
-            raise Exception("Last view has outgoing edge")
+            self.resetViewsFromGraph()
 
         # Check for row in 0..rows-2
         # Should link to next view only
@@ -4059,8 +4054,8 @@ class ViewsWidget(QtWidgets.QWidget):
             nextnode = self.viewsModel.item(row+1)
             es = node.outE('e.kind="Transition"')
             if len(es)!=1 or es[0]!=nextnode:
-                self.scene.graph.Edge(node, "Transition", nextnode)#.save(setchange=True, batch=batch)
-                #YYY es.delete(setchange=True, batch=batch)
+                self.scene.graph.Edge(node, "Transition", nextnode).save(setchange=False)
+                es.delete(setchange=False)
 
 
         # TODO update only changed views?
@@ -4093,7 +4088,7 @@ class ViewsWidget(QtWidgets.QWidget):
         node['right'] = sides['right']
         icon = self.createPreview({k: sides[k] for k in ('left','right')})
         node['_icon'] = icon
-        #YYY node.save()
+        node.save(setchange=True)
         self.viewsModel.dataChanged.emit(itemindex, itemindex)
 
     def deleteView(self):
@@ -4108,7 +4103,7 @@ class ViewsWidget(QtWidgets.QWidget):
             minindex = max
 
         for item in itemstodelete:
-            #YYY item.node.delete(disconnect=True, setchange=False)
+            item.node.delete(disconnect=True, setchange=False)
             self.scene.removeItem(item['_rect'])
             self.viewsModel.removeItem(item)
 
@@ -4121,9 +4116,6 @@ class ViewsWidget(QtWidgets.QWidget):
                 index = self.viewsModel.createIndex(row,0)
                 self.viewsListView.scrollTo(index)
                 self.viewsListView.setCurrentIndex(index)
-
-
-
 
 
 #----------------------------------------------------------------------
