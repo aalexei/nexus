@@ -2897,6 +2897,44 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.view.setViewSides({'left':left, 'right':right})
 
+        s = self.view.transform().m11()
+
+
+        self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
+        #self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+        pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
+        pen.setWidthF(CONFIG['trail_outer_width']/s)
+        pen.setCapStyle(QtCore.Qt.RoundCap)
+        self.pointertrailitem.setPen(pen)
+        TrailBlur = QtWidgets.QGraphicsBlurEffect()
+        TrailBlur.setBlurRadius(5.0/s)
+        self.pointertrailitem.setGraphicsEffect(TrailBlur)
+        self.scene.addItem(self.pointertrailitem)
+
+        # inner collor
+        self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
+        #self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+        pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
+        pen.setWidthF(CONFIG['trail_inner_width']/s)
+        pen.setCapStyle(QtCore.Qt.RoundCap)
+        self.pointertrailitem2.setPen(pen)
+        TrailBlur = QtWidgets.QGraphicsBlurEffect()
+        TrailBlur.setBlurRadius(4.0/s)
+        self.pointertrailitem2.setGraphicsEffect(TrailBlur)
+        self.scene.addItem(self.pointertrailitem2)
+
+        path = QtGui.QPainterPath()
+        path2 = QtGui.QPainterPath()
+        for stroke in reversed(penpoints):
+            if len(stroke)==0:
+                continue
+            path.moveTo(stroke[-1])
+            path2.moveTo(stroke[-1])
+            for p in reversed(stroke[:-1]):
+                path.lineTo(p)
+                path2.lineTo(p)
+        self.pointertrailitem.setPath(path)
+        self.pointertrailitem2.setPath(path)
         # path = QtGui.QPainterPath()
         # for stroke in penpoints:
         #     if len(stroke)==0:
@@ -2925,9 +2963,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         image = createViewImage(self.view, W, H)
 
-        viewrect = self.view.viewport().rect()
-        dx = (viewrect.width()-W)/2
-        dy = (viewrect.height()-H)/2
+        self.scene.removeItem(self.pointertrailitem )
+        self.pointertrailitem = None
+        self.scene.removeItem(self.pointertrailitem2 )
+        self.pointertrailitem2 = None
+        # viewrect = self.view.viewport().rect()
+        # dx = (viewrect.width()-W)/2
+        # dy = (viewrect.height()-H)/2
 
         # XXX need to add the pen strokes
         # image = QtGui.QImage(W,H, QtGui.QImage.Format_ARGB32)
