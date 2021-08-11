@@ -896,6 +896,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.viewsModel = ViewsModel(0,1)
         viewstoolbar = QtWidgets.QToolBar()
         self.views = ViewsWidget(self, viewstoolbar)
+        self.views.viewsListView.selectionChange.connect(self.viewsFrames)
 
         dock = QtWidgets.QDockWidget(self.tr("Views"), self)
         self.viewsAct = dock.toggleViewAction()
@@ -3036,7 +3037,6 @@ class MainWindow(QtWidgets.QMainWindow):
         selected = self.views.viewsListView.selectedIndexes()
         for s in selected:
             selecteditems.append(self.views.viewsModel.itemFromIndex(s))
-        print(selecteditems)
 
         for item in self.views.viewsModel.views:
             if vis and item in selecteditems:
@@ -3493,32 +3493,66 @@ class ViewsModel(QtCore.QAbstractListModel):
 #         return self.viewRectItem.scenePos()
 
 
+
+class RectangleChanged(QtCore.QObject):
+
+    # QGraphics items can;t signal as they don't inherit from QObject
+    # Create a signal class that can
+    signal = QtCore.pyqtSignal(dict)
+
+    def emit(self, d):
+        self.signal.emit(d)
+
+
 #----------------------------------------------------------------------
-class ViewRectangle(QtWidgets.QGraphicsPathItem):
+class ViewRectangle(QtWidgets.QGraphicsPathItem ):
     '''
     Scene widget to indicate a View
     '''
 
-    # viewChanged = QtCore.pyqtSignal()
-    # Nominal Full HD size
+    # fired off when view rect is changed
+    viewRectangleChanged = QtCore.pyqtSignal(str,int,int,int,int)
+
+    # Nominal Full HD width
     WIDTH = 1920
-    HEIGHT = 1080
+    HEIGHT = 1440  # 4:3
+    HEIGHT2 = 1080  # 16:9 (1080p)
 
-    def __init__(self, viewItem):
+    def __init__(self, nodeuid):
 
-        self.viewitem = viewItem
+        self.nodeuid = nodeuid
+        self.rectangleChanged = RectangleChanged()
 
         # self.VIEWW, self.VIEWH = CONFIG['view_rect_size']
 
         path = QtGui.QPainterPath()
+        path.setFillRule(QtCore.Qt.WindingFill)
         #rect = QtCore.QRectF(-self.VIEWW/2.0,-self.VIEWH/2.0,self.VIEWW,self.VIEWH)
+        #rect = QtCore.QRectF(-self.WIDTH/2.0,-self.HEIGHT/2.0,self.WIDTH,self.HEIGHT)
         rect = QtCore.QRectF(-self.WIDTH/2.0,-self.HEIGHT/2.0,self.WIDTH,self.HEIGHT)
-        rect2 = QtCore.QRectF(-self.WIDTH/2.0,-self.WIDTH*3/4/2.0,self.WIDTH,self.WIDTH*3/4)
-        path.addRect(rect2)
+
+        #path.addRect(rect2)
         path.addRect(rect)
+        path.moveTo(-self.WIDTH/2.0,-self.HEIGHT2/2.0)
+        path.lineTo(self.WIDTH/2.0,-self.HEIGHT2/2.0)
+        path.moveTo(-self.WIDTH/2.0,self.HEIGHT2/2.0)
+        path.lineTo(self.WIDTH/2.0,self.HEIGHT2/2.0)
+
+        s = 5
+        path.moveTo(0, -40*s)
+        path.lineTo(40*s, 0)
+        path.lineTo(20*s, 0)
+        path.lineTo(20*s, 40*s)
+        path.lineTo(-20*s, 40*s)
+        path.lineTo(-20*s, 0)
+        path.lineTo(-40*s, 0)
+        path.lineTo(0, -40*s)
+
+
         super().__init__(path)
 
-        self.setPen(QtGui.QPen(QtCore.Qt.darkRed, 5))
+        #self.setPen(QtGui.QPen(QtCore.Qt.darkRed, 5))
+        #self.setPen(QtGui.QPen(QtCore.Qt.darkRed, 5))
         self.setBrush(QtGui.QBrush(QtGui.QColor(100,100,100,60)))
         self.setFlag(self.ItemIsMovable, True)
         self.setCursor(QtCore.Qt.SizeAllCursor)
@@ -3529,7 +3563,7 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem):
         ViewRectangleHandle("tSW", self)
         ViewRectangleHandle("tNW", self)
 
-        ViewRectangleDirection(self)
+        # ViewRectangleDirection(self)
         
     def mousePressEvent(self, event):
 
@@ -3601,9 +3635,11 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem):
     def mouseReleaseEvent(self, event):
 
         QtWidgets.QGraphicsItem.mouseReleaseEvent(self, event)
+        left = self.mapToScene(QtCore.QPointF(-self.WIDTH/2,0))
+        right = self.mapToScene(QtCore.QPointF(self.WIDTH/2,0))
 
-        self.viewitem.saveView()
-        self.viewitem.createPreview()
+        d = {'uid':self.nodeuid, 'left':(left.x(),left.y()), 'right':(right.x(),right.y())}
+        self.rectangleChanged.emit(d)
 
 
 #----------------------------------------------------------------------
@@ -3617,7 +3653,7 @@ class ViewRectangleHandle(QtWidgets.QGraphicsRectItem):
     def __init__(self, id, parent):
 
         self.id = id
-        W = 200
+        W = (parent.HEIGHT-parent.HEIGHT2)/2
 
         if id=='tNE':
             X,Y = parent.WIDTH/2.0-W, -parent.HEIGHT/2.0
@@ -3646,26 +3682,26 @@ class ViewRectangleHandle(QtWidgets.QGraphicsRectItem):
         self.parentItem().mouseReleaseEvent(event)
 
 
-class ViewRectangleDirection(QtWidgets.QGraphicsPathItem):
-    """
-    Graphic to indicate up direction on a view frame
-    """
-    def __init__(self, parent):
-        apath=QtGui.QPainterPath()
-        apath.moveTo(0, -40)
-        apath.lineTo(40, 0)
-        apath.lineTo(20, 0)
-        apath.lineTo(20, 40)
-        apath.lineTo(-20, 40)
-        apath.lineTo(-20, 0)
-        apath.lineTo(-40, 0)
-        apath.lineTo(0, -40)
+# class ViewRectangleDirection(QtWidgets.QGraphicsPathItem):
+#     """
+#     Graphic to indicate up direction on a view frame
+#     """
+#     def __init__(self, parent):
+#         apath=QtGui.QPainterPath()
+#         apath.moveTo(0, -40)
+#         apath.lineTo(40, 0)
+#         apath.lineTo(20, 0)
+#         apath.lineTo(20, 40)
+#         apath.lineTo(-20, 40)
+#         apath.lineTo(-20, 0)
+#         apath.lineTo(-40, 0)
+#         apath.lineTo(0, -40)
 
-        super().__init__(apath, parent)
-        self.setPen(QtGui.QPen(QtCore.Qt.black, 0))
-        self.setBrush(QtGui.QBrush(QtGui.QColor(100,100,100,50)))
+#         super().__init__(apath, parent)
+#         self.setPen(QtGui.QPen(QtCore.Qt.black, 0))
+#         self.setBrush(QtGui.QBrush(QtGui.QColor(100,100,100,50)))
 
-        self.setScale(5)
+#         self.setScale(5)
 
 
 class ViewsListView(QtWidgets.QListView):
@@ -3757,6 +3793,7 @@ class ViewsWidget(QtWidgets.QWidget):
         self.viewsListView.doubleClicked.connect(self.doubleClicked)
         #self.viewsModel.reordered.connect(self.relinkViews)
         #self.views.viewsListView.selectionChange.connect(self.viewsFrames)
+        # self.viewsListView.selectionChange.connect(self.selectionChanged)
         layout.addWidget(self.viewsListView)
 
         ## create actions
@@ -3874,14 +3911,32 @@ class ViewsWidget(QtWidgets.QWidget):
         self.addView(node)
         self.relinkViews()
 
+    def updateFromRectangle(self, d):
+        # find corresponding view
+
+        rows = self.viewsModel.rowCount(0)
+        for row in range(rows):
+            node = self.viewsModel.item(row)
+            if node['uid'] == d['uid']:
+                node['left'] = d['left']
+                node['right'] = d['right']
+                #YYY node.save()
+
+                icon = self.createPreview(d)
+                node['_icon'] = icon
+                index = self.viewsModel.createIndex(0,0)
+                self.viewsModel.dataChanged.emit(index, index)
+
     def addView(self, node):
 
         #
         # Add a rectagle to scene to show view extent
         #
-        rectitem = ViewRectangle(self.scene)
+        rectitem = ViewRectangle(node['uid'])
         self.scene.addItem(rectitem)
         node['_rect'] = rectitem
+        # connect proxy signalling object
+        rectitem.rectangleChanged.signal.connect(self.updateFromRectangle)
         #self.viewRectItem = rectitem
 
         L = node['left']
@@ -4066,6 +4121,9 @@ class ViewsWidget(QtWidgets.QWidget):
                 index = self.viewsModel.createIndex(row,0)
                 self.viewsListView.scrollTo(index)
                 self.viewsListView.setCurrentIndex(index)
+
+
+
 
 
 #----------------------------------------------------------------------
