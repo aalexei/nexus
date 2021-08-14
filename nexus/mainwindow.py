@@ -3908,7 +3908,7 @@ class ViewsWidget(QtWidgets.QWidget):
                 right = T.map(QtCore.QPointF(WIDTH/2,0))
                 viewnode['left'] = (left.x(),left.y())
                 viewnode['right'] = (right.x(),right.y())
-                del viewnode['transform']
+                # del viewnode['transform']
                 viewnode.save(setchange=False)
 
         # Now add the viewnodes we found to the widget
