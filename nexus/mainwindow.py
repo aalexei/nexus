@@ -951,6 +951,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         QtWidgets.QApplication.restoreOverrideCursor()
 
+
+        self.timerLabel = QtWidgets.QLabel(self)
+        self.timerLabel.move(200,200)
+        self.timerLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.timerLabel.setStyleSheet("color:rgba(155,0,0,100); font: 300pt")
+        self.timerLabel.hide()
+
         ## need to keep a reference or it will get garbage collected!
         app = QtWidgets.QApplication.instance()
         app.updateWindowMenu()
@@ -2709,13 +2716,41 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             print("Stopped")
 
+    def startRecordTimer(self):
+        self.time_left_int = 3
+        self.updateRecordTimerCount()
+        size = self.size()
+        self.timerLabel.move(size.width()/2, size.height()/2-self.timerLabel.size().height()/2)
+        self.timerLabel.show()
+
+        self.myTimer = QtCore.QTimer(self)
+        self.myTimer.timeout.connect(self.recordTimerTimeout)
+        self.myTimer.start(1000)
+
+    def recordTimerTimeout(self):
+        self.time_left_int -= 1
+
+        if self.time_left_int == 0:
+            self.myTimer.stop()
+            self.myTimer.deleteLater()
+            self.timerLabel.hide()
+            self.recordRealStart()
+
+        self.updateRecordTimerCount()
+
+    def updateRecordTimerCount(self):
+        self.timerLabel.setText(str(self.time_left_int))
+        self.timerLabel.adjustSize()
+
     def recordStart(self):
 
         if self.audiorecorder.state()==QAudioRecorder.StoppedState:
             # This is the initial state of the recorder
            
             # create a temporary directory to store files for movie
-            self.tmprecdir = Path(tempfile.mkdtemp(prefix="movie_components_", dir=Path.cwd()))
+            # XXX Having Path.cwd() leads to a segfault when app is constructed with pyinstaller
+            #self.tmprecdir = Path(tempfile.mkdtemp(prefix="movie_components_", dir=Path.cwd()))
+            self.tmprecdir = Path(tempfile.mkdtemp(prefix="movie_components_", dir=Path('/tmp/')))
 
             logging.info("Created temporary directory %s for movie", self.tmprecdir)
             url = QtCore.QUrl("{}/audio.wav".format(self.tmprecdir))
@@ -2724,6 +2759,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # initialise stream
             self.event_stream = []
+
+        # This needs to be in a separate thread, triggering the recording at the end
+        # label = QtWidgets.QLabel('', self)
+        # label.move(100,100)
+        # label.show()
+        # t=3
+        # while t >= 0:
+        #     label.setText(str(t))
+        #     time.sleep(1)
+        #     t -= 1
+        # label.hide()
+
+        self.startRecordTimer()
+        # self.recordRealStart()
+
+    def recordRealStart(self):
 
         # The following applies for initial start and resuming from pause
         self.view.recordStateEvent.connect(self.storeRecordingEvent)
@@ -2870,7 +2921,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Combine audio and video
         self.showMessage("Combining video and audio")
         subprocess.run(['ffmpeg', '-i', 'video.mp4',
-                        '-itsoffset', '0.5', # delay the audio slightly
+                        #'-itsoffset', '0.5', # delay the audio slightly
                         '-i', 'audio.wav',
                         '-c:v', 'copy',
                         '-c:a', 'aac',
@@ -2887,12 +2938,14 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         # TODO cleanup temporary directory unless user indicates not to
-        # TODO slight delay on audio recording starting
-        # TODO figure out where audio too soon is coming from (delay in starting to record?)
         # TODO needs better feedback
-        # TODO probably should be moved to separate thread
-        # TODO accomodate changing screens: store central point and width of HD view and addapt dynamically
-        
+        # TODO have a timer when about to start (separate thread, triggeing at end)
+        # TODO ability to cancel a recording
+        # TODO probably should be moved to separate thread (except need to generate views)
+        # TODO crashes on generating video if app made with pyinstaller (subprocess?)
+        # TODO audio delay when used as an app (pyinstaller) as oppesed to cli
+        # TODO also record manual changes to position and zoom
+
     def generateFrame(self, left, right, penpoints):
 
         self.view.setViewSides({'left':left, 'right':right})
@@ -3335,206 +3388,6 @@ class ViewsModel(QtCore.QAbstractListModel):
     def setHomeView(self,  viewnumber):
         self.home = self._cleanlimits(viewnumber)
 
-# class ViewsModelold(QtGui.QStandardItemModel):
-
-#     current = 0
-#     home = 0 # home is the first view by default
-#     athome = None  # the location of the previous view will be stored here on switch
-
-#     reordered = QtCore.pyqtSignal()
-
-#     def _cleanlimits(self,  viewnumber):
-#         '''
-#         clean up limits for requested view number
-#         '''
-#         # NB if no items maxview will be -1
-#         maxview = self.rowCount()-1
-#         return max(min(viewnumber, maxview), 0)
-
-#     def currentView(self):
-#         '''
-#         Return current view in presentation
-#         '''
-#         return self.item(self.current)
-
-#     def firstView(self):
-#         '''
-#         reset view to first one
-#         '''
-#         self.current = 0
-#         return self.currentView()
-
-#     def setCurrentView(self,  viewnumber):
-#         '''
-#         Set current view for presentations
-#         '''
-#         self.current = self._cleanlimits(viewnumber)
-
-#     def nextView(self):
-
-#         self.current = self._cleanlimits(self.current+1)
-#         return self.currentView()
-
-#     def previousView(self):
-
-#         self.current = self._cleanlimits(self.current-1)
-#         return self.currentView()
-
-#     def homeView(self):
-#         '''
-#         Return special "home" view slide
-#         '''
-#         return self.item(self.home)
-
-#     def setHomeView(self,  viewnumber):
-#         self.home = self._cleanlimits(viewnumber)
-
-#     def dropMimeData(self, data, action, targetrow, targetcolumn, parent ):
-
-#         if data.hasFormat('application/x-qabstractitemmodeldatalist'):
-#             bytearray = data.data('application/x-qabstractitemmodeldatalist')
-#             ds = QtCore.QDataStream(bytearray)
-
-#             ## parse the internal drag and drop format to find the source items
-#             ## we just need the rows
-#             rows = []
-#             while not ds.atEnd():
-#                 row = ds.readInt32()
-#                 rows.append(row)
-#                 column = ds.readInt32()
-#                 map_items = ds.readInt32()
-#                 for i in range(map_items):
-#                     key = ds.readInt32()
-#                     value = ds.readQVariant()
-
-#             ## rows will be in the order of the selection ... keep them in list order
-#             rows.sort()
-
-#             ## grab a row independent reference to each item
-#             sourceitems = []
-#             for row in rows:
-#                 sourceitems.append( self.item(row ) )
-
-#             ## insert marker so we keep track of where to add items
-#             if targetrow == -1:
-#                 targetrow = self.rowCount()
-#             #target = ViewsItem(scene=self.scene)
-#             target = QtGui.QStandardItem()
-#             self.insertRow(targetrow, target)
-
-#             ## move items to new home
-#             for item in sourceitems:
-#                 tmp = self.takeRow( item.row() )
-#                 self.insertRow(target.row(), tmp)
-
-#             ## remove marker
-#             self.takeRow( target.row() )
-#             self.reordered.emit()
-
-#             return True
-
-#         else:
-#             return False
-
-# class ViewsItem(QtGui.QStandardItem):
-
-#     ICONMAXSIZE = 300
-
-#     def __init__(self, node, scene=None):
-#         super().__init__()
-#         self.node = node
-
-#         self.setDropEnabled(False)
-#         # self.viewRectItem = None
-#         rectitem = ViewRectangle(self)
-#         scene.addItem(rectitem)
-#         self.viewRectItem = rectitem
-
-#         # set the transformation on the viewRectItem
-#         T = graphics.Transform(*self.node['transform'])
-#         self.viewRectItem.setTransform(T)
-#         self.viewRectItem.setVisible(False)
-
-#     def setView(self, view):
-
-#         invmatrix = view.transform()
-#         matrix = invmatrix.inverted()[0]
-#         centrePoint = view.mapToScene(view.viewport().rect().center())
-
-#         # XXX store centre, scale, and rotation
-#         dx,dy,r,s = graphics.Transform(matrix).getTRS()
-#         matrix = graphics.Transform().setTRS(centrePoint.x(),centrePoint.y(),r,s)
-#         self.viewRectItem.setTransform(matrix)
-
-#         self.saveView()
-#         self.createPreview(view)
-
-#     def saveView(self):
-#         self.node['transform'] = self.viewTransform().tolist()
-#         self.node.save(setchange=False)
-
-#     def createPreview(self, view=None, icon=None):
-
-#         if view is None:
-#             # try and get view from viewrectItem
-#             # XXX how to get right view?
-#             view = self.viewRectItem.scene().views()[0]
-
-
-#         if icon is None:
-#             # take a snapshot of the view
-
-#             # temporarily deselect selected items
-#             selected = self.viewRectItem.scene().selectedItems()
-#             for item in selected:
-#                 item.setSelected(False)
-
-#             # remember the visibility of viewrect and hide it
-#             # XXX need to hide them all
-#             vis = self.viewRectItem.isVisible()
-#             self.viewRectItem.hide()
-
-#             # remember current view
-#             matrix0 = view.transform()
-#             center0 = view.mapToScene(view.viewport().rect().center())
-
-#             # set view to viewRectItem's view
-#             matrix = self.viewInverseTransform()
-#             center = self.viewCentre()
-#             view.setTransform(matrix)
-#             view.centerOn(center)
-
-#             # generate pixmap
-#             pixmap = view.grab()
-#             pixmap = pixmap.scaled( self.ICONMAXSIZE, self.ICONMAXSIZE, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-
-#             # restore view
-#             view.setTransform(matrix0)
-#             view.centerOn(center0)
-
-#             icon = QtGui.QIcon(pixmap)
-
-#             # restore visibility
-#             self.viewRectItem.setVisible(vis)
-
-#             # restore selected state
-#             for item in selected:
-#                 item.setSelected(True)
-
-#         self.setIcon(icon)
-
-#     def viewTransform(self):
-#         return graphics.Transform(self.viewRectItem.sceneTransform())
-
-#     def viewInverseTransform(self):
-#         ## convenience function
-#         return graphics.Transform(self.viewRectItem.sceneTransform().inverted()[0])
-
-#     def viewCentre(self):
-#         ## convenience function (point contained in sceneTransform())
-#         return self.viewRectItem.scenePos()
-
-
 
 class RectangleChanged(QtCore.QObject):
 
@@ -3722,28 +3575,6 @@ class ViewRectangleHandle(QtWidgets.QGraphicsRectItem):
     def mouseReleaseEvent(self, event):
         event.sourceId = self.id
         self.parentItem().mouseReleaseEvent(event)
-
-
-# class ViewRectangleDirection(QtWidgets.QGraphicsPathItem):
-#     """
-#     Graphic to indicate up direction on a view frame
-#     """
-#     def __init__(self, parent):
-#         apath=QtGui.QPainterPath()
-#         apath.moveTo(0, -40)
-#         apath.lineTo(40, 0)
-#         apath.lineTo(20, 0)
-#         apath.lineTo(20, 40)
-#         apath.lineTo(-20, 40)
-#         apath.lineTo(-20, 0)
-#         apath.lineTo(-40, 0)
-#         apath.lineTo(0, -40)
-
-#         super().__init__(apath, parent)
-#         self.setPen(QtGui.QPen(QtCore.Qt.black, 0))
-#         self.setBrush(QtGui.QBrush(QtGui.QColor(100,100,100,50)))
-
-#         self.setScale(5)
 
 
 class ViewsListView(QtWidgets.QListView):
@@ -4096,26 +3927,15 @@ class ViewsWidget(QtWidgets.QWidget):
             nextnode = self.viewsModel.item(row+1)
             es = node.outE('e.kind="Transition"')
             if len(es)!=1 or es[0]!=nextnode:
+                # NB python will run 2nd clause only if fist is False
+                # could also be = not (len(es)==1 and es[0]==nextnode)
                 self.scene.graph.Edge(node, "Transition", nextnode).save(setchange=False)
+                # this will delete all edges in set es
                 es.delete(setchange=False)
 
 
-        # TODO update only changed views?
+        # TODO update only the actually changed views?
         self.viewsModel.dataChanged.emit(self.viewsModel.createIndex(0,0), self.viewsModel.createIndex(rows,0))
-
-        # rows = self.viewsModel.rowCount()
-        # if rows == 0:
-        #     # Nothing to do
-        #     return
-
-        # delete all Transition edges and relink
-        # for r in range(rows):
-        #     item = self.viewsModel.item(r)
-        #     item.node.bothE('e.kind="Transition"').delete(setchange=False)
-        # for r in range(1,rows):
-        #     item0 = self.viewsModel.item(r-1)
-        #     item1 = self.viewsModel.item(r)
-        #     self.scene.graph.Edge(item0.node, "Transition", item1.node).save(setchange=False)
 
     def resetView(self):
         '''

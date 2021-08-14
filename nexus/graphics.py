@@ -2744,6 +2744,10 @@ class NexusView(QtWidgets.QGraphicsView):
         # when recording, these events will be caught otherwise ignored
         self.recordStateEvent.emit({'t':time.time(),'cmd':'view', 'left':sides['left'], 'right':sides['right']})
 
+        # when streaming
+        self.viewChangeStream.emit(self)
+
+
     def wheelEvent(self, event):
 
         if (event.modifiers() & QtCore.Qt.ControlModifier) or (event.modifiers() & QtCore.Qt.AltModifier):
