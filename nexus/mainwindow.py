@@ -1690,6 +1690,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recPauseAct = QtWidgets.QAction(QtGui.QIcon(":/images/pause.svg"), self.tr("Pause Recording"), self)
         self.recPauseAct.setCheckable(True)
         self.recPauseAct.triggered.connect(self.recordPause)
+        self.recPauseAct.setShortcut("Esc")
 
         self.recEndAct = QtWidgets.QAction(QtGui.QIcon(":/images/stop.svg"), self.tr("End Recording"), self)
         self.recEndAct.setCheckable(True)
@@ -2663,7 +2664,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
         self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
 
-        self.editModeAct.setShortcut("Esc")
 
         #
         # Recording setup
@@ -2710,45 +2710,57 @@ class MainWindow(QtWidgets.QMainWindow):
     def audioRecorderStateChange(self):
 
         if self.audiorecorder.state()==QAudioRecorder.RecordingState:
-            print("Recording")
+            logging.debug("Recording")
         elif self.audiorecorder.state()==QAudioRecorder.PausedState:
-            print("Paused")
+            logging.debug("Paused")
         else:
-            print("Stopped")
+            logging.debug("Stopped")
 
     def startRecordTimer(self):
+        '''
+        Start a short countdown before actual recording
+        '''
         self.time_left_int = 3
         self.updateRecordTimerCount()
         size = self.size()
         self.timerLabel.move(size.width()/2, size.height()/2-self.timerLabel.size().height()/2)
         self.timerLabel.show()
 
-        self.myTimer = QtCore.QTimer(self)
-        self.myTimer.timeout.connect(self.recordTimerTimeout)
-        self.myTimer.start(1000)
+        self.preRecordTimer = QtCore.QTimer(self)
+        self.preRecordTimer.timeout.connect(self.recordTimerTimeout)
+        self.preRecordTimer.start(1000)
 
     def recordTimerTimeout(self):
+        '''
+        Update pre-record timer label or launch recording
+        '''
         self.time_left_int -= 1
 
         if self.time_left_int == 0:
-            self.myTimer.stop()
-            self.myTimer.deleteLater()
+            self.preRecordTimer.stop()
+            self.preRecordTimer.deleteLater()
             self.timerLabel.hide()
             self.recordRealStart()
 
         self.updateRecordTimerCount()
 
     def updateRecordTimerCount(self):
+        '''
+        Update label for pre-record timer
+        '''
         self.timerLabel.setText(str(self.time_left_int))
         self.timerLabel.adjustSize()
 
     def recordStart(self):
+        '''
+        Start recording has been triggered
+        '''
 
         if self.audiorecorder.state()==QAudioRecorder.StoppedState:
             # This is the initial state of the recorder
            
             # create a temporary directory to store files for movie
-            # XXX Having Path.cwd() leads to a segfault when app is constructed with pyinstaller
+            # TODO fix: having Path.cwd() leads to a segfault when app is constructed with pyinstaller
             #self.tmprecdir = Path(tempfile.mkdtemp(prefix="movie_components_", dir=Path.cwd()))
             self.tmprecdir = Path(tempfile.mkdtemp(prefix="movie_components_", dir=Path('/tmp/')))
 
@@ -2760,21 +2772,13 @@ class MainWindow(QtWidgets.QMainWindow):
             # initialise stream
             self.event_stream = []
 
-        # This needs to be in a separate thread, triggering the recording at the end
-        # label = QtWidgets.QLabel('', self)
-        # label.move(100,100)
-        # label.show()
-        # t=3
-        # while t >= 0:
-        #     label.setText(str(t))
-        #     time.sleep(1)
-        #     t -= 1
-        # label.hide()
 
         self.startRecordTimer()
-        # self.recordRealStart()
 
     def recordRealStart(self):
+        '''
+        Actually start recording (after pre-reording countdown)
+        '''
 
         # The following applies for initial start and resuming from pause
         self.view.recordStateEvent.connect(self.storeRecordingEvent)
@@ -2839,6 +2843,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # this is a mirror of code in graphics
         # I know, I know, don't duplicate, abstract
         # outer colour
+        # TODO update with new graphics code
+        # problem is the new code depends on the scale of the view so
+        # need to create the pointer item when the trail starts
         self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
         self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
         pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
@@ -2863,7 +2870,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for i in range(N):
             if i%1==0:
-                print('Writing frames: {:.0f}%'.format(i/N*100))
+                logging.debug('Writing frames: {:.0f}%'.format(i/N*100))
                 progress.setValue(i/N*100)
             e = self.event_stream[i]
             cmd = e['cmd']
@@ -2873,7 +2880,6 @@ class MainWindow(QtWidgets.QMainWindow):
             dt = self.event_stream[i+1]['t']-e['t']
 
             if cmd == 'view':
-                # XXX needs fix for left and right
                 currentview = {'left':e['left'], 'right':e['right']}
             elif cmd=='pen-clear':
                 currentpen = [[]]
@@ -2885,6 +2891,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     #frame faster than 1/60 fps so skip making this one
                     skipped+=dt
                     continue
+            elif cmd=='pause':
+                currentpen = [[]]
 
             # draw frame
             if cmd in ['view','pen-clear', 'pen-up', 'pen-point']:
@@ -2939,12 +2947,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # TODO cleanup temporary directory unless user indicates not to
         # TODO needs better feedback
-        # TODO have a timer when about to start (separate thread, triggeing at end)
         # TODO ability to cancel a recording
         # TODO probably should be moved to separate thread (except need to generate views)
         # TODO crashes on generating video if app made with pyinstaller (subprocess?)
         # TODO audio delay when used as an app (pyinstaller) as oppesed to cli
         # TODO also record manual changes to position and zoom
+        # TODO send pointer trail cleanup on pause recording
 
     def generateFrame(self, left, right, penpoints):
 
