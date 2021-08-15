@@ -2720,15 +2720,18 @@ class MainWindow(QtWidgets.QMainWindow):
         '''
         Start a short countdown before actual recording
         '''
-        self.time_left_int = 3
-        self.updateRecordTimerCount()
-        size = self.size()
-        self.timerLabel.move(size.width()/2, size.height()/2-self.timerLabel.size().height()/2)
-        self.timerLabel.show()
+        self.time_left_int = int(CONFIG['recording_countdown'])
+        if self.time_left_int == 0:
+            self.recordRealStart()
+        else:
+            self.updateRecordTimerCount()
+            size = self.size()
+            self.timerLabel.move(size.width()/2, size.height()/2-self.timerLabel.size().height()/2)
+            self.timerLabel.show()
 
-        self.preRecordTimer = QtCore.QTimer(self)
-        self.preRecordTimer.timeout.connect(self.recordTimerTimeout)
-        self.preRecordTimer.start(1000)
+            self.preRecordTimer = QtCore.QTimer(self)
+            self.preRecordTimer.timeout.connect(self.recordTimerTimeout)
+            self.preRecordTimer.start(1000)
 
     def recordTimerTimeout(self):
         '''

@@ -66,31 +66,27 @@ default_config = {
     #
     # laser trail
     # Colour format: #AARRGGBB
+    #
     "trail_outer_color": "#EE00E000",
     "trail_inner_color": "#BBFFFFFF",
     "trail_outer_width": 14,
     "trail_inner_width": 4,
     "trail_pointer_factor": 1.5, # factor to increase pointer size by
-
     "trail_hold_time": 1.0, # how long to keep the trail after pointer-up [in seconds]
 
     #
-    # Views
+    # Presentation Mode
     #
-
-    #"view_rect_size": (1024, 768), # match to your screen size. Only for reference.
-    #"view_rect_size": (2560/2, 1440/2), # match to your screen size. Only for reference.
-    # "view_rect_size": (2732/2, 2048/2), # iPad Pro 12.9" Only for reference.
-    #"view_rect_size": (2560, 1440), # match to your screen size. Only for reference.
-    "view_rect_size": (1920, 1080), # match to your screen size. Only for reference.
-
-    # while in presentation mode
     "view_next_keys": ["PgDown","Right", "Down", " "],
     "view_prev_keys": ["PgUp","Left", "Up"],
     "view_home_keys": [".", "H"],
     "view_first_keys": ["0", "S"],
     "view_pointer_keys": ["P"],
 
+    #
+    # Recording
+    #
+    "recording_countdown": 3,
 }
 
 
