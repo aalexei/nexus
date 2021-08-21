@@ -3365,7 +3365,10 @@ class ViewsModel(QtCore.QAbstractListModel):
         '''
         Return current view in presentation
         '''
-        return self.views[self.current]
+        try:
+            return self.views[self.current]
+        except IndexError:
+            return None
 
     def firstView(self):
         '''
@@ -3394,7 +3397,10 @@ class ViewsModel(QtCore.QAbstractListModel):
         '''
         Return special "home" view slide
         '''
-        return self.views[self.home]
+        try:
+            return self.views[self.home]
+        except IndexError:
+            return None
 
     def setHomeView(self,  viewnumber):
         self.home = self._cleanlimits(viewnumber)
