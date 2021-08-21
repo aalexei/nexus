@@ -44,7 +44,7 @@ EraserMode = 3
 # Mouse press states
 MPRESS, MMOVE, MLONG, MDOUBLE, MADD = 1,2,3,4,5
 
-VERSION=0.86
+VERSION=0.87
 
 ##----------------------------------------------------------------------
 class Transform(QtGui.QTransform):
