@@ -237,13 +237,16 @@ class NexusGraph(graphydb.Graph):
         sha1 = hashlib.sha1(dataenc.encode('utf-8')).hexdigest()
 
         ## limit images to this size or scale down
-        MAXSIZE = 250
+        MAXSIZE = 1000
 
+        scale = 1.0
         maxside = max( image.width(), image.height() )
         if maxside > MAXSIZE:
             scale = MAXSIZE/float(maxside)
-        else:
-            scale = 1.0
+
+        # heuristic, on retina screens need to scale down:
+        scale = scale/4.0
+
         T = [scale, 0.0, 0.0, 0.0, scale, 0.0, 0.0, 0.0, 1.0]
 
         imgnode = self.Node('Image')
@@ -259,7 +262,7 @@ class NexusGraph(graphydb.Graph):
 
         copynode = self.getCopyNode(clear=True)
         stem = self.Node('Stem', pos=[10,10], flip=1,
-                         scale=1.0).save(setchange=False)
+                         scale=0.6).save(setchange=False)
 
         self.Edge(copynode, 'Child', stem).save(setchange=False)
         self.Edge(stem, 'In', imgnode).save(setchange=False)
@@ -320,6 +323,7 @@ class NexusGraph(graphydb.Graph):
                         linkpath += "?" + query
                     text = '<a href="x-devonthink-item:%s">%s</a>'%(linkpath, info['name'])
 
+
                 elif str(url.scheme())=='bookends':
                     uuid = str(url.path())[1:]
                     data = devonthink.getBEinfo(uuid)
@@ -359,7 +363,7 @@ class NexusGraph(graphydb.Graph):
             item.save(setchange=False)
 
             stem = self.Node('Stem', pos=[10,10], flip=1,
-                            scale=1.0).save(setchange=False)
+                             scale=0.6).save(setchange=False)
 
             self.Edge(copynode, 'Child', stem).save(setchange=False)
             self.Edge(stem, 'In', item).save(setchange=False)
@@ -381,7 +385,7 @@ class NexusGraph(graphydb.Graph):
         item.save(setchange=False)
 
         copynode = self.getCopyNode(clear=True)
-        stem = self.Node('Stem', pos=[10,10], flip=1, z=0).save(setchange=False)
+        stem = self.Node('Stem', pos=[10,10], flip=1, z=0, scale=0.6).save(setchange=False)
 
         self.Edge(copynode, 'Child', stem).save(setchange=False)
         self.Edge(stem, 'In', item).save(setchange=False)
@@ -411,11 +415,14 @@ class NexusGraph(graphydb.Graph):
 
         # first linkify any perculiar protocols
         link_re = re.compile(
-            r"""({0})://[\w\-\/_]+""".format(
+            r"""({0}):[//]?[\w\-\/_]+""".format(
                 '|'.join(['papers3', 'omnifocus', 'zotero'])
             ), re.IGNORECASE | re.VERBOSE | re.UNICODE)
         linker = Linker(url_re = link_re)
         html = linker.linkify(text)
+
+        # handle ook links
+        html = re.sub(r'ook:(\w+)', r'<a href="ook:\1">\1</a>', html)
 
         # now linkify any other urls
         html = bleach.linkify(html)
@@ -428,7 +435,7 @@ class NexusGraph(graphydb.Graph):
         item.save(setchange=False)
 
         copynode = self.getCopyNode(clear=True)
-        stem = self.Node('Stem', pos=[10,10], flip=1, z=0).save(setchange=False)
+        stem = self.Node('Stem', pos=[10,10], flip=1, z=0, scale=0.6).save(setchange=False)
 
         self.Edge(copynode, 'Child', stem).save(setchange=False)
         self.Edge(stem, 'In', item).save(setchange=False)

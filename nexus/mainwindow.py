@@ -990,7 +990,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         setifunset(settings, "style/branchcolor", "#715D80")
         setifunset(settings, "style/branchthickness", 5)
-        setifunset(settings, "new/stemscale", 0.7)
+        #setifunset(settings, "new/stemscale", 0.6)
+        # force the scale
+        settings.setValue("new/stemscale", 0.6)
+
 
         setifunset(settings, "input/pen1/color", "#000080")
         setifunset(settings, "input/pen2/color", "#000000")

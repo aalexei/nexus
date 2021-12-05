@@ -35,7 +35,7 @@ default_config = {
     #
     "pinch_no_move_threshold": 0,  # view pixels
     "pinch_no_rotate_threshold": 20, # degrees
-    "pinch_no_scale_threshold": [0.9, 1.1], # scale factors
+    "pinch_no_scale_threshold": [0.92, 1.08], # scale factors
 
     #
     # input dialog
