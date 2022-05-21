@@ -3882,8 +3882,8 @@ class ViewsWidget(QtWidgets.QWidget):
         visiblerects = []
         rows = self.viewsModel.rowCount(0)
         for row in range(rows):
-            node = self.viewsModel.item(row)
-            rect = node['_rect']
+            tmpnode = self.viewsModel.item(row)
+            rect = tmpnode['_rect']
             if rect.isVisible():
                 visiblerects.append(rect)
                 rect.setVisible(False)
@@ -3971,8 +3971,8 @@ class ViewsWidget(QtWidgets.QWidget):
 
         # reset the rectangle
         rectitem = node['_rect']
-        #matrix = self._getRectTransform(node['left'],node['right'])
-        #rectitem.setTransform(matrix)
+        matrix = self._getRectTransform(node['left'],node['right'])
+        rectitem.setTransform(matrix)
 
         self.viewsModel.dataChanged.emit(itemindex, itemindex)
 
