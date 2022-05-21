@@ -2074,8 +2074,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def printViews(self, printer):
 
-        VIEWS = self.views.viewsModel.rowCount()
-
+        VIEWS = self.views.viewsModel.rowCount(0)
 
         painter = QtGui.QPainter(printer)
 
@@ -2187,7 +2186,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if views:
             ## Used for print preview:
-            dialog.paintRequested.connect(self.printViews)
+            #dialog.paintRequested.connect(self.printViews)
 
             if dialog.exec_():
                 self.printViews(self.printer)
@@ -3824,42 +3823,26 @@ class ViewsWidget(QtWidgets.QWidget):
     def addView(self, node):
 
         #
-        # Add a rectagle to scene to show view extent
+        # Add a rectangle to scene to show view extent
         #
         rectitem = ViewRectangle(node['uid'])
         self.scene.addItem(rectitem)
         node['_rect'] = rectitem
-        # connect proxy signalling object
-        rectitem.rectangleChanged.signal.connect(self.updateFromRectangle)
-        #self.viewRectItem = rectitem
 
         L = node['left']
         R = node['right']
-        # cx = (L[0]+R[0])/2
-        # cy = (L[1]+R[1])/2
-        # s = rectitem.WIDTH/sqrt((R[0]-L[0])**2+(R[1]-L[1])**2)
-        # r = atan2(-(R[1]-L[1]), R[0]-L[0])
-
-        # matrix = graphics.Transform().setTRS(cx,cy,r,1/s)
-
         matrix = self._getRectTransform(L,R)
         rectitem.setTransform(matrix)
-        # TODO fix view rect
-        # set the transformation on the viewRectItem
-        #T = graphics.Transform(*self.node['transform'])
-        # XXX T = graphics.Transform().setTRS(node['x'], node['y'], node['r'], node['s'])
-        # XXX rectitem.setTransform(T)
         rectitem.setVisible(False)
+
+        # connect proxy signalling object
+        rectitem.rectangleChanged.signal.connect(self.updateFromRectangle)
 
         #
         # Add an icon for the view
         #
         icon = self.createPreview({k: node[k] for k in ('left','right')})
         node['_icon'] = icon
-
-        # TODO save view to graph
-        # if not self.window().viewsFramesAct.isChecked():
-        #     item.viewRectItem.setVisible(False)
 
         #
         # Add this view after any selected views or append
@@ -3876,7 +3859,6 @@ class ViewsWidget(QtWidgets.QWidget):
 
         # TODO update selection in nicer way
         self.viewsListView.clearSelection()
-        # self.viewsListView.setCurrentIndex(0)
 
     def _getRectTransform(self,L,R):
 
@@ -3895,22 +3877,24 @@ class ViewsWidget(QtWidgets.QWidget):
         for item in selected:
             item.setSelected(False)
 
-        # remember the visibility of viewrect and hide it
-        # XXX need to hide them all
-        #vis = self.viewRectItem.isVisible()
-        #self.viewRectItem.hide()
+        # remember the visibility of viewrects and hide them
+        # so they don't appear in icon
+        visiblerects = []
+        rows = self.viewsModel.rowCount(0)
+        for row in range(rows):
+            node = self.viewsModel.item(row)
+            rect = node['_rect']
+            if rect.isVisible():
+                visiblerects.append(rect)
+                rect.setVisible(False)
 
         # remember current view
         sides = self.view.getViewSides()
 
-        # set view to viewRectItem's view
+        # set view to node's view
         self.view.setViewSides(node)
 
         image = createViewImage(self.view, self.ICONMAXWIDTH, self.ICONMAXHEIGHT)
-        # # generate pixmap
-        # # TODO fix the aspect ratio of pixmap to 1080p
-        # pixmap = self.view.grab()
-        # pixmap = pixmap.scaled( self.ICONMAXSIZE, self.ICONMAXSIZE, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
 
         # restore view
         self.view.setViewSides(sides)
@@ -3918,8 +3902,9 @@ class ViewsWidget(QtWidgets.QWidget):
         # icon = QtGui.QIcon(pixmap)
         icon = QtGui.QIcon(QtGui.QPixmap.fromImage(image))
 
-        # restore visibility
-        # self.viewRectItem.setVisible(vis)
+        # restore visible rects
+        for rect in visiblerects:
+            rect.setVisible(True)
 
         # restore selected state
         for item in selected:
@@ -3986,8 +3971,8 @@ class ViewsWidget(QtWidgets.QWidget):
 
         # reset the rectangle
         rectitem = node['_rect']
-        matrix = self._getRectTransform(node['left'],node['right'])
-        rectitem.setTransform(matrix)
+        #matrix = self._getRectTransform(node['left'],node['right'])
+        #rectitem.setTransform(matrix)
 
         self.viewsModel.dataChanged.emit(itemindex, itemindex)
 
@@ -4003,7 +3988,8 @@ class ViewsWidget(QtWidgets.QWidget):
             minindex = max
 
         for item in itemstodelete:
-            item.node.delete(disconnect=True, setchange=False)
+
+            item.delete(disconnect=True, setchange=False)
             self.scene.removeItem(item['_rect'])
             self.viewsModel.removeItem(item)
 
