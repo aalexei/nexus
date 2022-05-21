@@ -21,7 +21,7 @@ function svgcontrols(){
 
     var Smax = 100;
     var Smin = 0.5;
-    var zoomSensitivity = 0.02;
+    var zoomSensitivity = 0.008;
 
     var mode = '';
     var X0i, Y0i ,X1i ,Y1i ,X0f ,Y0f ,X1f ,Y1f ,Di ,Df ,cXi ,cYi ,cXf ,cYf;
