@@ -3747,6 +3747,7 @@ class ViewsWidget(QtWidgets.QWidget):
 
         # DEPRECATED[v0.86]
         for viewnode in viewnodes:
+            # no longer use transform but left and right points
             # transition from old-style viewnodes pre v0.86
             if 'transform' in viewnode:
                 T = graphics.Transform(*viewnode['transform'])
@@ -3805,8 +3806,8 @@ class ViewsWidget(QtWidgets.QWidget):
         self.relinkViews()
 
     def updateFromRectangle(self, d):
-        # find corresponding view
 
+        # find corresponding view
         rows = self.viewsModel.rowCount(0)
         for row in range(rows):
             node = self.viewsModel.item(row)
@@ -3834,12 +3835,14 @@ class ViewsWidget(QtWidgets.QWidget):
 
         L = node['left']
         R = node['right']
-        cx = (L[0]+R[0])/2
-        cy = (L[1]+R[1])/2
-        s = rectitem.WIDTH/sqrt((R[0]-L[0])**2+(R[1]-L[1])**2)
-        r = atan2(-(R[1]-L[1]), R[0]-L[0])
+        # cx = (L[0]+R[0])/2
+        # cy = (L[1]+R[1])/2
+        # s = rectitem.WIDTH/sqrt((R[0]-L[0])**2+(R[1]-L[1])**2)
+        # r = atan2(-(R[1]-L[1]), R[0]-L[0])
 
-        matrix = graphics.Transform().setTRS(cx,cy,r,1/s)
+        # matrix = graphics.Transform().setTRS(cx,cy,r,1/s)
+
+        matrix = self._getRectTransform(L,R)
         rectitem.setTransform(matrix)
         # TODO fix view rect
         # set the transformation on the viewRectItem
@@ -3875,6 +3878,15 @@ class ViewsWidget(QtWidgets.QWidget):
         self.viewsListView.clearSelection()
         # self.viewsListView.setCurrentIndex(0)
 
+    def _getRectTransform(self,L,R):
+
+        cx = (L[0]+R[0])/2
+        cy = (L[1]+R[1])/2
+        s = ViewRectangle.WIDTH/sqrt((R[0]-L[0])**2+(R[1]-L[1])**2)
+        r = atan2(-(R[1]-L[1]), R[0]-L[0])
+
+        matrix = graphics.Transform().setTRS(cx,cy,r,1/s)
+        return matrix
 
     def createPreview(self, node):
 
@@ -3971,6 +3983,12 @@ class ViewsWidget(QtWidgets.QWidget):
         icon = self.createPreview({k: sides[k] for k in ('left','right')})
         node['_icon'] = icon
         node.save(setchange=True)
+
+        # reset the rectangle
+        rectitem = node['_rect']
+        matrix = self._getRectTransform(node['left'],node['right'])
+        rectitem.setTransform(matrix)
+
         self.viewsModel.dataChanged.emit(itemindex, itemindex)
 
     def deleteView(self):
