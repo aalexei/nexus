@@ -3918,6 +3918,9 @@ class ViewsWidget(QtWidgets.QWidget):
         '''
 
         rows = self.viewsModel.rowCount(0)
+        if rows == 0:
+            # nothing to do
+            return
 
         # Check first view node is sensible
         # There should be no incomming edges
