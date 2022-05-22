@@ -18,10 +18,12 @@
 
 
 from . import graphydb, config, graphics, devonthink
-import logging, re, base64, hashlib, os
+import logging, re, base64, hashlib, os, json
 import bleach
 from bleach.linkifier import Linker
 import urllib.parse
+from urllib.request import urlopen
+
 
 from PyQt5 import QtCore, QtGui
 
@@ -207,10 +209,25 @@ class NexusGraph(graphydb.Graph):
         # print('urls:', mimedata.urls())
         # print(mimedata.html())
 
+        # What about multiple formats present?
+        logging.debug(f"mimedata available: {mimedata.formats()}")
+        if mimedata.hasUrls():
+            logging.debug(f"mimedata ulrs: {mimedata.urls()}")
+        if mimedata.hasHtml():
+            logging.debug(f"mimedata html: {mimedata.html()}")
+        if mimedata.hasText():
+            logging.debug(f"mimedata html: {mimedata.text()}")
+
+
         if mimedata.hasFormat('application/x-nexus'):
             data = mimedata.data('application/x-nexus')
             nexuslink = bytes(data).decode('utf-8')
             copynode, msg = self.getNodeFromLink(nexuslink)
+
+        if mimedata.hasFormat('application/json'):
+            rawdata = mimedata.data('application/json')
+            data = json.loads(bytes(rawdata))
+            copynode, msg = self.itemFromJSON(data)
 
         elif mimedata.hasImage():
             imagedata = mimedata.imageData()
@@ -229,6 +246,68 @@ class NexusGraph(graphydb.Graph):
             copynode, msg = self.itemFromText(text)
 
         return copynode, msg
+
+    def itemFromJSON(self, data):
+
+        dataenc = data['image']
+        image = DataToImage(dataenc)
+
+        # TODO combine with itemFromImage
+        sha1 = hashlib.sha1(dataenc.encode('utf-8')).hexdigest()
+
+        ## limit images to this size or scale down
+        MAXSIZE = 1000
+
+        scale = 1.0
+        maxside = max( image.width(), image.height() )
+        if maxside > MAXSIZE:
+            scale = MAXSIZE/float(maxside)
+
+        # heuristic, on retina screens need to scale down:
+        scale = scale/4.0
+
+        T = [scale, 0.0, 0.0, 0.0, scale, 0.0, 0.0, 0.0, 1.0]
+
+        imgnode = self.Node('Image')
+        imgnode['frame'] = T
+        imgnode['z'] = 0
+        imgnode['sha1'] = sha1
+        imgnode.save(setchange=False)
+
+        # TODO chack to see if data exists already
+        datanode = self.Node('ImageData')
+        datanode['data'] = dataenc
+        datanode['sha1'] = sha1
+        datanode.save(setchange=False)
+
+        copynode = self.getCopyNode(clear=True)
+        stem = self.Node('Stem', pos=[10,10], flip=1,
+                         scale=0.6).save(setchange=False)
+
+        self.Edge(copynode, 'Child', stem).save(setchange=False)
+        self.Edge(stem, 'In', imgnode).save(setchange=False)
+        self.Edge(imgnode, 'With', datanode).save(setchange=False)
+
+        if 'citekey' in data:
+            citekey=data['citekey']
+            url=f'ook:{citekey}'
+            if 'page' in data:
+                page = data['page']
+                url+=f'?page={page}'
+            item =  self.Node('Text')
+            item['maxwidth'] = CONFIG['text_item_width']
+            item['source'] = f'<a href="{url}">[{citekey}]</a>'
+            item['frame'] = graphics.Transform().tolist()
+            item['z'] = 0
+            item.save(setchange=False)
+
+            stem2 = self.Node('Stem', pos=[10, 15], flip=-1,
+                              scale=0.3).save(setchange=False)
+
+            self.Edge(stem, 'Child', stem2).save(setchange=False)
+            self.Edge(stem2, 'In', item).save(setchange=False)
+
+        return copynode, "OK"
 
     def itemFromImage(self, image):
         # XXX image: jpg/png distinctions?
@@ -255,6 +334,7 @@ class NexusGraph(graphydb.Graph):
         imgnode['sha1'] = sha1
         imgnode.save(setchange=False)
 
+        # TODO chack to see if data exists already
         datanode = self.Node('ImageData')
         datanode['data'] = dataenc
         datanode['sha1'] = sha1
@@ -422,7 +502,17 @@ class NexusGraph(graphydb.Graph):
         html = linker.linkify(text)
 
         # handle ook links
-        html = re.sub(r'ook:(\w+)', r'<a href="ook:\1">\1</a>', html)
+        def processook(match):
+            citekey = match.group(1)
+            with urlopen(f"http://localhost:9999/api?cmd=details&citekey={citekey}") as response:
+                raw = response.read()
+            data = json.loads(raw)
+            ref = f'<table bgcolor="#f0f0ff" cellpadding="5"><tr><td>' \
+                f'<a href="ook:{citekey}">{data["title"]}</a><hr/>' \
+                f'<p style="font-size:8pt;margin-top:0px;margin-bottom:0px;qq">{data["names"]} <i>{data["ref"]}</i></p>' \
+                f'</td></tr></table>'
+            return ref
+        html = re.sub(r'ook:(\w+)', processook, html, re.DOTALL)
 
         # now linkify any other urls
         html = bleach.linkify(html)
