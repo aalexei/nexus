@@ -2075,7 +2075,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def printViews(self, printer):
 
         VIEWS = self.views.viewsModel.rowCount(0)
-
+        VIEWSIDES = self.view.getViewSides()
         painter = QtGui.QPainter(printer)
 
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
@@ -2086,68 +2086,90 @@ class MainWindow(QtWidgets.QMainWindow):
         scenebrush = self.scene.backgroundBrush()
         self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
 
+        # targetRect = QtCore.QRectF(0, 0, painter.device().width(), painter.device().height())
         targetRect = QtCore.QRectF(0, 0, painter.device().width(), painter.device().height())
 
         ## keep a record of the visible stems, will hide stems not in view to save space.
-        visibleStems = []
-        for stem in self.scene.allChildStems():
-            if stem.isVisible():
-                visibleStems.append(stem)
+        # visibleStems = []
+        # for stem in self.scene.allChildStems():
+        #     if stem.isVisible():
+        #         visibleStems.append(stem)
 
+
+        # W = 1920
+        # H = 1080
+        W = painter.device().width()
+        H = painter.device().height()
 
         for ii in range(VIEWS):
             viewitem = self.views.viewsModel.item(ii)
 
-            # XXX clean up this code .. doesn't do rotations
-            matrix = viewitem.viewInverseTransform()
-            center = viewitem.viewCentre()
-            scale = sqrt(matrix.m11()**2+matrix.m21()**2)
-            rotation = atan2(matrix.m11(), matrix.m21()) # between -pi and pi
-            if rotation < 0:
-                ## make between 0 and 2pi
-                rotation = 2*pi+rotation
+            self.view.setViewSides(viewitem)
+            #image = createViewImage(self.view, W, H)
+            #painter.drawImage(0,0,image)
 
-            tmpmatrix = QtGui.QTransform()
-            tmpmatrix.rotateRadians(rotation-pi/2.0)
-            tmpmatrix.scale(scale, scale)
+            rect = self.view.viewport().rect()
 
-            matrixinv, dummy = tmpmatrix.inverted()
+            # adjust height so same proportions as target
+            dh = rect.height()-int(rect.width()*H/W)
+            rect.setTop(rect.top()+dh/2)
+            rect.setBottom(rect.bottom()-dh/2)
 
-            ## should max out the rect item in target rect?
-            sourceRect = QtCore.QRectF(0, 0, ViewRectangle.WIDTH, ViewRectangle.HEIGHT)
-            sourceRect.translate(-sourceRect.width()/2.0, -sourceRect.height()/2.0)
 
-            sourceRect = matrixinv.mapRect(sourceRect)
-            sourceRect.translate(center)
+            # image = QtGui.QImage(W, H, QtGui.QImage.Format_ARGB32_Premultiplied)
+            # image.fill(QtCore.Qt.transparent)
+            # painteri = QtGui.QPainter(image)
+            # self.view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+            # self.view.render(painteri, QtCore.QRectF(imagei.rect()), rect)
+            # painteri.end()
+
+
+
+
+
+
+            print(f'v:{rect} p:{targetRect}')
+            self.view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+            self.view.render(painter, targetRect, rect)
+
+
+
+            # ## should max out the rect item in target rect?
+            # sourceRect = QtCore.QRectF(0, 0, ViewRectangle.WIDTH, ViewRectangle.HEIGHT)
+            # sourceRect.translate(-sourceRect.width()/2.0, -sourceRect.height()/2.0)
+
+            # sourceRect = matrixinv.mapRect(sourceRect)
+            # sourceRect.translate(center)
 
             # XXX hide any view rects
 
             ## hide items not in view
-            inview = []
-            for item in viewitem.viewRectItem.collidingItems():
-                if isinstance(item, graphics.StemItem):
-                    inview.append(item)
-                    ## if parents hide so do the children
-                    inview.extend(item.allParentStems())
-                    ## add any children not explicitly hidden since at the very least the tails will be visible
-                    for child in item.childStems2:
-                        if child in visibleStems:
-                            inview.append(child)
+            # inview = []
+            # for item in viewitem.viewRectItem.collidingItems():
+            #     if isinstance(item, graphics.StemItem):
+            #         inview.append(item)
+            #         ## if parents hide so do the children
+            #         inview.extend(item.allParentStems())
+            #         ## add any children not explicitly hidden since at the very least the tails will be visible
+            #         for child in item.childStems2:
+            #             if child in visibleStems:
+            #                 inview.append(child)
 
-            for stem in visibleStems:
-                if stem not in inview:
-                    stem.hide()
+            # for stem in visibleStems:
+            #     if stem not in inview:
+            #         stem.hide()
 
-            self.scene.render(painter, targetRect, sourceRect)
+            #self.scene.render(painter, targetRect, sourceRect)
 
             ## show items previously visible (or collidingItems won't register them for next view)
-            for stem in visibleStems:
-                stem.show()
+            # for stem in visibleStems:
+            #     stem.show()
 
             if ii < VIEWS-1:
                 self.printer.newPage()
 
         painter.end()
+        self.view.setViewSides(VIEWSIDES)
         self.scene.setBackgroundBrush(scenebrush)
 
     def printIt(self, views=False):
@@ -2172,12 +2194,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
         dialog.setWindowTitle(self.tr("Print ")+filename)
 
-        ## hide frames
+        #
+        # hide frames
+        #
         frames = False
         if self.viewsFramesAct.isChecked():
             frames = True
             self.viewsFramesAct.trigger()
 
+        #
+        # hide stems tagged with 'hide'
+        #
         hiddenstems = []
         for child in self.scene.allChildStems(includeroot=False):
             if 'hide' in child.getTags() and child.isVisible():
