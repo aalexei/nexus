@@ -2103,10 +2103,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for ii in range(VIEWS):
             viewitem = self.views.viewsModel.item(ii)
-
             self.view.setViewSides(viewitem)
-            #image = createViewImage(self.view, W, H)
-            #painter.drawImage(0,0,image)
 
             rect = self.view.viewport().rect()
 
@@ -2115,31 +2112,27 @@ class MainWindow(QtWidgets.QMainWindow):
             rect.setTop(rect.top()+dh/2)
             rect.setBottom(rect.bottom()-dh/2)
 
-
-            # image = QtGui.QImage(W, H, QtGui.QImage.Format_ARGB32_Premultiplied)
-            # image.fill(QtCore.Qt.transparent)
-            # painteri = QtGui.QPainter(image)
-            # self.view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
-            # self.view.render(painteri, QtCore.QRectF(imagei.rect()), rect)
-            # painteri.end()
-
-
-
-
-
-
-            print(f'v:{rect} p:{targetRect}')
+            #
+            # Create a intermediate image to control the resolution
+            #
+            factor = 4
+            image = QtGui.QImage(W*factor, H*factor, QtGui.QImage.Format_ARGB32_Premultiplied)
+            image.fill(QtCore.Qt.transparent)
+            painteri = QtGui.QPainter(image)
             self.view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
-            self.view.render(painter, targetRect, rect)
+            self.view.render(painteri, QtCore.QRectF(image.rect()), rect)
+            painteri.end()
+
+            painter.drawImage(targetRect,image,QtCore.QRectF(0, 0, W*factor,H*factor))
 
 
+            #
+            # The following prints at full resolution (vector graphics?)
+            # Printout can get to ~100Mb though
+            #
+            # self.view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+            # self.view.render(painter, targetRect, rect)
 
-            # ## should max out the rect item in target rect?
-            # sourceRect = QtCore.QRectF(0, 0, ViewRectangle.WIDTH, ViewRectangle.HEIGHT)
-            # sourceRect.translate(-sourceRect.width()/2.0, -sourceRect.height()/2.0)
-
-            # sourceRect = matrixinv.mapRect(sourceRect)
-            # sourceRect.translate(center)
 
             # XXX hide any view rects
 
@@ -2159,7 +2152,6 @@ class MainWindow(QtWidgets.QMainWindow):
             #     if stem not in inview:
             #         stem.hide()
 
-            #self.scene.render(painter, targetRect, sourceRect)
 
             ## show items previously visible (or collidingItems won't register them for next view)
             # for stem in visibleStems:
