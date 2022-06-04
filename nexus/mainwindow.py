@@ -2089,15 +2089,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # targetRect = QtCore.QRectF(0, 0, painter.device().width(), painter.device().height())
         targetRect = QtCore.QRectF(0, 0, painter.device().width(), painter.device().height())
 
-        ## keep a record of the visible stems, will hide stems not in view to save space.
-        # visibleStems = []
-        # for stem in self.scene.allChildStems():
-        #     if stem.isVisible():
-        #         visibleStems.append(stem)
+        # keep a record of the visible stems, will hide stems not in view to save space.
+        visibleStems = []
+        for stem in self.scene.allChildStems():
+            if stem.isVisible():
+                visibleStems.append(stem)
 
 
-        # W = 1920
-        # H = 1080
         W = painter.device().width()
         H = painter.device().height()
 
@@ -2112,50 +2110,11 @@ class MainWindow(QtWidgets.QMainWindow):
             rect.setTop(rect.top()+dh/2)
             rect.setBottom(rect.bottom()-dh/2)
 
-            #
-            # Create a intermediate image to control the resolution
-            #
-            factor = 4
-            image = QtGui.QImage(W*factor, H*factor, QtGui.QImage.Format_ARGB32_Premultiplied)
-            image.fill(QtCore.Qt.transparent)
-            painteri = QtGui.QPainter(image)
-            self.view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
-            self.view.render(painteri, QtCore.QRectF(image.rect()), rect)
-            painteri.end()
-
-            painter.drawImage(targetRect,image,QtCore.QRectF(0, 0, W*factor,H*factor))
-
-
-            #
-            # The following prints at full resolution (vector graphics?)
-            # Printout can get to ~100Mb though
-            #
-            # self.view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
-            # self.view.render(painter, targetRect, rect)
+            self.highResRender(painter, viewitem, rect, targetRect, visibleStems)
+            #self.lowResRender(painter, rect, targetRect)
 
 
             # XXX hide any view rects
-
-            ## hide items not in view
-            # inview = []
-            # for item in viewitem.viewRectItem.collidingItems():
-            #     if isinstance(item, graphics.StemItem):
-            #         inview.append(item)
-            #         ## if parents hide so do the children
-            #         inview.extend(item.allParentStems())
-            #         ## add any children not explicitly hidden since at the very least the tails will be visible
-            #         for child in item.childStems2:
-            #             if child in visibleStems:
-            #                 inview.append(child)
-
-            # for stem in visibleStems:
-            #     if stem not in inview:
-            #         stem.hide()
-
-
-            ## show items previously visible (or collidingItems won't register them for next view)
-            # for stem in visibleStems:
-            #     stem.show()
 
             if ii < VIEWS-1:
                 self.printer.newPage()
@@ -2163,6 +2122,52 @@ class MainWindow(QtWidgets.QMainWindow):
         painter.end()
         self.view.setViewSides(VIEWSIDES)
         self.scene.setBackgroundBrush(scenebrush)
+
+    def highResRender(self, painter, viewitem, rect, targetRect, visibleStems):
+
+        ## hide items not in view
+        inview = []
+        for item in viewitem['_rect'].collidingItems():
+            if isinstance(item, graphics.StemItem):
+                inview.append(item)
+                ## if parents hide so do the children
+                inview.extend(item.allParentStems())
+                ## add any children not explicitly hidden since at the very least the tails will be visible
+                for child in item.childStems2:
+                    if child in visibleStems:
+                        inview.append(child)
+
+        for stem in visibleStems:
+            if stem not in inview:
+                stem.hide()
+
+        #
+        # The following prints at full resolution (vector graphics?)
+        # Printout can get to ~100Mb though
+        #
+        self.view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+        self.view.render(painter, targetRect, rect)
+
+        ## show items previously visible (or collidingItems won't register them for next view)
+        for stem in visibleStems:
+            stem.show()
+
+    def lowResRender(self, painter, rect, targetRect, factor=4):
+
+        W = targetRect.width()
+        H = targetRect.height()
+
+        #
+        # Create a intermediate image to control the resolution
+        #
+        image = QtGui.QImage(W*factor, H*factor, QtGui.QImage.Format_ARGB32_Premultiplied)
+        image.fill(QtCore.Qt.transparent)
+        painteri = QtGui.QPainter(image)
+        self.view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+        self.view.render(painteri, QtCore.QRectF(image.rect()), rect)
+        painteri.end()
+
+        painter.drawImage(targetRect,image,QtCore.QRectF(0, 0, W*factor,H*factor))
 
     def printIt(self, views=False):
 
@@ -2580,6 +2585,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menuBar().setVisible(True)
 
         self.recMenu.setEnabled(False)
+        self.recPauseAct.setEnabled(False)
         self.editToolBar.setVisible(True)
         self.fileToolBar.setVisible(True)
         self.filterToolBar.setVisible(True)
@@ -2616,6 +2622,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recToolBar.setVisible(False)
         self.modeToolBar.setVisible(False)
         self.scene.clearSelection()
+        self.recPauseAct.setEnabled(False)
 
         if self.viewsFramesAct.isChecked():
             self.viewsFramesAct.trigger()
@@ -2659,6 +2666,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.modeToolBar.setVisible(False)
 
         self.recMenu.setEnabled(True)
+        self.recPauseAct.setEnabled(True)
 
         self.scene.clearSelection()
 

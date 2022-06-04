@@ -4816,7 +4816,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
             indexBack = QtWidgets.QGraphicsPathItem(path, self)
             indexBack.setBrush(QtGui.QBrush(QtGui.QColor(self.style('branchcolor')).lighter()))
-            indexBack.setPen(QtGui.QPen(QtCore.Qt.gray, 0 , QtCore.Qt.SolidLine, QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
+            indexBack.setPen(QtGui.QPen(QtCore.Qt.gray, 0.1 , QtCore.Qt.SolidLine, QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
             indexBack.setZValue(11)
 
             self.indexText = QtWidgets.QGraphicsSimpleTextItem(str(self.index), indexBack)
@@ -5080,10 +5080,13 @@ class StemItem(QtWidgets.QGraphicsItem):
 
     def mouseMoveEvent(self, event):
 
-        # TODO should use screen pos as touch gesture shouldn't depend on zoom
         p1 = event.scenePos()
         p0 = self._m_press_pos
-        d = sqrt(abs((p1.x()-p0.x())**2+(p1.y()-p0.y())**2))
+
+        # Use item pos as touch gesture shouldn't depend on zoom
+        p0i = self.mapFromScene(p0)
+        p1i = self.mapFromScene(p1)
+        d = sqrt(abs((p1i.x()-p0i.x())**2+(p1i.y()-p0i.y())**2))
 
         # if self.scene().presentation:
         #     #self.presstime = 0
@@ -5125,7 +5128,11 @@ class StemItem(QtWidgets.QGraphicsItem):
         p1 = event.scenePos()
         p0 = self._m_press_pos
         self._pressTimer.stop()
-        d = sqrt(abs((p1.x()-p0.x())**2+(p1.y()-p0.y())**2))
+
+        # Use item pos as touch gesture shouldn't depend on zoom
+        p0i = self.mapFromScene(p0)
+        p1i = self.mapFromScene(p1)
+        d = sqrt(abs((p1i.x()-p0i.x())**2+(p1i.y()-p0i.y())**2))
 
         if self._m_state == MMOVE or \
             (self._m_state == MPRESS and d>self._move_threshold):
