@@ -1,5 +1,5 @@
 ##
-## Copyright 2010-2021 Alexei Gilchrist
+## Copyright 2010-2022 Alexei Gilchrist
 ##
 ## This file is part of Nexus.
 ##

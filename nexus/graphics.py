@@ -1,5 +1,5 @@
 ##
-## Copyright 2010-2021 Alexei Gilchrist
+## Copyright 2010-2022 Alexei Gilchrist
 ##
 ## This file is part of Nexus.
 ##
@@ -4888,7 +4888,7 @@ class StemItem(QtWidgets.QGraphicsItem):
                 T = T.translate(-w,(1+self.stemwidth)/0.4)
                 self.tagitems.setTransform(T)
         else:
-            # XXX position the tags on central node somewhere visible
+            # TODO position the tags on central node somewhere visible
             self.tagitems.hide()
 
     def positionLeaf(self):
