@@ -23,6 +23,7 @@ import bleach
 from bleach.linkifier import Linker
 import urllib.parse
 from urllib.request import urlopen
+import ssl
 
 
 from PyQt5 import QtCore, QtGui
@@ -504,13 +505,18 @@ class NexusGraph(graphydb.Graph):
         # handle ook links
         def processook(match):
             citekey = match.group(1)
-            with urlopen(f"http://localhost:9999/api?cmd=details&citekey={citekey}") as response:
-                raw = response.read()
-            data = json.loads(raw)
-            ref = f'<table bgcolor="#f0f0ff" cellpadding="5"><tr><td>' \
-                f'<a href="ook:{citekey}">{data["title"]}</a><hr/>' \
-                f'<p style="font-size:8pt;margin-top:0px;margin-bottom:0px;qq">{data["names"]} <i>{data["ref"]}</i></p>' \
-                f'</td></tr></table>'
+            url = f"https://localhost:8888/detail/{citekey}"
+            context = ssl._create_unverified_context()
+            try:
+                with urlopen(url, context=context) as response:
+                    raw = response.read()
+                data = json.loads(raw)
+                ref = f'<table bgcolor="#f0f0ff" cellpadding="5"><tr><td>' \
+                    f'<a href="ook:{citekey}">{data["title"]}</a><hr/>' \
+                    f'<p style="font-size:8pt;margin-top:0px;margin-bottom:0px;qq">{data["names"]} <i>{data["ref"]}</i></p>' \
+                    f'</td></tr></table>'
+            except urllib.error.HTTPError as x:
+                ref = f'<b>ERROR: {x}</b>'
             return ref
         html = re.sub(r'ook:(\w+)', processook, html, re.DOTALL)
 
