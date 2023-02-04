@@ -367,9 +367,9 @@ def createViewImage(view, width, height, removebackground=False):
     # Get the size of your graphicsview
     rect = view.viewport().rect()
     # adjust height so same proportions as target
-    dh = rect.height()-int(rect.width()*height/width)
-    rect.setTop(rect.top()+dh/2)
-    rect.setBottom(rect.bottom()-dh/2)
+    dh = rect.height()-rect.width()*height/width
+    rect.setTop(int(rect.top()+dh/2))
+    rect.setBottom(int(rect.bottom()-dh/2))
 
     image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32_Premultiplied)
     image.fill(QtCore.Qt.transparent)
@@ -2107,8 +2107,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # adjust height so same proportions as target
             dh = rect.height()-int(rect.width()*H/W)
-            rect.setTop(rect.top()+dh/2)
-            rect.setBottom(rect.bottom()-dh/2)
+            rect.setTop(int(rect.top()+dh/2))
+            rect.setBottom(int(rect.bottom()-dh/2))
 
             self.highResRender(painter, viewitem, rect, targetRect, visibleStems)
             #self.lowResRender(painter, rect, targetRect)
@@ -2755,7 +2755,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.updateRecordTimerCount()
             size = self.size()
-            self.timerLabel.move(size.width()/2, size.height()/2-self.timerLabel.size().height()/2)
+            self.timerLabel.move(int(size.width()/2), int(size.height()/2-self.timerLabel.size().height()/2))
             self.timerLabel.show()
 
             self.preRecordTimer = QtCore.QTimer(self)
@@ -2903,7 +2903,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(N):
             if i%1==0:
                 logging.debug('Writing frames: {:.0f}%'.format(i/N*100))
-                progress.setValue(i/N*100)
+                progress.setValue(int(i/N*100))
             e = self.event_stream[i]
             cmd = e['cmd']
             if cmd in ['start','end']:
@@ -3108,7 +3108,7 @@ class MainWindow(QtWidgets.QMainWindow):
             #self.view.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
         else:
             QtWidgets.QApplication.instance().restoreOverrideCursor() # restore first so default in in the stack
-            s=CONFIG['trail_outer_width']*CONFIG['trail_pointer_factor']
+            s=int(CONFIG['trail_outer_width']*CONFIG['trail_pointer_factor'])
             pix = QtGui.QPixmap(s, s)
             rg = QtGui.QRadialGradient(s/2,s/2,s/2, s/2, s/2, CONFIG['trail_inner_width']/2)
             rg.setColorAt(0, QtGui.QColor(CONFIG['trail_inner_color']))
@@ -3119,7 +3119,7 @@ class MainWindow(QtWidgets.QMainWindow):
             painter.setPen(QtCore.Qt.NoPen)
             painter.drawEllipse(0,0,s,s)
             painter.end()
-            QtWidgets.QApplication.instance().setOverrideCursor(QtGui.QCursor(pix, -s/2,-s/2))
+            QtWidgets.QApplication.instance().setOverrideCursor(QtGui.QCursor(pix, -int(s/2),-int(s/2)))
             #self.view.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
 
 
@@ -3663,11 +3663,11 @@ class ViewsListView(QtWidgets.QListView):
         if self.orientation == self.Vertical:
             # size = self.size().width()
             width = self.size().width()
-            height = width*270/380
+            height = int(width*270/380)
         else:
             # size = self.size().height()
             height = self.size().height()
-            width = height*380/270
+            width = int(height*380/270)
         #self.setIconSize(QtCore.QSize(size-12,size-12))
         self.setIconSize(QtCore.QSize(width-2,height-2))
 

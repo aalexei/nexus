@@ -2016,7 +2016,7 @@ class InkView(QtWidgets.QGraphicsView):
         '''
         # t = time.time()
         scene = self.scene()
-        itemunder = scene.itemAt(QtCore.QPoint(*event.scenePos), self.transform())
+        itemunder = scene.itemAt(QtCore.QPoint(*[int(x) for x in event.scenePos]), self.transform())
         if isinstance(itemunder, (OverRect,TransformationHandle, TextWidthWidget)):
             self._itemUnder = itemunder
             itemunder.pointerPressEvent(event)
@@ -2342,9 +2342,9 @@ class InkView(QtWidgets.QGraphicsView):
 
         else:
             degreesx = 2*8*event.angleDelta().x()
-            distancex = -degreesx/30.0
+            distancex = -int(degreesx/30.0)
             degreesy = 2*8*event.angleDelta().y()
-            distancey = -degreesy/30.0
+            distancey = -int(degreesy/30.0)
 
             sb=self.horizontalScrollBar()
             sb.setValue(sb.value()+distancex)
@@ -2653,7 +2653,7 @@ class NexusView(QtWidgets.QGraphicsView):
         self._trailTimer = QtCore.QTimer()
         self._trailTimer.setSingleShot(True)
         self._trailTimer.timeout.connect(self.trailTimerExpire)
-        self._trailTimer.setInterval(CONFIG['trail_hold_time']*1000)
+        self._trailTimer.setInterval(int(CONFIG['trail_hold_time'])*1000)
 
         # track when pinch events occur
         self.pinchtime = 0
@@ -2711,9 +2711,9 @@ class NexusView(QtWidgets.QGraphicsView):
         '''
         vrect = self.viewport().rect()
 
-        vleft = QtCore.QPoint(vrect.left(),vrect.top()+vrect.height()/2.0)
+        vleft = QtCore.QPoint(vrect.left(),int(vrect.top()+vrect.height()/2.0))
         # According to docs for historical reasons rect.right = rect.left+rect.width-1 so do it ourselves
-        vright = QtCore.QPoint(vrect.left()+vrect.width(), vrect.top()+vrect.height()/2.0)
+        vright = QtCore.QPoint(vrect.left()+vrect.width(), int(vrect.top()+vrect.height()/2.0))
 
         sleft = self.mapToScene(vleft)
         sright = self.mapToScene(vright)
@@ -2777,10 +2777,10 @@ class NexusView(QtWidgets.QGraphicsView):
             # logging.debug('wheelEvent')
 
             degreesy = 2*8*event.angleDelta().y() * self._scrollwheelfactor
-            distancey = -degreesy/30.0
+            distancey = -int(degreesy/30.0)
 
             degreesx = 2*8*event.angleDelta().x() * self._scrollwheelfactor
-            distancex = -degreesx/30.0
+            distancex = -int(degreesx/30.0)
 
             sb=self.horizontalScrollBar()
             sb.setValue(sb.value()+distancex)
