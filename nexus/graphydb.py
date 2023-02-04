@@ -116,7 +116,7 @@ Two additional tables `settings` and `cache` provide simple key-value stores wit
 '''
 
 import json, re, os, random, fnmatch, time, copy
-from collections import MutableMapping
+from collections.abc import MutableMapping
 import apsw
 import logging
 from datetime import datetime
