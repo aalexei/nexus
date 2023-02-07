@@ -369,6 +369,10 @@ class InputDialog(QtWidgets.QDialog):
         self.fullscreenwidget.setCheckState(False)
         dlayout.addRow("Maximize dialog", self.fullscreenwidget)
 
+        # Allow rotation of canvas
+        self.view.allowrotationwidget = QtWidgets.QCheckBox()
+        self.view.allowrotationwidget.setCheckState(False)
+        dlayout.addRow("Allow canvas rotation", self.view.allowrotationwidget)
 
 
     def setDialog(self, stem):
@@ -2275,7 +2279,10 @@ class InkView(QtWidgets.QGraphicsView):
             self._sticky = False
 
         if not self._sticky:
-            matrix3 = Transform().scale(Stot,Stot).rotate(Rtot)
+            if self.allowrotationwidget.isChecked():
+                matrix3 = Transform().scale(Stot,Stot).rotate(Rtot)
+            else:
+                matrix3 = Transform().scale(Stot,Stot)
             M = Transform(matrix3*self._g_transform)
             Minv, dummy = M.inverted()
 
