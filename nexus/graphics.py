@@ -172,7 +172,7 @@ class InputDialog(QtWidgets.QDialog):
     def __init__(self):
         super().__init__(None)
 
-        #self.setSizeGripEnabled(True)
+        self.setSizeGripEnabled(True)
         self.setWindowFlag(QtCore.Qt.Window, True)
 
         ## create main layout
