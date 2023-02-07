@@ -40,8 +40,10 @@ default_config = {
     #
     # input dialog
     #
-
+    # completely ignore mouse moves when using pen
     "input_ignore_mouse": False,
+    # mouse pans display when using pen
+    "input_mouse_moves": False,
 
     # quadratic Bezier (0,0)-(x1,y1)-(1,1) 
     "pressure_curve":{'x1':0.2, 'y1':0.8},

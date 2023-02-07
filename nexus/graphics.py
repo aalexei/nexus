@@ -1977,7 +1977,44 @@ class InkView(QtWidgets.QGraphicsView):
 
         if scene.mode == PenMode:
             if not CONFIG['input_ignore_mouse']:
-                self.penMoveEvent(scenePos)
+                if CONFIG['input_mouse_moves']:
+                    s0 = self.mapFromScene(self._event.firstScenePos[0],self._event.firstScenePos[1])
+                    s1 = self.mapFromScene(self._event.lastScenePos[0],self._event.lastScenePos[1])
+                    #s2 = self.mapFromScene(self._event.scenePos[0],self._event.scenePos[1])
+                    s2 = event.pos()
+                    matrix = self.transform()
+                    imatrix, dummy = matrix.inverted()
+
+                    # s2 = event.pos()
+                    ds = s2-s1
+                    #print(s0, matrix.map(event.pos()))
+
+                    VIEW_CENTER = self.viewport().rect().center()
+                    # VIEW_WIDTH = self.viewport().rect().width()
+                    # VIEW_HEIGHT = self.viewport().rect().height()
+                    # QPointF mouseDelta = mapToScene(event->pos()) - mapToScene(_lastMousePos);
+                    #self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+                    # center = QtCore.QPoint(int(VIEW_WIDTH / 2 - ds.x()),  int(VIEW_HEIGHT / 2 - ds.y()))
+                    self.centerOn(self.mapToScene(VIEW_CENTER-ds))
+
+                    # print(matrix.dx(),matrix.dy(),matrix.m11())
+                    # The following jitters a lot
+                    # matrix = self.transform()
+                    # print(matrix.dx(),matrix.dy(),matrix.m11())
+                    # matrix0 = QtGui.QTransform()
+                    # matrix0.translate(ds.x(), ds.y())
+                    # self.setTransform(matrix0, False)
+                    # self.setTransform(matrix, True)
+
+                    # hbar = self.horizontalScrollBar()
+                    # vbar = self.verticalScrollBar()
+                    # hbar.setValue(hbar.value()-ds.x())
+                    # vbar.setValue(vbar.value()-ds.y())
+
+
+                else:
+                    self.penMoveEvent(scenePos)
+
 
         elif scene.mode == EraserMode:
             self.eraserMoveEvent(scenePos, self.transform())
