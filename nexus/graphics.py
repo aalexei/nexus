@@ -186,7 +186,7 @@ class InputDialog(QtWidgets.QDialog):
 
         self.toolbar = QtWidgets.QToolBar()
         self.toolbar.setOrientation(QtCore.Qt.Horizontal)
-        self.toolbar.setIconSize(QtCore.QSize(32,32))
+        self.toolbar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
         #self.toolbar.setMovable(True)
         #self.toolbar.setFloatable(True)
         layout.addWidget(self.toolbar)

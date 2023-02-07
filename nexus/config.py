@@ -87,6 +87,11 @@ default_config = {
     # Recording
     #
     "recording_countdown": 3,
+
+    #
+    # Icon size
+    #
+    "icon_size": 26,
 }
 
 

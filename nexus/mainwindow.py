@@ -1877,12 +1877,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def createToolBars(self):
         self.fileToolBar = self.addToolBar(self.tr("File"))
-        self.fileToolBar.setIconSize(QtCore.QSize(24,24))
+        self.fileToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
         self.fileToolBar.addAction(self.newAct)
         self.fileToolBar.addAction(self.openAct)
 
         self.editToolBar = self.addToolBar(self.tr("Edit"))
-        self.editToolBar.setIconSize(QtCore.QSize(24,24))
+        self.editToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
         self.editToolBar.addAction(self.undoAct)
         self.editToolBar.addAction(self.cutAct)
         self.editToolBar.addAction(self.copyAct)
@@ -1890,7 +1890,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editToolBar.addAction(self.deleteAct)
 
         self.viewToolBar = self.addToolBar(self.tr("View"))
-        self.viewToolBar.setIconSize(QtCore.QSize(24,24))
+        self.viewToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
         self.viewToolBar.addAction(self.zoomInAct)
         self.viewToolBar.addAction(self.zoomOutAct)
         self.viewToolBar.addAction(self.zoomSelectionAct)
@@ -1906,7 +1906,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.modeToolBar.addAction(self.recordModeAct)
 
         self.recToolBar = self.addToolBar(self.tr("Record"))
-        self.recToolBar.setIconSize(QtCore.QSize(24,24))
+        self.recToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
         self.recToolBar.addAction(self.recStartAct)
         self.recToolBar.addAction(self.recPauseAct)
         self.recToolBar.addAction(self.recEndAct)
@@ -1919,7 +1919,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.filterToolBar.addWidget(self.filterEdit)
         self.filterToolBar.addAction(self.filterClearAct)
         self.filterToolBar.addAction(self.filterRunAct)
-        self.filterToolBar.setIconSize(QtCore.QSize(24,24))
+        self.filterToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
         self.filterEdit.runfilter.connect(self.sceneFilterStems)
         self.filterRunAct.triggered.connect(self.filterEdit.editingFinished2)
         self.filterClearAct.triggered.connect(self.filterEdit.clear)
@@ -3729,7 +3729,7 @@ class ViewsWidget(QtWidgets.QWidget):
         self.deleteViewAct.triggered.connect(self.deleteView)
 
         ## create toolbar
-        self.toolbar.setIconSize(QtCore.QSize(20,20))
+        self.toolbar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
         self.toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
 
         self.toolbar.addAction(self.addViewAct)
