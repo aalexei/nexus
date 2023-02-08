@@ -1858,13 +1858,13 @@ class InkView(QtWidgets.QGraphicsView):
                QtGui.QTabletEvent.TabletRelease:"TabletRelease"}
         etype = tev.get(eventtype,"OtherTabletEvent")
 
-        logging.debug("I {} pointer={} pressure={} tilt=({},{}) buttons={} device={} id={}".format(
-            etype, event.pointerType(), pressure,
-            event.xTilt(), event.yTilt(),
-            int(event.buttons()),
-            repr(event.device()),
-            repr(event.uniqueId())
-            ))
+        # logging.debug("I {} pointer={} pressure={} tilt=({},{}) buttons={} device={} id={}".format(
+        #     etype, event.pointerType(), pressure,
+        #     event.xTilt(), event.yTilt(),
+        #     int(event.buttons()),
+        #     repr(event.device()),
+        #     repr(event.uniqueId())
+        #     ))
 
         pressure = pressureCurve(pressure,**CONFIG['pressure_curve'])
 
@@ -1976,16 +1976,18 @@ class InkView(QtWidgets.QGraphicsView):
         scene = self.scene()
         scenePos = self.mapToScene(event.pos())
         scenePosF = scenePos.x(), scenePos.y()
-        print('prev', self._event)
         self._event.update("move", scenePosF)
 
         if scene.mode == PenMode:
             if not CONFIG['input_ignore_mouse']:
                 if CONFIG['input_mouse_moves']:
-                    print(self._event, event.type())
-                    s0 = self.mapFromScene(self._event.firstScenePos[0],self._event.firstScenePos[1])
-                    VIEW_CENTER = self.viewport().rect().center()
-                    self.centerOn(self.mapToScene(VIEW_CENTER-event.pos()+s0))
+                    if self._event.time-self._event.lastTime>0:
+                        print('dt', self._event.time-self._event.firstTime)
+                        s0 = self.mapFromScene(self._event.firstScenePos[0],self._event.firstScenePos[1])
+                        VIEW_CENTER = self.viewport().rect().center()
+                        self.centerOn(self.mapToScene(VIEW_CENTER-event.pos()+s0))
+                    else:
+                        logging.debug('Removing zero elapsed time move', self._event)
                 else:
                     self.penMoveEvent(scenePos)
 
