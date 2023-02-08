@@ -1789,6 +1789,8 @@ class PointerEvent():
         self.scenePos = scenePos
         self.type = etype
 
+    def __repr__(self):
+        return f"PointerEvent('{self.type}', t={self.time}, p={self.scenePos})"
 
 # XXX move modes into class
 Free, Mouse, Tablet, Gesture = 0,1,2,3
@@ -1855,13 +1857,13 @@ class InkView(QtWidgets.QGraphicsView):
                QtGui.QTabletEvent.TabletMove:"TabletMove",
                QtGui.QTabletEvent.TabletRelease:"TabletRelease"}
         etype = tev.get(eventtype,"OtherTabletEvent")
-        # logging.debug("I {} pointer={} pressure={} tilt=({},{}) buttons={} device={} id={}".format(
-        #     etype, event.pointerType(), pressure,
-        #     event.xTilt(), event.yTilt(),
-        #     int(event.buttons()),
-        #     repr(event.device()),
-        #     repr(event.uniqueId())
-        #     ))
+        logging.debug("I {} pointer={} pressure={} tilt=({},{}) buttons={} device={} id={}".format(
+            etype, event.pointerType(), pressure,
+            event.xTilt(), event.yTilt(),
+            int(event.buttons()),
+            repr(event.device()),
+            repr(event.uniqueId())
+            ))
 
         pressure = pressureCurve(pressure,**CONFIG['pressure_curve'])
 
@@ -1978,6 +1980,7 @@ class InkView(QtWidgets.QGraphicsView):
         if scene.mode == PenMode:
             if not CONFIG['input_ignore_mouse']:
                 if CONFIG['input_mouse_moves']:
+                    print(self._event)
                     s0 = self.mapFromScene(self._event.firstScenePos[0],self._event.firstScenePos[1])
                     VIEW_CENTER = self.viewport().rect().center()
                     self.centerOn(self.mapToScene(VIEW_CENTER-event.pos()+s0))
