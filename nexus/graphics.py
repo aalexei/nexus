@@ -1978,16 +1978,18 @@ class InkView(QtWidgets.QGraphicsView):
         scenePosF = scenePos.x(), scenePos.y()
         self._event.update("move", scenePosF)
 
+        if self._event.time-self._event.lastTime==0.0:
+            # Hack to fix Spurious mouse move events on Windows ViewSonic screen
+            # They seem to have 0 elapsed time
+            logging.debug(f'Removing zero elapsed time move: {self._event}')
+            return
+
         if scene.mode == PenMode:
             if not CONFIG['input_ignore_mouse']:
                 if CONFIG['input_mouse_moves']:
-                    if self._event.time-self._event.lastTime>0:
-                        print('dt', self._event.time-self._event.firstTime)
-                        s0 = self.mapFromScene(self._event.firstScenePos[0],self._event.firstScenePos[1])
-                        VIEW_CENTER = self.viewport().rect().center()
-                        self.centerOn(self.mapToScene(VIEW_CENTER-event.pos()+s0))
-                    else:
-                        logging.debug('Removing zero elapsed time move', self._event)
+                    s0 = self.mapFromScene(self._event.firstScenePos[0],self._event.firstScenePos[1])
+                    VIEW_CENTER = self.viewport().rect().center()
+                    self.centerOn(self.mapToScene(VIEW_CENTER-event.pos()+s0))
                 else:
                     self.penMoveEvent(scenePos)
 
