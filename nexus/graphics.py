@@ -1790,7 +1790,7 @@ class PointerEvent():
         self.type = etype
 
     def __repr__(self):
-        return f"PointerEvent('{self.type}', t={self.time}, p={self.scenePos})"
+        return f"PointerEvent('{self.type}', t={self.time}, dt={self.time-self.lastTime}, p={self.scenePos})"
 
 # XXX move modes into class
 Free, Mouse, Tablet, Gesture = 0,1,2,3
@@ -1857,6 +1857,7 @@ class InkView(QtWidgets.QGraphicsView):
                QtGui.QTabletEvent.TabletMove:"TabletMove",
                QtGui.QTabletEvent.TabletRelease:"TabletRelease"}
         etype = tev.get(eventtype,"OtherTabletEvent")
+
         logging.debug("I {} pointer={} pressure={} tilt=({},{}) buttons={} device={} id={}".format(
             etype, event.pointerType(), pressure,
             event.xTilt(), event.yTilt(),
@@ -1975,12 +1976,13 @@ class InkView(QtWidgets.QGraphicsView):
         scene = self.scene()
         scenePos = self.mapToScene(event.pos())
         scenePosF = scenePos.x(), scenePos.y()
+        print('prev', self._event)
         self._event.update("move", scenePosF)
 
         if scene.mode == PenMode:
             if not CONFIG['input_ignore_mouse']:
                 if CONFIG['input_mouse_moves']:
-                    print(self._event)
+                    print(self._event, event.type())
                     s0 = self.mapFromScene(self._event.firstScenePos[0],self._event.firstScenePos[1])
                     VIEW_CENTER = self.viewport().rect().center()
                     self.centerOn(self.mapToScene(VIEW_CENTER-event.pos()+s0))
