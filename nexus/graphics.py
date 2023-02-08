@@ -1836,6 +1836,9 @@ class InkView(QtWidgets.QGraphicsView):
         self._itemUnder = None
         self._event = None
 
+        # Extra potential filter to separate mouse and tablet
+        self.tablettime = 0
+
         self.setAttribute(QtCore.Qt.WA_AcceptTouchEvents, True)
 
     def tabletEvent(self, event):
@@ -1843,6 +1846,8 @@ class InkView(QtWidgets.QGraphicsView):
         tablet event dispatcher
         '''
 
+        # Record the tablet event time. Can be used to filter out
+        # errant mouse events that are sometimes generated
         self.tablettime = time.time()
 
         eventtype = event.type()
@@ -1933,7 +1938,6 @@ class InkView(QtWidgets.QGraphicsView):
 
 
     def mousePressEvent(self, event):
-        print("View press event")
 
         # TODO is this still used?
         if self._eventstate !=Free:
@@ -1981,10 +1985,10 @@ class InkView(QtWidgets.QGraphicsView):
         if scene.mode == PenMode:
             if not CONFIG['input_ignore_mouse']:
                 if CONFIG['input_mouse_moves']:
-                    if self._event.time-self._event.lastTime==0.0:
+                    if self._event.time-self.tablettime<0.5:
                         # Hack to fix Spurious mouse move events on Windows ViewSonic screen
-                        # They seem to have 0 elapsed time
-                        logging.debug(f'Removing zero elapsed time move: {self._event}')
+                        # They seem to have 0 elapsed time. Some still get through.
+                        logging.debug(f'Removing mouse move event too soon after tablet event: {self._event}')
                         return
                     s0 = self.mapFromScene(self._event.firstScenePos[0],self._event.firstScenePos[1])
                     VIEW_CENTER = self.viewport().rect().center()
@@ -4202,7 +4206,6 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         QtWidgets.QGraphicsTextItem.mouseReleaseEvent(self, event)
 
     def mousePressEvent(self, event):
-        print('TextItem press event')
         if self.url is not None:
             try:
                 ## remove any existing links so we don't end up emiting multiple signals
