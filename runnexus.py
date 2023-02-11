@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2010-2022 Alexei Gilchrist
+# Copyright 2010-2023 Alexei Gilchrist
 #
 # This file is part of Nexus.
 #
@@ -26,9 +26,21 @@ from nexus.graphics import VERSION
 import logging
 
 #import cProfile
+if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
+if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
 if __name__ == "__main__":
     app = NexusApplication()
+
+    # Custom fonts should be set after application instance so try here
+    QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-line-figures.ttf")
+    QtGui.QFontDatabase.addApplicationFont(":/images/et-book-bold-line-figures.ttf")
+    QtGui.QFontDatabase.addApplicationFont(":/images/et-book-display-italic-old-style-figures.ttf")
+    QtGui.QFontDatabase.addApplicationFont(":/images/et-book-semi-bold-old-style-figures.ttf")
+    QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-old-style-figures.ttf")
+
     app.processEvents()
 
     validfiles = []
