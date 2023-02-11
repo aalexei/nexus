@@ -484,11 +484,12 @@ class NexusApplication(QtWidgets.QApplication):
         act.setCheckable(True)
         self.actionFullScreen = act
 
-        QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-line-figures.ttf")
-        QtGui.QFontDatabase.addApplicationFont(":/images/et-book-bold-line-figures.ttf")
-        QtGui.QFontDatabase.addApplicationFont(":/images/et-book-display-italic-old-style-figures.ttf")
-        QtGui.QFontDatabase.addApplicationFont(":/images/et-book-semi-bold-old-style-figures.ttf")
-        QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-old-style-figures.ttf")
+        # Moved to runnexus
+        # QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-line-figures.ttf")
+        # QtGui.QFontDatabase.addApplicationFont(":/images/et-book-bold-line-figures.ttf")
+        # QtGui.QFontDatabase.addApplicationFont(":/images/et-book-display-italic-old-style-figures.ttf")
+        # QtGui.QFontDatabase.addApplicationFont(":/images/et-book-semi-bold-old-style-figures.ttf")
+        # QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-old-style-figures.ttf")
 
         self.windowMenu = menu
         #self.toggleStreaminServer(True)
@@ -883,7 +884,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.view = graphics.NexusView(self.scene)
         self.setCentralWidget(self.view)
-
 
         # dock = QtWidgets.QDockWidget(self.tr("Edit"), self)
         # self.editwidget = EditWidget(self)
