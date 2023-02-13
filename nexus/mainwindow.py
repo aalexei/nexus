@@ -484,12 +484,11 @@ class NexusApplication(QtWidgets.QApplication):
         act.setCheckable(True)
         self.actionFullScreen = act
 
-        # Moved to runnexus
-        # QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-line-figures.ttf")
-        # QtGui.QFontDatabase.addApplicationFont(":/images/et-book-bold-line-figures.ttf")
-        # QtGui.QFontDatabase.addApplicationFont(":/images/et-book-display-italic-old-style-figures.ttf")
-        # QtGui.QFontDatabase.addApplicationFont(":/images/et-book-semi-bold-old-style-figures.ttf")
-        # QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-old-style-figures.ttf")
+        QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-line-figures.ttf")
+        QtGui.QFontDatabase.addApplicationFont(":/images/et-book-bold-line-figures.ttf")
+        QtGui.QFontDatabase.addApplicationFont(":/images/et-book-display-italic-old-style-figures.ttf")
+        QtGui.QFontDatabase.addApplicationFont(":/images/et-book-semi-bold-old-style-figures.ttf")
+        QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-old-style-figures.ttf")
 
         self.windowMenu = menu
         #self.toggleStreaminServer(True)

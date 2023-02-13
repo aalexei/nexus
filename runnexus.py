@@ -34,13 +34,6 @@ if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
 if __name__ == "__main__":
     app = NexusApplication()
 
-    # Custom fonts should be set after application instance so try here
-    QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-line-figures.ttf")
-    QtGui.QFontDatabase.addApplicationFont(":/images/et-book-bold-line-figures.ttf")
-    QtGui.QFontDatabase.addApplicationFont(":/images/et-book-display-italic-old-style-figures.ttf")
-    QtGui.QFontDatabase.addApplicationFont(":/images/et-book-semi-bold-old-style-figures.ttf")
-    QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-old-style-figures.ttf")
-
     app.processEvents()
 
     validfiles = []
