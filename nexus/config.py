@@ -48,6 +48,16 @@ default_config = {
     # quadratic Bezier (0,0)-(x1,y1)-(1,1) 
     "pressure_curve":{'x1':0.2, 'y1':0.8},
 
+    # Pen Gaussian smoothing
+    # factor = strength, near = only apply if change less than this number
+    "pen_smoothing_factor": 1.0,
+    "pen_smoothing_near": 10,
+
+    # Pen simplification
+    # max cartesian distance error to tolerate
+    "pen_simplify_tolerance": 0.1,
+
+
     #
     # text item
     #

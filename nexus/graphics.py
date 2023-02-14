@@ -3414,12 +3414,8 @@ def gaussianSmoothing(P, factor=0.6, near=7):
     :return: smoothed points
     '''
 
-    factor = 0.6
-
     s0 = 1 - 2 * factor / 3.  # weighting of principal point
     s1 = factor / 3.  # weighting of side points
-
-    near = 7
 
     Ps = list(P)
     for ii in range(1, len(P) - 1):
@@ -3488,7 +3484,9 @@ def smoothInkPath(P):
     except ZeroDivisionError:
         rate = 0
 
-    Ps = gaussianSmoothing(P)
+    Ps = gaussianSmoothing(P,
+                           factor=CONFIG["pen_smoothing_factor"],
+                           near=CONFIG["pen_smoothing_near"])
 
     # now simplify the path removing unnecessary points
     raw = []
@@ -3499,7 +3497,8 @@ def smoothInkPath(P):
         pt.insert(0,pp)
         raw.append(pt)
 
-    simplified = simplifyLowes(raw, 0, len(raw)-1, set(), tol=.18)
+    simplified = simplifyLowes(raw, 0, len(raw)-1, set(),
+                               tol=CONFIG["pen_simplify_tolerance"])
 
     simplified = list(simplified)
     simplified.sort()
