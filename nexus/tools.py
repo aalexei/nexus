@@ -133,6 +133,7 @@ class SizeSwatch(QtWidgets.QLabel):
 
         painter = QtGui.QPainter()
         painter.begin(pix)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
 
         ## Draw black and white triangles to show off semi-opaque colors

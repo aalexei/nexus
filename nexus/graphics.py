@@ -758,6 +758,7 @@ class InputDialog(QtWidgets.QDialog):
         pix.fill(QtCore.Qt.transparent)
         painter = QtGui.QPainter()
         painter.begin(pix)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
         painter.drawPixmap(0,0, pixmask)
         painter.drawPixmap(0, 0, pixpen)
