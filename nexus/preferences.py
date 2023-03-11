@@ -223,20 +223,20 @@ class ConfigDialog(QtWidgets.QDialog):
         configButton = QtWidgets.QListWidgetItem(self.contentsWidget)
         configButton.setIcon(QtGui.QIcon(':/images/inputpane.png'))
         configButton.setText("Input dialog")
-        configButton.setTextAlignment(QtCore.Qt.AlignHCenter)
-        configButton.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        configButton.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
+        configButton.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled)
 
         updateButton = QtWidgets.QListWidgetItem(self.contentsWidget)
         updateButton.setIcon(QtGui.QIcon(':/images/inputpane.png'))
         updateButton.setText("New stems")
-        updateButton.setTextAlignment(QtCore.Qt.AlignHCenter)
-        updateButton.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        updateButton.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
+        updateButton.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled)
 
         queryButton = QtWidgets.QListWidgetItem(self.contentsWidget)
         queryButton.setIcon(QtGui.QIcon(':/images/inputpane.png'))
         queryButton.setText("Applications")
-        queryButton.setTextAlignment(QtCore.Qt.AlignHCenter)
-        queryButton.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        queryButton.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
+        queryButton.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled)
 
         self.contentsWidget.currentItemChanged.connect(self.changePage)
 

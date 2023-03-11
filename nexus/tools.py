@@ -60,15 +60,15 @@ class ColorSwatch(QtWidgets.QLabel):
 
         painter = QtGui.QPainter()
         painter.begin(pix)
-        painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
 
         ## Draw black and white triangles to show off semi-opaque colors
         path = QtGui.QPainterPath()
         path.addRect(0,0,s,s)
-        painter.fillPath(path, QtGui.QBrush(QtCore.Qt.white))
+        painter.fillPath(path, QtGui.QBrush(QtCore.Qt.GlobalColor.white))
         path = QtGui.QPainterPath()
         path.addPolygon(QtGui.QPolygonF([QtCore.QPointF(0,0),QtCore.QPointF(s,0),QtCore.QPointF(0,s)]))
-        painter.fillPath(path, QtGui.QBrush(QtCore.Qt.black))
+        painter.fillPath(path, QtGui.QBrush(QtCore.Qt.GlobalColor.black))
 
         ## now add color on top
         path = QtGui.QPainterPath()
@@ -76,9 +76,9 @@ class ColorSwatch(QtWidgets.QLabel):
         painter.fillPath(path, QtGui.QBrush(self.color))
 
         if self.selected:
-            pen = QtGui.QPen(QtCore.Qt.black)
+            pen = QtGui.QPen(QtCore.Qt.GlobalColor.black)
             pen.setWidth(4)
-            pen.setJoinStyle(QtCore.Qt.MiterJoin)
+            pen.setJoinStyle(QtCore.Qt.PenJoinStyle.MiterJoin)
             painter.setPen(pen)
             painter.drawRect(2,2,s-4,s-4)
 
@@ -133,21 +133,21 @@ class SizeSwatch(QtWidgets.QLabel):
 
         painter = QtGui.QPainter()
         painter.begin(pix)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
 
         ## Draw black and white triangles to show off semi-opaque colors
         path = QtGui.QPainterPath()
         path.addRect(0,0,s,s)
-        painter.fillPath(path, QtGui.QBrush(QtCore.Qt.white))
+        painter.fillPath(path, QtGui.QBrush(QtCore.Qt.GlobalColor.white))
         path = QtGui.QPainterPath()
         path.addEllipse(QtCore.QPointF(s/2,s/2), size, size)
-        painter.fillPath(path, QtGui.QBrush(QtCore.Qt.black))
+        painter.fillPath(path, QtGui.QBrush(QtCore.Qt.GlobalColor.black))
 
         if self.selected:
-            pen = QtGui.QPen(QtCore.Qt.black)
+            pen = QtGui.QPen(QtCore.Qt.GlobalColor.black)
             pen.setWidth(4)
-            pen.setJoinStyle(QtCore.Qt.MiterJoin)
+            pen.setJoinStyle(QtCore.Qt.PenJoinStyle.MiterJoin)
             painter.setPen(pen)
             painter.drawRect(2,2,s-4,s-4)
 

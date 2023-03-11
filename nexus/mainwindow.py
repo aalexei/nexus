@@ -372,16 +372,16 @@ def createViewImage(view, width, height, removebackground=False):
     rect.setBottom(int(rect.bottom()-dh/2))
 
     image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32_Premultiplied)
-    image.fill(QtCore.Qt.transparent)
+    image.fill(QtCore.Qt.GlobalColor.transparent)
 
     if removebackground:
         # make the scene background transparent
         oldbrush =  view.scene().backgroundBrush()
-        brush = QtGui.QBrush(QtCore.Qt.transparent)
+        brush = QtGui.QBrush(QtCore.Qt.GlobalColor.transparent)
         view.scene().setBackgroundBrush(brush)
 
     painter = QtGui.QPainter(image)
-    view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+    view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
     view.render(painter, QtCore.QRectF(image.rect()), rect)
     painter.end()
 
@@ -567,8 +567,8 @@ class NexusApplication(QtWidgets.QApplication):
         w.activateWindow()
 
         # try out transparancy
-        # w.setWindowFlag(QtCore.Qt.FramelessWindowHint)
-        # w.setAttribute(QtCore.Qt.WA_TranslucentBackground, True)
+        # w.setWindowFlag(QtCore.Qt.WindowType.FramelessWindowHint)
+        # w.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
         return w
 
@@ -698,15 +698,15 @@ class NexusApplication(QtWidgets.QApplication):
         # make larger based on retina?
         #image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
         image = QtGui.QImage(1920,1080, QtGui.QImage.Format_ARGB32_Premultiplied)
-        image.fill(QtCore.Qt.transparent)
+        image.fill(QtCore.Qt.GlobalColor.transparent)
         painter = QtGui.QPainter(image)
 
         oldbrush =  view.scene().backgroundBrush()
-        brush = QtGui.QBrush(QtCore.Qt.transparent)
+        brush = QtGui.QBrush(QtCore.Qt.GlobalColor.transparent)
         view.scene().setBackgroundBrush(brush)
 
         # Render the graphicsview onto the image and save it out.
-        view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+        view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         view.render(painter, QtCore.QRectF(image.rect()), rect)
 
         # return previous background
@@ -887,7 +887,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # dock = QtWidgets.QDockWidget(self.tr("Edit"), self)
         # self.editwidget = EditWidget(self)
         # dock.setWidget(self.editwidget)
-        # self.addDockWidget(QtCore.Qt.TopDockWidgetArea, dock)
+        # self.addDockWidget(QtCore.Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
         #
         # Views widget
@@ -901,7 +901,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewsAct = dock.toggleViewAction()
         dock.setWidget(self.views)
         dock.setTitleBarWidget(viewstoolbar)
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, dock)
         dock.dockLocationChanged.connect(self.views.locationChanged)
         dock.close()
 
@@ -916,7 +916,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.scene.linkClicked.connect(self.linkClicked)
 
 
-        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
 
         QtWidgets.QApplication.restoreOverrideCursor()
 
@@ -930,7 +930,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for item in self.scene.allChildStems():
             rect=rect.united(item.sceneBoundingRect())
 
-        self.view.fitInView(rect, QtCore.Qt.KeepAspectRatio)
+        self.view.fitInView(rect, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
         ## update the recent files
         settings = QtCore.QSettings("Ectropy", "Nexus")
@@ -953,7 +953,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.timerLabel = QtWidgets.QLabel(self)
         self.timerLabel.move(200,200)
-        self.timerLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.timerLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.timerLabel.setStyleSheet("color:rgba(155,0,0,100); font: 300pt")
         self.timerLabel.hide()
 
@@ -1099,7 +1099,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return links
 
         progress = QtWidgets.QProgressDialog("Discovering maps...", "Abort", 0, 1, self)
-        progress.setWindowModality(QtCore.Qt.WindowModal)
+        progress.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
         progress.show()
 
         currentpath = Path(self.scene.graph.path)
@@ -2004,7 +2004,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Do not update current views yet so this function can be used in scripting.
         '''
         logging.debug("Loading map data from %s", filename)
-        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
 
         g = self.loadOrConvertMap(filename)
 
@@ -2031,13 +2031,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def printMap(self, printer):
 
         painter = QtGui.QPainter(printer)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setRenderHint(QtGui.QPainter.TextAntialiasing)
-        painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
 
         self.scene.clearSelection()
         scenebrush = self.scene.backgroundBrush()
-        self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
+        self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
 
         targetRect = QtCore.QRectF(0, 0, painter.device().width(), painter.device().height())
 
@@ -2077,13 +2077,13 @@ class MainWindow(QtWidgets.QMainWindow):
         VIEWSIDES = self.view.getViewSides()
         painter = QtGui.QPainter(printer)
 
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setRenderHint(QtGui.QPainter.TextAntialiasing)
-        painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
 
         self.scene.clearSelection()
         scenebrush = self.scene.backgroundBrush()
-        self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
+        self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
 
         # targetRect = QtCore.QRectF(0, 0, painter.device().width(), painter.device().height())
         targetRect = QtCore.QRectF(0, 0, painter.device().width(), painter.device().height())
@@ -2144,7 +2144,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # The following prints at full resolution (vector graphics?)
         # Printout can get to ~100Mb though
         #
-        self.view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+        self.view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         self.view.render(painter, targetRect, rect)
 
         ## show items previously visible (or collidingItems won't register them for next view)
@@ -2160,9 +2160,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # Create a intermediate image to control the resolution
         #
         image = QtGui.QImage(W*factor, H*factor, QtGui.QImage.Format_ARGB32_Premultiplied)
-        image.fill(QtCore.Qt.transparent)
+        image.fill(QtCore.Qt.GlobalColor.transparent)
         painteri = QtGui.QPainter(image)
-        self.view.setRenderHints(QtGui.QPainter.Antialiasing |QtGui.QPainter.TextAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
+        self.view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         self.view.render(painteri, QtCore.QRectF(image.rect()), rect)
         painteri.end()
 
@@ -2575,8 +2575,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.showNormal()
         #self.showMaximized()
 
-        self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.viewToolBar.setVisible(True)
         self.recToolBar.setVisible(False)
         self.statusBar().setVisible(True)
@@ -2633,8 +2633,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.presentationhiddenstems.append(child)
 
         # this seems to throw off the view snaps:
-        self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         #self.showFullScreen()
 
@@ -2878,26 +2878,26 @@ class MainWindow(QtWidgets.QMainWindow):
         # problem is the new code depends on the scale of the view so
         # need to create the pointer item when the trail starts
         self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-        self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+        self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
         pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
         pen.setWidthF(CONFIG['trail_outer_width'])
-        pen.setCapStyle(QtCore.Qt.RoundCap)
+        pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
         self.pointertrailitem.setPen(pen)
         self.pointertrailitem.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
         self.scene.addItem(self.pointertrailitem)
 
         # inner colour
         self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-        self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+        self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
         pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
         pen.setWidthF(CONFIG['trail_inner_width'])
-        pen.setCapStyle(QtCore.Qt.RoundCap)
+        pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
         self.pointertrailitem2.setPen(pen)
         self.pointertrailitem2.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
         self.scene.addItem(self.pointertrailitem2)
 
         progress = QtWidgets.QProgressDialog("Making frames","Cancel",0,120, self)
-        progress.setWindowModality(QtCore.Qt.WindowModal)
+        progress.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
 
         for i in range(N):
             if i%1==0:
@@ -2993,10 +2993,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
         self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-        #self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+        #self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
         pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
         pen.setWidthF(CONFIG['trail_outer_width']/s)
-        pen.setCapStyle(QtCore.Qt.RoundCap)
+        pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
         self.pointertrailitem.setPen(pen)
         TrailBlur = QtWidgets.QGraphicsBlurEffect()
         TrailBlur.setBlurRadius(5.0/s)
@@ -3005,10 +3005,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # inner collor
         self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-        #self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+        #self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
         pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
         pen.setWidthF(CONFIG['trail_inner_width']/s)
-        pen.setCapStyle(QtCore.Qt.RoundCap)
+        pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
         self.pointertrailitem2.setPen(pen)
         TrailBlur = QtWidgets.QGraphicsBlurEffect()
         TrailBlur.setBlurRadius(4.0/s)
@@ -3065,11 +3065,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # XXX need to add the pen strokes
         # image = QtGui.QImage(W,H, QtGui.QImage.Format_ARGB32)
-        # image.fill(QtCore.Qt.transparent)
+        # image.fill(QtCore.Qt.GlobalColor.transparent)
         # painter = QtGui.QPainter(image)
-        # painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-        # painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
-        # self.view.render(painter, QtCore.QRectF(), QtCore.QRect(dx,dy,W,H), QtCore.Qt.KeepAspectRatio)
+        # painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
+        # painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform, True)
+        # self.view.render(painter, QtCore.QRectF(), QtCore.QRect(dx,dy,W,H), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
         ## Ideally the pen would be draw here but the transformations are a mess
         ## Needs a complete overhaul to accomodate different res screens anyway
@@ -3103,8 +3103,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self.hidePointerAct.isChecked():
             QtWidgets.QApplication.instance().restoreOverrideCursor()
-            QtWidgets.QApplication.instance().setOverrideCursor(QtCore.Qt.BlankCursor)
-            #self.view.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
+            QtWidgets.QApplication.instance().setOverrideCursor(QtCore.Qt.CursorShape.BlankCursor)
+            #self.view.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter)
         else:
             QtWidgets.QApplication.instance().restoreOverrideCursor() # restore first so default in in the stack
             s=int(CONFIG['trail_outer_width']*CONFIG['trail_pointer_factor'])
@@ -3112,14 +3112,14 @@ class MainWindow(QtWidgets.QMainWindow):
             rg = QtGui.QRadialGradient(s/2,s/2,s/2, s/2, s/2, CONFIG['trail_inner_width']/2)
             rg.setColorAt(0, QtGui.QColor(CONFIG['trail_inner_color']))
             rg.setColorAt(1, QtGui.QColor(CONFIG['trail_outer_color']))
-            pix.fill(QtCore.Qt.transparent)
+            pix.fill(QtCore.Qt.GlobalColor.transparent)
             painter = QtGui.QPainter(pix)
             painter.setBrush(QtGui.QBrush(rg))
-            painter.setPen(QtCore.Qt.NoPen)
+            painter.setPen(QtCore.Qt.PenStyle.NoPen)
             painter.drawEllipse(0,0,s,s)
             painter.end()
             QtWidgets.QApplication.instance().setOverrideCursor(QtGui.QCursor(pix, -int(s/2),-int(s/2)))
-            #self.view.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+            #self.view.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
 
     def viewsNext(self):
@@ -3204,7 +3204,7 @@ class RecordDialog(QtWidgets.QDialog):
         super().__init__(*args, **kwargs)
 
         self.setWindowTitle("Record")
-        #self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        #self.setWindowFlags(QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
         self.audiorecorder = QAudioRecorder()
 
@@ -3354,7 +3354,7 @@ class ViewsModel(QtCore.QAbstractListModel):
         self.views = []
 
     def data(self, index, role):
-        if role == QtCore.Qt.DecorationRole:
+        if role == QtCore.Qt.ItemDataRole.DecorationRole:
             # See below for the data structure.
             v = self.views[index.row()]
             # Return the todo text only.
@@ -3466,7 +3466,7 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
         # self.VIEWW, self.VIEWH = CONFIG['view_rect_size']
 
         path = QtGui.QPainterPath()
-        path.setFillRule(QtCore.Qt.WindingFill)
+        path.setFillRule(QtCore.Qt.FillRule.WindingFill)
         #rect = QtCore.QRectF(-self.VIEWW/2.0,-self.VIEWH/2.0,self.VIEWW,self.VIEWH)
         #rect = QtCore.QRectF(-self.WIDTH/2.0,-self.HEIGHT/2.0,self.WIDTH,self.HEIGHT)
         rect = QtCore.QRectF(-self.WIDTH/2.0,-self.HEIGHT/2.0,self.WIDTH,self.HEIGHT)
@@ -3491,11 +3491,11 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
 
         super().__init__(path)
 
-        #self.setPen(QtGui.QPen(QtCore.Qt.darkRed, 5))
-        #self.setPen(QtGui.QPen(QtCore.Qt.darkRed, 5))
+        #self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.darkRed, 5))
+        #self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.darkRed, 5))
         self.setBrush(QtGui.QBrush(QtGui.QColor(100,100,100,60)))
         self.setFlag(self.ItemIsMovable, True)
-        self.setCursor(QtCore.Qt.SizeAllCursor)
+        self.setCursor(QtCore.Qt.CursorShape.SizeAllCursor)
         #self.setFlag(self.ItemIsSelectable, True)
 
         ViewRectangleHandle("tNE", self)
@@ -3519,7 +3519,7 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
         self.originalTransform = self.transform()
 
         rect = self.boundingRect()
-        if event.modifiers() & QtCore.Qt.AltModifier:
+        if event.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier:
             self.pivot = QtCore.QPointF(0,0)
 
         elif event.source == "tNE":
@@ -3633,11 +3633,11 @@ class ViewsListView(QtWidgets.QListView):
     def __init__(self):
         super().__init__()
 
-        self.setViewMode(self.ListMode)
+        self.setViewMode(self.ViewMode.ListMode)
         self.setWrapping(False)
-        self.setFlow(QtWidgets.QListView.TopToBottom)
-        self.setMovement(self.Snap)
-        self.setResizeMode( self.Adjust )
+        self.setFlow(QtWidgets.QListView.Flow.TopToBottom)
+        self.setMovement(self.Movement.Snap)
+        self.setResizeMode( self.ResizeMode.Adjust )
         self.setSelectionRectVisible( True )
         self.setSelectionMode( self.ExtendedSelection )
         self.setSpacing(0)
@@ -3729,7 +3729,7 @@ class ViewsWidget(QtWidgets.QWidget):
 
         ## create toolbar
         self.toolbar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
-        self.toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
+        self.toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonIconOnly)
 
         self.toolbar.addAction(self.addViewAct)
         self.toolbar.addAction(self.resetViewAct)
@@ -3797,9 +3797,9 @@ class ViewsWidget(QtWidgets.QWidget):
         Where this widget is docked has changed ... adjust flow accordingly
         '''
 
-        if loc in [QtCore.Qt.NoDockWidgetArea]:
+        if loc in [QtCore.Qt.DockWidgetArea.NoDockWidgetArea]:
             pass
-        elif loc in [QtCore.Qt.TopDockWidgetArea, QtCore.Qt.BottomDockWidgetArea]:
+        elif loc in [QtCore.Qt.DockWidgetArea.TopDockWidgetArea, QtCore.Qt.DockWidgetArea.BottomDockWidgetArea]:
             self.viewsListView.orientation = self.viewsListView.Horizontal
         else:
             self.viewsListView.orientation = self.viewsListView.Vertical

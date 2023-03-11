@@ -308,7 +308,7 @@ class InputDialog(QtWidgets.QDialog):
 
         # Tags
         self.tagsEdit = QtWidgets.QLineEdit()
-        self.tagsEdit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp(r"[\w\s-]*")))
+        self.tagsEdit.setValidator(QtGui.QRegularExpressionValidator(QtCore.QRegularExpression(r"[\w\s-]*")))
         self.tagsEdit.setToolTip("Enter space separated tags")
         self.tagsEdit.editingFinished.connect(self.tagsChanged)
         playout.addRow("Tags:", self.tagsEdit)
@@ -325,7 +325,7 @@ class InputDialog(QtWidgets.QDialog):
 
         # Branch color and inherit box
         pix = QtGui.QPixmap(50, 50)
-        pix.fill(QtCore.Qt.gray)
+        pix.fill(QtCore.Qt.GlobalColor.gray)
         colbutton = QtWidgets.QPushButton()
         colbutton.setToolTip("Set branch colour")
         self.branchcolorbutton = colbutton
@@ -366,12 +366,12 @@ class InputDialog(QtWidgets.QDialog):
 
         # Full screen
         self.fullscreenwidget = QtWidgets.QCheckBox()
-        self.fullscreenwidget.setCheckState(False)
+        self.fullscreenwidget.setCheckState(QtCore.Qt.CheckState.Unchecked)
         dlayout.addRow("Maximize dialog", self.fullscreenwidget)
 
         # Allow rotation of canvas
         self.view.allowrotationwidget = QtWidgets.QCheckBox()
-        self.view.allowrotationwidget.setCheckState(False)
+        self.view.allowrotationwidget.setCheckState(QtCore.Qt.CheckState.Unchecked)
         dlayout.addRow("Allow canvas rotation", self.view.allowrotationwidget)
 
 
@@ -413,11 +413,11 @@ class InputDialog(QtWidgets.QDialog):
             branchcolor = self.scene.node['branchcolor']
             pix.fill(QtGui.QColor(branchcolor))
             self.branchcolorbutton.setDisabled(False)
-            self.branchcolorinherit.setCheckState(QtCore.Qt.Unchecked)
+            self.branchcolorinherit.setCheckState(QtCore.Qt.CheckState.Unchecked)
         else:
-            pix.fill(QtCore.Qt.gray)
+            pix.fill(QtCore.Qt.GlobalColor.gray)
             self.branchcolorbutton.setDisabled(True)
-            self.branchcolorinherit.setCheckState(QtCore.Qt.Checked)
+            self.branchcolorinherit.setCheckState(QtCore.Qt.CheckState.Checked)
         self.branchcolorbutton.setIcon(QtGui.QIcon(pix))
 
         # TODO why calling it twice?
@@ -663,7 +663,7 @@ class InputDialog(QtWidgets.QDialog):
         ## ----------------------------------------------------------------------------------
         self.zoomOriginalAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-one.svg"), self.tr("Reset Zoom"), self)
         self.zoomOriginalAct.setStatusTip(self.tr("Reset Zoom"))
-        self.zoomOriginalAct.triggered.connect(self.view.StandardKey.zoomOriginal)
+        self.zoomOriginalAct.triggered.connect(self.view.zoomOriginal)
 
         ## ----------------------------------------------------------------------------------
         self.raiseAct = QtGui.QAction(QtGui.QIcon(":/images/raise.svg"), self.tr("Raise"), self)
@@ -723,14 +723,14 @@ class InputDialog(QtWidgets.QDialog):
         self.underlineAct.triggered.connect(self.textUnderlineEvent)
 
         pix = QtGui.QPixmap(16,16)
-        pix.fill(QtCore.Qt.black)
+        pix.fill(QtCore.Qt.GlobalColor.black)
         self.textColorAct = QtGui.QAction(QtGui.QIcon(pix), self.tr("Color"), self)
         self.textColorAct.setStatusTip(self.tr("Foreground Color"))
         self.textColorAct.setVisible(False)
         self.textColorAct.triggered.connect(self.textColorEvent)
 
         pix = QtGui.QPixmap(16,16)
-        pix.fill(QtCore.Qt.yellow)
+        pix.fill(QtCore.Qt.GlobalColor.yellow)
         self.textBackColorAct = QtGui.QAction(QtGui.QIcon(pix), self.tr("Background Color"), self)
         self.textBackColorAct.setStatusTip(self.tr("Background Color"))
         self.textBackColorAct.setVisible(False)
@@ -752,14 +752,14 @@ class InputDialog(QtWidgets.QDialog):
 
         pixpen = QtGui.QPixmap(pixmask.size())
         pixpen.fill(color)
-        pixpen.setMask(pixmask.createMaskFromColor(QtGui.QColor("#d8d8d8"), mode=QtCore.Qt.MaskOutColor))
+        pixpen.setMask(pixmask.createMaskFromColor(QtGui.QColor("#d8d8d8"), mode=QtCore.Qt.MaskMode.MaskOutColor))
 
         pix = QtGui.QPixmap(pixpen.size())
-        pix.fill(QtCore.Qt.transparent)
+        pix.fill(QtCore.Qt.GlobalColor.transparent)
         painter = QtGui.QPainter()
         painter.begin(pix)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
         painter.drawPixmap(0,0, pixmask)
         painter.drawPixmap(0, 0, pixpen)
         painter.end()
@@ -836,11 +836,11 @@ class InputDialog(QtWidgets.QDialog):
         #self.textFontSize.setVisible(True)
         self.clearFormatAct.setVisible(True)
 
-        #self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
+        #self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
         # self.scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor("White")))
 
 
-        self.view.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+        self.view.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
 
         items = self.scene.getItems()
 
@@ -931,7 +931,7 @@ class InputDialog(QtWidgets.QDialog):
         self.fontAct.setVisible(False)
         self.clearFormatAct.setVisible(False)
 
-        self.view.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+        self.view.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
         # self.scene.setBackgroundBrush(QtGui.QBrush(QtGui.QPixmap(":/images/gridbackground.png")))
 
         for item in self.scene.getItems():
@@ -941,7 +941,7 @@ class InputDialog(QtWidgets.QDialog):
 
     def setEraserMode(self):
         self.setPenMode()
-        self.view.viewport().setCursor(QtCore.Qt.CrossCursor)
+        self.view.viewport().setCursor(QtCore.Qt.CursorShape.CrossCursor)
         self.scene.mode = EraserMode
 
     # XXX should drawing modes be in the scene instead?
@@ -968,9 +968,9 @@ class InputDialog(QtWidgets.QDialog):
         self.fontAct.setVisible(False)
         self.clearFormatAct.setVisible(False)
 
-        #self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
+        #self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
         # self.scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor("White")))
-        self.view.viewport().setCursor(QtCore.Qt.ArrowCursor)
+        self.view.viewport().setCursor(QtCore.Qt.CursorShape.ArrowCursor)
 
         for item in self.scene.getItems():
             item.setMode(SelectMode)
@@ -1195,10 +1195,10 @@ class InputDialog(QtWidgets.QDialog):
         ## make background transparent
         pixmap.fill( QtGui.QColor(0,0,0,0))
         painter = QtGui.QPainter(pixmap)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setRenderHint(QtGui.QPainter.HighQualityAntialiasing)
-        painter.setRenderHint(QtGui.QPainter.TextAntialiasing)
-        painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.HighQualityAntialiasing)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
 
         ## hide unselected visible items that are in the rect
         hiddenitems = []
@@ -1542,7 +1542,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         # XXX draw pivot point
 
         ## pivot in scene coords
-        if (event.modifiers & QtCore.Qt.AltModifier) or \
+        if (event.modifiers & QtCore.Qt.KeyboardModifier.AltModifier) or \
            event.source in ["rNE","rNW","rSW","rSE"]:
             self.pivot = rect.center()
         elif event.source == "tNE":
@@ -1632,7 +1632,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
             ky = (p1[1]-pv[1])/(p0[1]-pv[1])
 
         ## Keep aspect ratio while scaling unless shift is used
-        if not( event.modifiers & QtCore.Qt.ShiftModifier):
+        if not( event.modifiers & QtCore.Qt.KeyboardModifier.ShiftModifier):
             if abs(kx-1.0)>abs(ky-1.0):
                 ky=kx
             else:
@@ -1703,7 +1703,7 @@ class OverRect(QtWidgets.QGraphicsRectItem):
         super().__init__(parent)
 
         self.setBrush(QtGui.QBrush(self.defaultcol))
-        self.setPen(QtGui.QPen(QtCore.Qt.NoPen))
+        self.setPen(QtGui.QPen(QtCore.Qt.PenStyle.NoPen))
         self.setZValue(200)
         self.id = "rect"
 
@@ -1729,17 +1729,17 @@ class TransformationHandle(QtWidgets.QGraphicsPathItem):
         self.setScale(2)
 
         self.setAcceptHoverEvents(True)
-        self.setBrush(QtGui.QBrush(QtCore.Qt.black))
+        self.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.black))
 
         ## this is so that the widget doesn't change with scene scaling
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations,  True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations,  True)
 
     def hoverEnterEvent(self, event):
-        self.setBrush(QtGui.QBrush(QtCore.Qt.yellow))
+        self.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.yellow))
         QtWidgets.QGraphicsPathItem.hoverEnterEvent(self, event)
 
     def hoverLeaveEvent(self, event):
-        self.setBrush(QtGui.QBrush(QtCore.Qt.black))
+        self.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.black))
         QtWidgets.QGraphicsPathItem.hoverLeaveEvent(self, event)
 
     def pointerPressEvent(self, event):
@@ -1808,13 +1808,13 @@ class InkView(QtWidgets.QGraphicsView):
         self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         self.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
         self.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
-        #QT6 self.setRenderHint(QtGui.QPainter.HighQualityAntialiasing)
+        #QT6 self.setRenderHint(QtGui.QPainter.RenderHint.HighQualityAntialiasing)
         self.setCacheMode(QtWidgets.QGraphicsView.CacheModeFlag.CacheBackground)
         #self.setDragMode(QtGui.QGraphicsView.NoDrag)
         #self.setDragMode(QtGui.QGraphicsView.ScrollHandDrag)
         #self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
         self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        #self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        #self.setResizeAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         #self.setTransformationAnchor(QtGui.QGraphicsView.NoAnchor)
 
 
@@ -1969,7 +1969,7 @@ class InkView(QtWidgets.QGraphicsView):
 
     def mouseMoveEvent(self, event):
 
-        if event.buttons() == QtCore.Qt.NoButton:
+        if event.buttons() == QtCore.Qt.MouseButton.NoButton:
             # Ignore hover events
             return
 
@@ -2046,7 +2046,7 @@ class InkView(QtWidgets.QGraphicsView):
         else:
             ## this grouping is so we can delete the items easily
             scene.tmpselect = QtWidgets.QGraphicsPolygonItem()
-            scene.tmpselect.setPen(QtGui.QPen(QtCore.Qt.gray, 0.5 , QtCore.Qt.DotLine, QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
+            scene.tmpselect.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.gray, 0.5 , QtCore.Qt.PenStyle.DotLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
             ## draw over everything
             scene.tmpselect.setZValue(1000)
             scene.addItem(scene.tmpselect)
@@ -2135,7 +2135,7 @@ class InkView(QtWidgets.QGraphicsView):
         p1 = scene._lastScenePos
         p2 = scenePos
         pen = QtGui.QPen(scene.pen)
-        pen.setCapStyle(QtCore.Qt.RoundCap)
+        pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
         point = [p2.x(),p2.y(),pressure,t]
         scene.strokecoords.append(point)
         scene._tmppath.append(point)
@@ -2249,7 +2249,7 @@ class InkView(QtWidgets.QGraphicsView):
             v1 = self.mapFromGlobal(pinch.centerPoint().toPoint())
 
         anchor = self.transformationAnchor()
-        self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.NoAnchor)
 
         if pinch.state() == 1:
             # gesture begin
@@ -2345,9 +2345,9 @@ class InkView(QtWidgets.QGraphicsView):
 
     def wheelEvent(self, event):
         # logging.debug('Wheel event')
-        if (event.modifiers() & QtCore.Qt.ControlModifier) or  (event.modifiers() & QtCore.Qt.AltModifier):
+        if (event.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier) or  (event.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
             anchor = self.transformationAnchor()
-            self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
+            self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.NoAnchor)
             matrix = self.transform()
             p = self.mapToScene(self.mapFromGlobal(QtGui.QCursor.pos()))
             matrix.translate(p.x(),p.y())
@@ -2418,7 +2418,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         self.backgroundDialog = BackgroundDialog(self, self.parent())
         self.backgroundDialog.hide()
 
-        brush = QtGui.QBrush(QtGui.QColor("White"), QtCore.Qt.SolidPattern)
+        brush = QtGui.QBrush(QtGui.QColor("White"), QtCore.Qt.BrushStyle.SolidPattern)
         self.setBackgroundBrush(brush)
 
 
@@ -2648,22 +2648,22 @@ class NexusView(QtWidgets.QGraphicsView):
 
         super().__init__(scene, parent)
 
-        self.setViewportUpdateMode(QtWidgets.QGraphicsView.SmartViewportUpdate)
+        self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.SmartViewportUpdate)
 
-        self.setRenderHint(QtGui.QPainter.Antialiasing)
-        self.setRenderHint(QtGui.QPainter.TextAntialiasing)
-        self.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
-        self.setCacheMode(self.CacheNone)
+        self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        self.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
+        self.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+        self.setCacheMode(self.CacheModeFlag.CacheNone)
 
         # implement the drag pan ourselves to avoid tablet event bug
-        self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+        self.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
 
-        self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
-        self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.setResizeAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
-        self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
+        self.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
 
-        self.setOptimizationFlags(self.DontSavePainterState | self.DontAdjustForAntialiasing)
+        self.setOptimizationFlags(self.OptimizationFlag.DontSavePainterState | self.OptimizationFlag.DontAdjustForAntialiasing)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
         self.grabGesture(QtCore.Qt.GestureType.PanGesture)
@@ -2728,7 +2728,7 @@ class NexusView(QtWidgets.QGraphicsView):
             for item in self.scene().allChildStems():
                 rect=rect.united(item.sceneBoundingRect())
 
-        self.fitInView(rect, QtCore.Qt.KeepAspectRatio)
+        self.fitInView(rect, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
     def getViewSides(self):
         '''
@@ -2775,12 +2775,12 @@ class NexusView(QtWidgets.QGraphicsView):
 
     def wheelEvent(self, event):
 
-        if (event.modifiers() & QtCore.Qt.ControlModifier) or (event.modifiers() & QtCore.Qt.AltModifier):
+        if (event.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier) or (event.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
 
             # logging.debug('wheelEvent (mod)')
 
             anchor = self.transformationAnchor()
-            self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
+            self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.NoAnchor)
             matrix = self.transform()
             p = self.mapToScene(self.mapFromGlobal(QtGui.QCursor.pos()))
             matrix.translate(p.x(),p.y())
@@ -2828,19 +2828,19 @@ class NexusView(QtWidgets.QGraphicsView):
         if self.scene().mode in ["presentation", "record"]:
             self._dragmode = self.PREDRAGPAN
 
-        elif event.button() in [QtCore.Qt.RightButton, QtCore.Qt.MiddleButton] and (self.itemAt(event.pos()) is None):
+        elif event.button() in [QtCore.Qt.MouseButton.RightButton, QtCore.Qt.MouseButton.MiddleButton] and (self.itemAt(event.pos()) is None):
             self._dragmode = self.DRAGZOOM
             self._dragy = event.pos().y()
-            self.viewport().setCursor(QtCore.Qt.SizeVerCursor)
+            self.viewport().setCursor(QtCore.Qt.CursorShape.SizeVerCursor)
             self._zoompoint = self.mapToScene(event.pos())
-        elif event.button()==QtCore.Qt.LeftButton and (self.itemAt(event.pos()) is None):
+        elif event.button()==QtCore.Qt.MouseButton.LeftButton and (self.itemAt(event.pos()) is None):
             self._dragmode = self.PREDRAGPAN
             self._dragy = event.pos().y()
             self._dragx = event.pos().x()
-            self.viewport().setCursor(QtCore.Qt.ClosedHandCursor)
+            self.viewport().setCursor(QtCore.Qt.CursorShape.ClosedHandCursor)
         else:
             self._dragmode = self.DRAGOFF
-            self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
+            self.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
             QtWidgets.QGraphicsView.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):
@@ -2859,7 +2859,7 @@ class NexusView(QtWidgets.QGraphicsView):
             dy = event.pos().y() - self._dragy
             scale = max(min(-dy/400.0 + 1,1.5),0.5)
 
-            self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorViewCenter)
+            self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter)
             self.scaleView(scale)
 
             self._dragy = event.pos().y()
@@ -2884,10 +2884,10 @@ class NexusView(QtWidgets.QGraphicsView):
             if self.pointertrailitem is None:
 
                 self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-                #self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+                #self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
                 pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
                 pen.setWidthF(CONFIG['trail_outer_width']/s)
-                pen.setCapStyle(QtCore.Qt.RoundCap)
+                pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
                 self.pointertrailitem.setPen(pen)
                 TrailBlur = QtWidgets.QGraphicsBlurEffect()
                 TrailBlur.setBlurRadius(5.0/s)
@@ -2896,10 +2896,10 @@ class NexusView(QtWidgets.QGraphicsView):
             if self.pointertrailitem2 is None:
                 # inner collor
                 self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-                #self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
+                #self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
                 pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
                 pen.setWidthF(CONFIG['trail_inner_width']/s)
-                pen.setCapStyle(QtCore.Qt.RoundCap)
+                pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
                 self.pointertrailitem2.setPen(pen)
                 TrailBlur = QtWidgets.QGraphicsBlurEffect()
                 TrailBlur.setBlurRadius(4.0/s)
@@ -2942,7 +2942,7 @@ class NexusView(QtWidgets.QGraphicsView):
             event.accept()
 
         elif not self.scene().mode in ["presentation", "record"]:
-            self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
+            self.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
 
 
@@ -2966,7 +2966,7 @@ class NexusView(QtWidgets.QGraphicsView):
        
 
         if not self.scene().mode in ["presentation", "record"]:
-            self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
+            self.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseReleaseEvent(self, event)
             self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-up'})
 
@@ -3014,7 +3014,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
 
     def keyPressEvent(self, event):
-        if self.scene().mode in ["presentation", "record"] and event.key() == QtCore.Qt.Key_Escape:
+        if self.scene().mode in ["presentation", "record"] and event.key() == QtCore.Qt.Key.Key_Escape:
             self.presentationEscape.emit()
             event.accept()
         else:
@@ -3022,7 +3022,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
 
     def event(self, event):
-        if event.type() == QtCore.QEvent.Gesture:
+        if event.type() == QtCore.QEvent.Type.Gesture:
             return self.gestureEvent(event)
         else:
             return QtWidgets.QGraphicsView.event(self, event)
@@ -3059,16 +3059,16 @@ class NexusView(QtWidgets.QGraphicsView):
             v1 = self.mapFromGlobal(pinch.centerPoint().toPoint())
 
         anchor = self.transformationAnchor()
-        self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.NoAnchor)
 
         self._dragmode = self.DRAGOFF
 
-        if anchor == QtWidgets.QGraphicsView.AnchorUnderMouse:
+        if anchor == QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse:
             ## this is used in normal mode
             #v1 = self.mapToScene(self.mapFromGlobal(QtGui.QCursor.pos()))
             #p = c1
             pass
-        elif anchor == QtWidgets.QGraphicsView.AnchorViewCenter:
+        elif anchor == QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter:
             ## this is used in presentation mode
             v1 = self.viewport().rect().center()
         else:
@@ -3176,11 +3176,11 @@ class BackgroundDialog(QtWidgets.QDialog):
         self.page1 = page
 
         layout.addWidget(QtWidgets.QLabel("Color:") ,0, 0)
-        if brush.style() == QtCore.Qt.SolidPattern:
+        if brush.style() == QtCore.Qt.BrushStyle.SolidPattern:
             color = brush.color()
             page.setChecked(True)
         else:
-            color = QtGui.QColor(QtCore.Qt.white)
+            color = QtGui.QColor(QtCore.Qt.GlobalColor.white)
             page.setChecked(False)
         pix = QtGui.QPixmap(16,16)
         pix.fill(color)
@@ -3199,7 +3199,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         page.setLayout(layout)
         page.clicked.connect(lambda x: self.styleSwitch(2,x))
         self.page2 = page
-        if brush.style() == QtCore.Qt.TexturePattern:
+        if brush.style() == QtCore.Qt.BrushStyle.TexturePattern:
             page.setChecked(True)
         else:
             page.setChecked(False)
@@ -3220,7 +3220,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         page.setLayout(layout)
         page.clicked.connect(lambda x: self.styleSwitch(3,x))
         self.page3 = page
-        if brush.style() == QtCore.Qt.RadialGradientPattern:
+        if brush.style() == QtCore.Qt.BrushStyle.RadialGradientPattern:
             page.setChecked(True)
         else:
             page.setChecked(False)
@@ -3228,7 +3228,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         layout.addWidget(QtWidgets.QLabel("Colors:"), 0, 0)
         layout.addWidget(QtWidgets.QLabel("Radius:"), 1, 0)
 
-        col = QtGui.QColor(QtCore.Qt.gray)
+        col = QtGui.QColor(QtCore.Qt.GlobalColor.gray)
         pix = QtGui.QPixmap(16,16)
         pix.fill(col)
         colorswatch = QtGui.QIcon(pix)
@@ -3239,7 +3239,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         self.color1button = button
         self.color1 = col
 
-        col = QtGui.QColor(QtCore.Qt.white)
+        col = QtGui.QColor(QtCore.Qt.GlobalColor.white)
         pix = QtGui.QPixmap(16,16)
         pix.fill(col)
         colorswatch = QtGui.QIcon(pix)
@@ -3286,7 +3286,7 @@ class BackgroundDialog(QtWidgets.QDialog):
             colorswatch = QtGui.QIcon(pix)
             self.colorswatchbutton.setIcon(colorswatch)
 
-            brush = QtGui.QBrush(col, QtCore.Qt.SolidPattern)
+            brush = QtGui.QBrush(col, QtCore.Qt.BrushStyle.SolidPattern)
             self.scene.setBackgroundBrush(brush)
 
 
@@ -3316,7 +3316,7 @@ class BackgroundDialog(QtWidgets.QDialog):
 
     def clearBack(self):
 
-        brush = QtGui.QBrush(QtCore.Qt.NoBrush)
+        brush = QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush)
         self.scene.setBackgroundBrush(brush)
 
     def setColor1(self):
@@ -3554,9 +3554,9 @@ class InkItem(QtWidgets.QGraphicsPathItem):
         self.originalCursor = None
         # XXX consolidate cursor setting code
 
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
         self.setZValue(node['z'])
 
         self.width = node['width']
@@ -3620,7 +3620,7 @@ class InkItem(QtWidgets.QGraphicsPathItem):
     def keyPressEvent(self, event):
 
         for item in self.scene().selectedItems():
-            if item.flags() & QtWidgets.QGraphicsItem.ItemIsFocusable:
+            if item.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable:
                 item.handleKeyPressEvent(event)
 
     def handleKeyPressEvent(self, event):
@@ -3635,7 +3635,7 @@ class InkItem(QtWidgets.QGraphicsPathItem):
 
     #     batch = graphydb.generateUUID()
     #     for item in self.scene().selectedItems():
-    #         if item.flags() & QtWidgets.QGraphicsItem.ItemIsMovable:
+    #         if item.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable:
     #             p0i = item.mapFromScene(p0)
     #             p1i = item.mapFromScene(p1)
     #             dpi = p1i-p0i
@@ -3677,10 +3677,10 @@ class InkItem(QtWidgets.QGraphicsPathItem):
 
             path.closeSubpath()
 
-        path.setFillRule(QtCore.Qt.WindingFill)
+        path.setFillRule(QtCore.Qt.FillRule.WindingFill)
         self.setPath(path)
-        self.setPen(QtGui.QPen(QtCore.Qt.NoPen))
-        self.setBrush(QtGui.QBrush(self.color, QtCore.Qt.SolidPattern))
+        self.setPen(QtGui.QPen(QtCore.Qt.PenStyle.NoPen))
+        self.setBrush(QtGui.QBrush(self.color, QtCore.Qt.BrushStyle.SolidPattern))
 
         # TODO[autosave] remove the following?
         self.coords = S
@@ -3698,37 +3698,37 @@ class InkItem(QtWidgets.QGraphicsPathItem):
 
         if mode == PenMode:
 
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
             self.setSelected(False)
 
         elif mode == SelectMode:
 
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, True)
             self.setSelected(False)
 
         else:
 
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
             self.setSelected(False)
 
     def hoverEnterEvent(self, event):
-        if self.flags() & QtWidgets.QGraphicsItem.ItemIsMovable and self.isSelected():
+        if self.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable and self.isSelected():
             self.originalCursor = self.cursor()
-            self.setCursor(QtCore.Qt.SizeAllCursor)
+            self.setCursor(QtCore.Qt.CursorShape.SizeAllCursor)
 
         QtWidgets.QGraphicsPathItem.hoverEnterEvent(self, event)
 
     def hoverMoveEvent(self, event):
-        if self.flags() & QtWidgets.QGraphicsItem.ItemIsMovable \
+        if self.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable \
            and self.isSelected() and not self.hasCursor():
             self.originalCursor = self.cursor()
-            self.setCursor(QtCore.Qt.SizeAllCursor)
+            self.setCursor(QtCore.Qt.CursorShape.SizeAllCursor)
         QtWidgets.QGraphicsPathItem.hoverMoveEvent(self, event)
 
     def hoverLeaveEvent(self, event):
@@ -3747,12 +3747,12 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
         self.setAcceptHoverEvents(True)
 
-        self.setBrush(QtGui.QBrush(QtCore.Qt.black))
-        self.setPen(QtGui.QPen(QtCore.Qt.black))
+        self.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.black))
+        self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black))
 
         self.setShape()
 
@@ -3777,11 +3777,11 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
         self.setPath(path)
 
     def hoverEnterEvent(self, event):
-        self.setBrush(QtGui.QBrush(QtCore.Qt.yellow))
+        self.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.yellow))
         QtWidgets.QGraphicsPathItem.hoverEnterEvent(self, event)
 
     def hoverLeaveEvent(self, event):
-        self.setBrush(QtGui.QBrush(QtCore.Qt.black))
+        self.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.black))
         QtWidgets.QGraphicsPathItem.hoverLeaveEvent(self, event)
 
     def pointerPressEvent(self, event):
@@ -3850,9 +3850,9 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         self.setFont(self.DefaultFont)
         self.setDefaultTextColor(QtGui.QColor(node.get("color", CONFIG['text_item_color'])))
 
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
         self.setZValue(node['z'])
 
         self.setTabChangesFocus(True)
@@ -4025,10 +4025,10 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         ## width-setting widget hidden
         self.widthWidget.hide()
 
-        self.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
+        self.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.LinksAccessibleByMouse)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
 
     def setSelectMode(self):
         '''
@@ -4051,10 +4051,10 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         self.setTextCursor(cursor)
         self.setFont(self.DefaultFont)
 
-        self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
+        self.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.NoTextInteraction)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, True)
         self.setSelected(False)
 
     def setPenMode(self):
@@ -4078,10 +4078,10 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         self.setTextCursor(cursor)
         self.setFont(self.DefaultFont)
 
-        self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
+        self.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.NoTextInteraction)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
         self.setSelected(False)
 
     def setEditMode(self):
@@ -4096,7 +4096,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         doc = self.document()
         doc.clear()
 
-        self.setCursor(QtCore.Qt.IBeamCursor)
+        self.setCursor(QtCore.Qt.CursorShape.IBeamCursor)
         self.setFont(self.DefaultFont)
 
         self.setHtml(src)
@@ -4109,10 +4109,10 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.MoveAnchor)
         self.setTextCursor(cursor)
 
-        self.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
+        self.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextEditorInteraction)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, True)
 
         self.widthWidget.setShape()
         self.widthWidget.show()
@@ -4129,7 +4129,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         doc = self.document()
         doc.clear()
 
-        self.setCursor(QtCore.Qt.IBeamCursor)
+        self.setCursor(QtCore.Qt.CursorShape.IBeamCursor)
 
         #font = QtGui.QFont("Optima")
         font = QtGui.QFont()
@@ -4149,9 +4149,9 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         self.setTextCursor(cursor)
 
         self.setTextWidth(CONFIG['text_item_width'])
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, True)
 
         self.widthWidget.setShape()
         self.widthWidget.show()
@@ -4216,7 +4216,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
             # XXX should replace with Qt.UniqueConnection but...
             # doesn't seem to work yet (v4.6-1) giving the error:
             # AttributeError: type object 'Qt' has no attribute 'UniqueConnection'
-            # self.linkClicked.connect(self.scene().linkClicked, QtCore.Qt.UniqueConnection)
+            # self.linkClicked.connect(self.scene().linkClicked, QtCore.Qt.ConnectionType.UniqueConnection)
             self.linkClicked.connect(self.scene().linkClicked)
             self.linkClicked.emit(str(self.url))
             return
@@ -4245,7 +4245,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
     #     p1 = event.scenePos()
 
     #     for item in self.scene().selectedItems():
-    #         if item.flags() & QtWidgets.QGraphicsItem.ItemIsMovable:
+    #         if item.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable:
     #             p0i = item.mapFromScene(p0)
     #             p1i = item.mapFromScene(p1)
     #             dpi = p1i-p0i
@@ -4264,15 +4264,15 @@ class TextItem(QtWidgets.QGraphicsTextItem):
 
     def keyPressEvent(self, event):
 
-        # if event.key()==QtCore.Qt.Key_Return and event.modifiers()==QtCore.Qt.NoModifier:
+        # if event.key()==QtCore.Qt.Key.Key_Return and event.modifiers()==QtCore.Qt.KeyboardModifier.NoModifier:
         #     ## pass event along so 'OK' is clicked .. (get actual return with shift-return)
         #     QtWidgets.QGraphicsItem.keyPressEvent(self, event)
         #     return
 
-        if self.mode == self.EditMode and event.modifiers() & QtCore.Qt.ControlModifier:
+        if self.mode == self.EditMode and event.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier:
 
             # XXX combine text format with input dialog actions
-            if event.key() == QtCore.Qt.Key_B:
+            if event.key() == QtCore.Qt.Key.Key_B:
                 ## set bold
                 cursor = self.textCursor()
                 fmt = cursor.charFormat()
@@ -4281,14 +4281,14 @@ class TextItem(QtWidgets.QGraphicsTextItem):
                                 else QtGui.QFont.Bold)
                 cursor.mergeCharFormat(fmt)
 
-            elif event.key() == QtCore.Qt.Key_I:
+            elif event.key() == QtCore.Qt.Key.Key_I:
                 ## toggle italic
                 cursor = self.textCursor()
                 fmt = cursor.charFormat()
                 fmt.setFontItalic(not fmt.fontItalic())
                 cursor.mergeCharFormat(fmt)
 
-            elif event.key() == QtCore.Qt.Key_U:
+            elif event.key() == QtCore.Qt.Key.Key_U:
                 ## toggle underline
                 cursor = self.textCursor()
                 fmt = cursor.charFormat()
@@ -4305,7 +4305,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         else:
             ## pass event on
             for item in self.scene().selectedItems():
-                if item.flags() & QtWidgets.QGraphicsItem.ItemIsFocusable:
+                if item.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable:
                     item.handleKeyPressEvent(event)
 
 
@@ -4320,7 +4320,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         '''
 
         if len(url) > 0:
-            self.setCursor(QtCore.Qt.PointingHandCursor)
+            self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
             self.url = url
 
             # XXX should this be done at creation time? what if scene not defined?
@@ -4329,24 +4329,24 @@ class TextItem(QtWidgets.QGraphicsTextItem):
             self.statusMessage.emit(str(url))
 
         else:
-            self.setCursor(QtCore.Qt.ArrowCursor)
+            self.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
             self.statusMessage.emit("")
             self.url = None
 
     # def hoverEnterEvent(self, event):
-    #     if self.flags() & QtWidgets.QGraphicsItem.ItemIsMovable and self.isSelected():
-    #         self.setCursor(QtCore.Qt.SizeAllCursor)
+    #     if self.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable and self.isSelected():
+    #         self.setCursor(QtCore.Qt.CursorShape.SizeAllCursor)
 
     #     QtWidgets.QGraphicsTextItem.hoverEnterEvent(self, event)
 
     # def hoverMoveEvent(self, event):
-    #     if self.flags() & QtWidgets.QGraphicsItem.ItemIsMovable \
+    #     if self.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable \
     #        and self.isSelected() and not self.hasCursor():
-    #         self.setCursor(QtCore.Qt.SizeAllCursor)
+    #         self.setCursor(QtCore.Qt.CursorShape.SizeAllCursor)
     #     QtWidgets.QGraphicsTextItem.hoverMoveEvent(self, event)
 
     # def hoverLeaveEvent(self, event):
-    #     if self.flags() & QtWidgets.QGraphicsItem.ItemIsMovable \
+    #     if self.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable \
     #        and self.isSelected():
     #         self.unsetCursor()
     #     QtWidgets.QGraphicsTextItem.hoverLeaveEvent(self, event)
@@ -4430,7 +4430,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
 
         batch = graphydb.generateUUID()
         for item in self.scene().selectedItems():
-            if item.flags() & QtWidgets.QGraphicsItem.ItemIsMovable:
+            if item.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable:
                 p0i = item.mapFromScene(p0)
                 p1i = item.mapFromScene(p1)
                 dpi = p1i-p0i
@@ -4442,33 +4442,33 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
     def setMode(self, mode):
 
         if mode == PenMode:
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsSelectable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsMovable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsFocusable, False)
             self.setSelected(False)
 
         elif mode == SelectMode:
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsSelectable, True)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsMovable, True)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsFocusable, True)
             self.setSelected(False)
 
         else:
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsSelectable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsMovable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsFocusable, False)
             self.setSelected(False)
 
     def hoverEnterEvent(self, event):
-        if self.flags() & QtWidgets.QGraphicsItem.ItemIsMovable and self.isSelected():
-            self.setCursor(QtCore.Qt.SizeAllCursor)
+        if self.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable and self.isSelected():
+            self.setCursor(QtCore.Qt.CursorShape.SizeAllCursor)
 
         QtWidgets.QGraphicsPixmapItem.hoverEnterEvent(self, event)
 
     # def hoverMoveEvent(self, event):
-    #     if self.flags() & QtWidgets.QGraphicsItem.ItemIsMovable \
+    #     if self.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable \
     #        and self.isSelected() and not self.hasCursor():
-    #         self.setCursor(QtCore.Qt.SizeAllCursor)
+    #         self.setCursor(QtCore.Qt.CursorShape.SizeAllCursor)
     #     QtWidgets.QGraphicsPixmapItem.hoverMoveEvent(self, event)
 
     def hoverLeaveEvent(self, event):
@@ -4538,7 +4538,7 @@ class Leaf(QtWidgets.QGraphicsItem):
 
     def paint(self, painter, option, widget):
 
-        #painter.setPen(QtGui.QPen(QtCore.Qt.red, 0.5))
+        #painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.red, 0.5))
         #painter.drawRect(self.boundingRect())
         pass
 
@@ -4556,9 +4556,9 @@ class OpenCloseWidget(QtWidgets.QGraphicsPathItem):
     def __init__(self, stem):
         super().__init__(QtGui.QPainterPath(), stem)
         self.stem = stem
-        self.setCursor(QtCore.Qt.PointingHandCursor)
+        self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
 
-        self.setPen(QtGui.QPen(QtCore.Qt.black, 1 , QtCore.Qt.SolidLine, QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
+        self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1 , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
         self.setBrush(QtGui.QBrush(QtGui.QColor(230,230,230)))
 
         self.open = True
@@ -4679,33 +4679,33 @@ class StemItem(QtWidgets.QGraphicsItem):
         ## widget to show stem as selected
         ##
         self.selectpath = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(), self)
-        self.selectpath.setPen(QtGui.QPen(QtCore.Qt.black, 1, QtCore.Qt.DashLine))
+        self.selectpath.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1, QtCore.Qt.PenStyle.DashLine))
         self.selectpath.hide()
 
         ##
         ## widget to show stem as being edited
         ##
         self.editedpath = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(), self)
-        self.editedpath.setPen(QtGui.QPen(QtCore.Qt.red, 2, QtCore.Qt.SolidLine))
+        self.editedpath.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.red, 2, QtCore.Qt.PenStyle.SolidLine))
         self.editedpath.hide()
 
         ##
         ## widget to show log press feedback
         ##
         self.longPressWidget = QtWidgets.QGraphicsEllipseItem(0,0,6,6,self)
-        self.longPressWidget.setPen(QtGui.QPen(QtCore.Qt.black, 1))
-        self.longPressWidget.setBrush(QtGui.QBrush(QtCore.Qt.gray))
+        self.longPressWidget.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1))
+        self.longPressWidget.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.gray))
         self.longPressWidget.hide()
         self.longPressWidget.setZValue(90)
 
         ##
         ## setup a basic starting point for flags etc
         ##
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable,True)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable,True)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresParentOpacity,True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable,True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable,True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity,True)
         self.setSelected(False)
-        self.setCursor(QtCore.Qt.ArrowCursor)
+        self.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
 
         self.path = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(),self)
 
@@ -4839,7 +4839,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
             indexBack = QtWidgets.QGraphicsPathItem(path, self)
             indexBack.setBrush(QtGui.QBrush(QtGui.QColor(self.style('branchcolor')).lighter()))
-            indexBack.setPen(QtGui.QPen(QtCore.Qt.gray, 0.1 , QtCore.Qt.SolidLine, QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
+            indexBack.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.gray, 0.1 , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
             indexBack.setZValue(11)
 
             self.indexText = QtWidgets.QGraphicsSimpleTextItem(str(self.index), indexBack)
@@ -4866,7 +4866,7 @@ class StemItem(QtWidgets.QGraphicsItem):
             tr = self.leaf.mapToParent(self.leaf.boundingRect()).boundingRect().adjusted(-pad,-pad,pad,pad)
             path = QtGui.QPainterPath()
             path.addRoundedRect(tr,6,6)
-            self.path.setPen(QtGui.QPen(QtCore.Qt.black, penwidth , QtCore.Qt.SolidLine, QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
+            self.path.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, penwidth , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
             self.path.setBrush(QtGui.QBrush(QtGui.QColor(200,200,200)))
             self.path.setPath(path)
 
@@ -4874,7 +4874,7 @@ class StemItem(QtWidgets.QGraphicsItem):
             ##
             ## draw standard branch, actually, use redrawTail()
             ##
-            self.path.setPen(QtGui.QPen(QtCore.Qt.NoPen))
+            self.path.setPen(QtGui.QPen(QtCore.Qt.PenStyle.NoPen))
             self.path.setBrush(QtGui.QBrush(QtGui.QColor(self.style('branchcolor'))))
             self.redrawTail()
 
@@ -4895,7 +4895,7 @@ class StemItem(QtWidgets.QGraphicsItem):
             path.addRoundedRect(rect, 1, 1)
             back = QtWidgets.QGraphicsPathItem(path, self.tagitems)
             back.setTransform(QtGui.QTransform.fromTranslate(offset, 0), True)
-            back.setPen(QtGui.QPen(QtCore.Qt.gray, 0 , QtCore.Qt.SolidLine, QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
+            back.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.gray, 0 , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
             back.setBrush(QtGui.QBrush(QtGui.QColor('#ffffbb')))
             back.setZValue(-10)
 
@@ -5069,19 +5069,19 @@ class StemItem(QtWidgets.QGraphicsItem):
         self._m_state = MPRESS
         # logging.debug('[*] Press event ->[1]')
 
-        if (event.button() == QtCore.Qt.LeftButton and event.modifiers() == QtCore.Qt.ControlModifier) or \
-           (event.button() in [QtCore.Qt.RightButton, QtCore.Qt.MiddleButton]):
+        if (event.button() == QtCore.Qt.MouseButton.LeftButton and event.modifiers() == QtCore.Qt.KeyboardModifier.ControlModifier) or \
+           (event.button() in [QtCore.Qt.MouseButton.RightButton, QtCore.Qt.MouseButton.MiddleButton]):
             self._m_state = MADD
             # logging.debug('[1] Modifiers ->[5]')
             self.drawBud(event.pos())
 
         else:
 
-            if event.button() == QtCore.Qt.LeftButton:
-                if event.modifiers() == QtCore.Qt.ShiftModifier:
+            if event.button() == QtCore.Qt.MouseButton.LeftButton:
+                if event.modifiers() == QtCore.Qt.KeyboardModifier.ShiftModifier:
                     self.setSelected(not self.isSelected())
 
-                elif event.modifiers() == QtCore.Qt.NoModifier and not self.isSelected():
+                elif event.modifiers() == QtCore.Qt.KeyboardModifier.NoModifier and not self.isSelected():
                     self.scene().clearSelection()
                     self.setSelected(True)
 
@@ -5283,7 +5283,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         if self.newstemtail is None:
             self.newstemtail = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(),self)
-            self.newstemtail.setPen(QtGui.QPen(QtCore.Qt.NoPen))
+            self.newstemtail.setPen(QtGui.QPen(QtCore.Qt.PenStyle.NoPen))
             if self.depth==0:
                 color=QtGui.QColor(hsv_to_rgb(random.random(), 0.6, 0.85))
             else:
