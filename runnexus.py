@@ -18,7 +18,7 @@
 # along with Nexus.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys,  time
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 from nexus.mainwindow import MainWindow, NexusApplication, NewOrOpenDialog
 from pathlib import Path
@@ -26,10 +26,10 @@ from nexus.graphics import VERSION
 import logging
 
 #import cProfile
-if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
-    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
-if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
-    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
+# if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
+#     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
+# if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
+#     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
 if __name__ == "__main__":
     app = NexusApplication()
@@ -52,5 +52,4 @@ if __name__ == "__main__":
         d.show()
 
     #cProfile.run('app.exec_()','stats')
-    app.exec_()
-
+    app.exec()

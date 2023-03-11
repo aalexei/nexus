@@ -17,7 +17,7 @@
 ## along with Nexus.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 from . import resources
 import logging

@@ -20,8 +20,8 @@
 import xml.etree.ElementTree as et
 import sys,  zipfile,  io,  os, time, random, hashlib, json, shutil
 from pathlib import Path
-from PyQt5 import QtCore, QtGui, QtOpenGL, QtSvg, QtWidgets, QtPrintSupport
-from PyQt5.QtMultimedia import QAudioRecorder, QAudioEncoderSettings, QMultimedia
+from PyQt6 import QtCore, QtGui, QtOpenGL, QtSvg, QtWidgets, QtPrintSupport
+#QT6 from PyQt6.QtMultimedia import QAudioRecorder, QAudioEncoderSettings, QMultimedia
 import gzip
 from functools import reduce
 import webbrowser, tempfile
@@ -472,11 +472,11 @@ class NexusApplication(QtWidgets.QApplication):
         super().__init__(sys.argv)
         self.windows = []
 
-        self.setAttribute(QtCore.Qt.AA_DontShowIconsInMenus)
+        self.setAttribute(QtCore.Qt.ApplicationAttribute.AA_DontShowIconsInMenus)
         menu = QtWidgets.QMenu(self.tr("&Window"))
         menu.aboutToShow.connect(self.updateWindowMenu)
 
-        act = QtWidgets.QAction(QtGui.QIcon(":/images/view-fullscreen.svg"), self.tr("Full Screen"), self)
+        act = QtGui.QAction(QtGui.QIcon(":/images/view-fullscreen.svg"), self.tr("Full Screen"), self)
         act.setStatusTip(self.tr("Toggle full screen mode"))
         act.triggered.connect(self.windowFullScreen)
         act.setCheckable(True)
@@ -517,7 +517,7 @@ class NexusApplication(QtWidgets.QApplication):
         ## python's garbage collector with throw away our MainWindows!
         self.windows = self.windowList()
         for window in self.windows:
-            act = QtWidgets.QAction(QtGui.QIcon(":/images/nexusicon.svg"), window.windowTitle(), self)
+            act = QtGui.QAction(QtGui.QIcon(":/images/nexusicon.svg"), window.windowTitle(), self)
             ## tag the action so we can identify and delete it
             act.windowAction = True
             if window == activewindow:
@@ -626,7 +626,7 @@ class NexusApplication(QtWidgets.QApplication):
 
 
     #X def event(self, event):
-    #X     if event.type() == QtCore.QEvent.FileOpen:
+    #X     if event.type() == QtCore.QEvent.Type.FileOpen:
     #X         f =  event.file()
     #X
     #X         logging.debug("Received FileOpen event for %s", f)
@@ -643,7 +643,7 @@ class NexusApplication(QtWidgets.QApplication):
     #X         return QtWidgets.QApplication.event(self, event)
 
     def event(self, event):
-        if event.type() == QtCore.QEvent.FileOpen:
+        if event.type() == QtCore.QEvent.Type.FileOpen:
             f =  event.file()
 
             logging.debug("Received FileOpen event for %s", f)
@@ -867,7 +867,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setDefaultSettings()
 
-        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
         self.isUntitled = True
 
         self.setWindowIcon(QtGui.QIcon(":/images/nexusicon.png"))
@@ -1426,101 +1426,101 @@ class MainWindow(QtWidgets.QMainWindow):
         app = QtWidgets.QApplication.instance()
 
         # ----------------------------------------------------------------------------------
-        self.newAct = QtWidgets.QAction(QtGui.QIcon(":/images/new.svg"),self.tr("&New"), self)
-        self.newAct.setShortcut(QtGui.QKeySequence.New)
+        self.newAct = QtGui.QAction(QtGui.QIcon(":/images/new.svg"),self.tr("&New"), self)
+        self.newAct.setShortcut(QtGui.QKeySequence.StandardKey.New)
         self.newAct.setStatusTip(self.tr("Create a new file"))
         self.newAct.triggered.connect(self.newFile)
 
         # ----------------------------------------------------------------------------------
-        self.openAct = QtWidgets.QAction(QtGui.QIcon(":/images/open.svg"),self.tr("&Open..."), self)
-        self.openAct.setShortcut(QtGui.QKeySequence.Open)
+        self.openAct = QtGui.QAction(QtGui.QIcon(":/images/open.svg"),self.tr("&Open..."), self)
+        self.openAct.setShortcut(QtGui.QKeySequence.StandardKey.Open)
         self.openAct.setStatusTip(self.tr("Open an existing file"))
         self.openAct.triggered.connect(app.dialogOpen)
 
         # ----------------------------------------------------------------------------------
-        # self.saveAct = QtWidgets.QAction(QtGui.QIcon(":/images/save.svg"),self.tr("&Save"), self)
-        # self.saveAct.setShortcut(QtGui.QKeySequence.Save)
+        # self.saveAct = QtGui.QAction(QtGui.QIcon(":/images/save.svg"),self.tr("&Save"), self)
+        # self.saveAct.setShortcut(QtGui.QKeySequence.StandardKey.Save)
         # self.saveAct.setStatusTip(self.tr("Save the document to disk"))
         # self.saveAct.triggered.connect(self.save)
 
         # ----------------------------------------------------------------------------------
-        self.saveAsAct = QtWidgets.QAction(QtGui.QIcon(":/images/save-as.svg"), self.tr("Save &As..."), self)
+        self.saveAsAct = QtGui.QAction(QtGui.QIcon(":/images/save-as.svg"), self.tr("Save &As..."), self)
         self.saveAsAct.setStatusTip(self.tr("Save the document under a new name"))
         self.saveAsAct.triggered.connect(self.saveAs)
 
         # ----------------------------------------------------------------------------------
-        self.exportSVGAct = QtWidgets.QAction(QtGui.QIcon(":/images/export.svg"), self.tr("Export as SVG..."), self)
+        self.exportSVGAct = QtGui.QAction(QtGui.QIcon(":/images/export.svg"), self.tr("Export as SVG..."), self)
         self.exportSVGAct.setShortcut(self.tr("Ctrl+E"))
         self.exportSVGAct.setStatusTip(self.tr("Export the map to SVG"))
         self.exportSVGAct.triggered.connect(self.exportSVG)
 
-        self.exportLinkedSVGsAct = QtWidgets.QAction(QtGui.QIcon(":/images/export.svg"), self.tr("Export linked as SVG..."), self)
+        self.exportLinkedSVGsAct = QtGui.QAction(QtGui.QIcon(":/images/export.svg"), self.tr("Export linked as SVG..."), self)
         self.exportLinkedSVGsAct.setStatusTip(self.tr("Recursively export all linked maps as SVG"))
         self.exportLinkedSVGsAct.triggered.connect(self.exportLinkedSVGs)
 
-        self.exportTextAct = QtWidgets.QAction(QtGui.QIcon(":/images/export.svg"), self.tr("Export text..."), self)
+        self.exportTextAct = QtGui.QAction(QtGui.QIcon(":/images/export.svg"), self.tr("Export text..."), self)
         self.exportTextAct.setStatusTip(self.tr("Export text as outline"))
         self.exportTextAct.triggered.connect(self.exportText)
 
         # ----------------------------------------------------------------------------------
-        self.printMapAct = QtWidgets.QAction(QtGui.QIcon(":/images/print.svg"),self.tr("&Print Map"), self)
-        self.printMapAct.setShortcut(QtGui.QKeySequence.Print)
+        self.printMapAct = QtGui.QAction(QtGui.QIcon(":/images/print.svg"),self.tr("&Print Map"), self)
+        self.printMapAct.setShortcut(QtGui.QKeySequence.StandardKey.Print)
         self.printMapAct.setStatusTip(self.tr("Print whole map"))
         self.printMapAct.triggered.connect(self.printMapSlot)
 
-        self.printViewsAct = QtWidgets.QAction(QtGui.QIcon(":/images/print.svg"),self.tr("&Print Views"), self)
+        self.printViewsAct = QtGui.QAction(QtGui.QIcon(":/images/print.svg"),self.tr("&Print Views"), self)
         self.printViewsAct.setStatusTip(self.tr("Print Views"))
         self.printViewsAct.triggered.connect(self.printViewsSlot)
         # ----------------------------------------------------------------------------------
-        self.closeAct = QtWidgets.QAction(self.tr("&Close"), self)
-        self.closeAct.setShortcut(QtGui.QKeySequence.Close)
+        self.closeAct = QtGui.QAction(self.tr("&Close"), self)
+        self.closeAct.setShortcut(QtGui.QKeySequence.StandardKey.Close)
         self.closeAct.setStatusTip(self.tr("Close this window"))
         self.closeAct.triggered.connect(self.close)
 
         # ----------------------------------------------------------------------------------
-        self.exitAct = QtWidgets.QAction(self.tr("Q&uit"), self)
-        self.exitAct.setMenuRole(QtWidgets.QAction.QuitRole)
+        self.exitAct = QtGui.QAction(self.tr("Q&uit"), self)
+        self.exitAct.setMenuRole(QtGui.QAction.QuitRole)
         self.exitAct.setShortcut(self.tr("Ctrl+Q"))
         self.exitAct.setStatusTip(self.tr("Quit the application"))
         self.exitAct.triggered.connect(QtWidgets.qApp.closeAllWindows)
 
 
         # ----------------------------------------------------------------------------------
-        #self.grabModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/grab-mode.svg"), self.tr("Grab Mode"), self)
+        #self.grabModeAct = QtGui.QAction(QtGui.QIcon(":/images/grab-mode.svg"), self.tr("Grab Mode"), self)
         #self.grabModeAct.setCheckable(True)
 
         # ----------------------------------------------------------------------------------
-        #self.addModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/add-mode.svg"), self.tr("Add Mode"), self)
+        #self.addModeAct = QtGui.QAction(QtGui.QIcon(":/images/add-mode.svg"), self.tr("Add Mode"), self)
         #self.addModeAct.setCheckable(True)
 
         # ----------------------------------------------------------------------------------
-        #self.moveModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/move-mode.svg"), self.tr("Move Mode"), self)
+        #self.moveModeAct = QtGui.QAction(QtGui.QIcon(":/images/move-mode.svg"), self.tr("Move Mode"), self)
         #self.moveModeAct.setCheckable(True)
 
-        #modegroup = QtWidgets.QActionGroup(self)
+        #modegroup = QtGui.QActionGroup(self)
         #modegroup.addAction(self.grabModeAct)
         #modegroup.addAction(self.addModeAct)
         #modegroup.addAction(self.moveModeAct)
         #self.grabModeAct.setChecked(True)
 
         # ----------------------------------------------------------------------------------
-        self.cutAct = QtWidgets.QAction(QtGui.QIcon(":/images/edit-cut.svg"),self.tr("Cu&t"),
+        self.cutAct = QtGui.QAction(QtGui.QIcon(":/images/edit-cut.svg"),self.tr("Cu&t"),
                                     self)
-        self.cutAct.setShortcut(QtGui.QKeySequence.Cut)
+        self.cutAct.setShortcut(QtGui.QKeySequence.StandardKey.Cut)
         self.cutAct.setStatusTip(self.tr("Cut the current selection's "
                                          "contents to the clipboard"))
         self.cutAct.triggered.connect(self.scene.cut)
 
         # ----------------------------------------------------------------------------------
-        self.copyAct = QtWidgets.QAction(QtGui.QIcon(":/images/edit-copy.svg"),self.tr("&Copy"),
+        self.copyAct = QtGui.QAction(QtGui.QIcon(":/images/edit-copy.svg"),self.tr("&Copy"),
                                      self)
-        self.copyAct.setShortcut(QtGui.QKeySequence.Copy)
+        self.copyAct.setShortcut(QtGui.QKeySequence.StandardKey.Copy)
         self.copyAct.setStatusTip(self.tr("Copy the current selection's "
                                           "contents to the clipboard"))
         self.copyAct.triggered.connect(self.scene.copy)
 
         # ----------------------------------------------------------------------------------
-        self.copyStemLinkAct = QtWidgets.QAction(QtGui.QIcon(":/images/edit-copy.svg"),self.tr("&Copy Links"),
+        self.copyStemLinkAct = QtGui.QAction(QtGui.QIcon(":/images/edit-copy.svg"),self.tr("&Copy Links"),
                                      self)
         self.copyStemLinkAct.setShortcut("Shift+Ctrl+C")
         self.copyStemLinkAct.setStatusTip(self.tr("Copy the current selection links"
@@ -1528,153 +1528,153 @@ class MainWindow(QtWidgets.QMainWindow):
         self.copyStemLinkAct.triggered.connect(self.scene.copyStemLink)
 
         # ----------------------------------------------------------------------------------
-        self.pasteAct = QtWidgets.QAction(QtGui.QIcon(":/images/edit-paste.svg"),
+        self.pasteAct = QtGui.QAction(QtGui.QIcon(":/images/edit-paste.svg"),
                                       self.tr("&Paste"), self)
-        self.pasteAct.setShortcut(QtGui.QKeySequence.Paste)
+        self.pasteAct.setShortcut(QtGui.QKeySequence.StandardKey.Paste)
         self.pasteAct.setStatusTip(self.tr("Paste the clipboard's contents "
                                            "into the current selection"))
         self.pasteAct.triggered.connect(self.scene.paste)
 
         # ----------------------------------------------------------------------------------
-        self.deleteAct = QtWidgets.QAction(QtGui.QIcon(":/images/edit-delete.svg"),
+        self.deleteAct = QtGui.QAction(QtGui.QIcon(":/images/edit-delete.svg"),
                                        self.tr("&Delete"), self)
-        self.deleteAct.setShortcut(QtGui.QKeySequence.Delete)
+        self.deleteAct.setShortcut(QtGui.QKeySequence.StandardKey.Delete)
         self.deleteAct.setStatusTip(self.tr("Delete selection"))
         self.deleteAct.triggered.connect(self.scene.delete)
 
         # ----------------------------------------------------------------------------------
-        self.undoAct = QtWidgets.QAction(QtGui.QIcon(":/images/undo.svg"), self.tr("Undo"), self)
-        self.undoAct.setShortcut(QtGui.QKeySequence.Undo)
+        self.undoAct = QtGui.QAction(QtGui.QIcon(":/images/undo.svg"), self.tr("Undo"), self)
+        self.undoAct.setShortcut(QtGui.QKeySequence.StandardKey.Undo)
         self.undoAct.setStatusTip(self.tr("Undo last change"))
         self.undoAct.triggered.connect(self.undo)
 
         # ----------------------------------------------------------------------------------
-        self.setScaleAct = QtWidgets.QAction(self.tr("Set Scale"), self)
+        self.setScaleAct = QtGui.QAction(self.tr("Set Scale"), self)
         self.setScaleAct.setStatusTip(self.tr("Set the scale for selected"))
         self.setScaleAct.setShortcut("S")
         self.setScaleAct.triggered.connect(self.sceneDialogSetScale)
 
         # ----------------------------------------------------------------------------------
-        self.scaleByAct = QtWidgets.QAction(self.tr("Scale By"), self)
+        self.scaleByAct = QtGui.QAction(self.tr("Scale By"), self)
         self.scaleByAct.setStatusTip(self.tr("Scale selected by a factor"))
         self.scaleByAct.triggered.connect(self.sceneDialogScaleBy)
 
         # ----------------------------------------------------------------------------------
-        self.increaseScaleAct = QtWidgets.QAction(self.tr("Increase Scale"), self)
+        self.increaseScaleAct = QtGui.QAction(self.tr("Increase Scale"), self)
         self.increaseScaleAct.setStatusTip(self.tr("Increase scale of selected"))
         self.increaseScaleAct.setShortcuts(["+","="])
         self.increaseScaleAct.triggered.connect(self.sceneSelectedIncreaseScale)
 
         # ----------------------------------------------------------------------------------
-        self.decreaseScaleAct = QtWidgets.QAction(self.tr("Decrease Scale"), self)
+        self.decreaseScaleAct = QtGui.QAction(self.tr("Decrease Scale"), self)
         self.decreaseScaleAct.setStatusTip(self.tr("Decrease scale of selected"))
         self.decreaseScaleAct.setShortcuts(["-","_"])
         self.decreaseScaleAct.triggered.connect(self.sceneSelectedDecreaseScale)
 
         # ----------------------------------------------------------------------------------
-        self.selectAllAct = QtWidgets.QAction(self.tr("Select All"), self)
+        self.selectAllAct = QtGui.QAction(self.tr("Select All"), self)
         self.selectAllAct.setStatusTip(self.tr("Select all stems"))
         self.selectAllAct.setShortcut("A")
         self.selectAllAct.triggered.connect(self.sceneSelectAll)
 
         # ----------------------------------------------------------------------------------
-        self.selectChildrenAct = QtWidgets.QAction(self.tr("Select Children"), self)
+        self.selectChildrenAct = QtGui.QAction(self.tr("Select Children"), self)
         self.selectChildrenAct.setStatusTip(self.tr("Select all child stems"))
         self.selectChildrenAct.setShortcut("C")
         self.selectChildrenAct.triggered.connect(self.sceneSelectChildren)
 
         # ----------------------------------------------------------------------------------
-        self.selectSiblingsAct = QtWidgets.QAction(self.tr("Select Siblings"), self)
+        self.selectSiblingsAct = QtGui.QAction(self.tr("Select Siblings"), self)
         self.selectSiblingsAct.setStatusTip(self.tr("Extend selection to siblings"))
         self.selectSiblingsAct.setShortcut("E")
         self.selectSiblingsAct.triggered.connect(self.sceneSelectSiblings)
 
         # ----------------------------------------------------------------------------------
-        #self.clearStyleAct = QtWidgets.QAction(self.tr("Clear Style"), self)
+        #self.clearStyleAct = QtGui.QAction(self.tr("Clear Style"), self)
         #self.clearStyleAct.setStatusTip(self.tr("Clear the style setting for selected"))
         #self.clearStyleAct.triggered.connect(self.sceneSelectedClearStyle)
 
         # ----------------------------------------------------------------------------------
-        self.hideAct = QtWidgets.QAction(self.tr("Hide"), self)
+        self.hideAct = QtGui.QAction(self.tr("Hide"), self)
         self.hideAct.setStatusTip(self.tr("Hide selected"))
         self.hideAct.setShortcut("H")
         self.hideAct.triggered.connect(self.sceneSelectedHide)
 
         # ----------------------------------------------------------------------------------
-        self.setOpacityAct = QtWidgets.QAction(self.tr("Set Opacity"), self)
+        self.setOpacityAct = QtGui.QAction(self.tr("Set Opacity"), self)
         self.setOpacityAct.setStatusTip(self.tr("Set the opacity of selected items"))
         self.setOpacityAct.setShortcut("O")
         self.setOpacityAct.triggered.connect(self.sceneDialogOpacity)
 
         # ----------------------------------------------------------------------------------
-        self.toggleIconifyAct = QtWidgets.QAction(self.tr("Toggle Iconify"), self)
+        self.toggleIconifyAct = QtGui.QAction(self.tr("Toggle Iconify"), self)
         self.toggleIconifyAct.setStatusTip(self.tr("Toggle showing item as icon only"))
         self.toggleIconifyAct.setShortcut("I")
         self.toggleIconifyAct.triggered.connect(self.sceneToggleIconify)
 
         # ----------------------------------------------------------------------------------
-        self.clearUndoHistoryAct = QtWidgets.QAction(self.tr("Clear Undo History"), self)
+        self.clearUndoHistoryAct = QtGui.QAction(self.tr("Clear Undo History"), self)
         self.clearUndoHistoryAct.setStatusTip(self.tr("Clear all undo history"))
         self.clearUndoHistoryAct.triggered.connect(self.sceneClearUndoHistory)
 
         # ----------------------------------------------------------------------------------
-        self.aboutAct = QtWidgets.QAction(self.tr("About"), self)
-        self.aboutAct.setMenuRole(QtWidgets.QAction.AboutRole)
+        self.aboutAct = QtGui.QAction(self.tr("About"), self)
+        self.aboutAct.setMenuRole(QtGui.QAction.AboutRole)
         self.aboutAct.setStatusTip(self.tr("Show the application's About box"))
         self.aboutAct.triggered.connect(self.about)
 
         # ----------------------------------------------------------------------------------
-        self.zoomInAct = QtWidgets.QAction(QtGui.QIcon(":/images/zoom-in.svg"), self.tr("Zoom In"), self)
-        self.zoomInAct.setShortcut(QtGui.QKeySequence.ZoomIn)
+        self.zoomInAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-in.svg"), self.tr("Zoom In"), self)
+        self.zoomInAct.setShortcut(QtGui.QKeySequence.StandardKey.ZoomIn)
         self.zoomInAct.setStatusTip(self.tr("Zoom in"))
         self.zoomInAct.triggered.connect(self.view.zoomIn)
 
         # ----------------------------------------------------------------------------------
-        self.zoomOutAct = QtWidgets.QAction(QtGui.QIcon(":/images/zoom-out.svg"), self.tr("Zoom Out"), self)
-        self.zoomOutAct.setShortcut(QtGui.QKeySequence.ZoomOut)
+        self.zoomOutAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-out.svg"), self.tr("Zoom Out"), self)
+        self.zoomOutAct.setShortcut(QtGui.QKeySequence.StandardKey.ZoomOut)
         self.zoomOutAct.setStatusTip(self.tr("Zoom out"))
         self.zoomOutAct.triggered.connect(self.view.zoomOut)
 
         # ----------------------------------------------------------------------------------
-        self.zoomSelectionAct = QtWidgets.QAction(QtGui.QIcon(":/images/zoom-select.svg"), self.tr("Zoom to Selection"), self)
+        self.zoomSelectionAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-select.svg"), self.tr("Zoom to Selection"), self)
         self.zoomSelectionAct.setShortcut("Z")
         self.zoomSelectionAct.setStatusTip(self.tr("Zoom to Selection"))
         self.zoomSelectionAct.triggered.connect(self.view.zoomSelection)
 
         # ----------------------------------------------------------------------------------
-        self.zoomOriginalAct = QtWidgets.QAction(QtGui.QIcon(":/images/zoom-one.svg"), self.tr("Reset Zoom"), self)
+        self.zoomOriginalAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-one.svg"), self.tr("Reset Zoom"), self)
         self.zoomOriginalAct.setStatusTip(self.tr("Reset Zoom"))
         self.zoomOriginalAct.triggered.connect(self.view.zoomOriginal)
 
         # ----------------------------------------------------------------------------------
-        self.filterRunAct = QtWidgets.QAction(QtGui.QIcon(":/images/filter.svg"), self.tr("Run filter"), self)
+        self.filterRunAct = QtGui.QAction(QtGui.QIcon(":/images/filter.svg"), self.tr("Run filter"), self)
         self.filterRunAct.setStatusTip(self.tr("Filter map"))
         # ----------------------------------------------------------------------------------
-        self.filterClearAct = QtWidgets.QAction(QtGui.QIcon(":/images/filter-clear.svg"), self.tr("Clear filter"), self)
+        self.filterClearAct = QtGui.QAction(QtGui.QIcon(":/images/filter-clear.svg"), self.tr("Clear filter"), self)
         self.filterClearAct.setStatusTip(self.tr("Clear filters"))
 
         # ----------------------------------------------------------------------------------
         # Modes
         #
-        # self.presentationModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-presentation.svg"), self.tr("Presentation"), self)
+        # self.presentationModeAct = QtGui.QAction(QtGui.QIcon(":/images/view-presentation.svg"), self.tr("Presentation"), self)
         # self.presentationModeAct.setStatusTip(self.tr("Set Toggle Presentation Mode"))
         # self.presentationModeAct.triggered.connect(self.setPresentationMode)
         # self.presentationModeAct.setCheckable(True)
         # self.presentationModeAct.setChecked(False)
 
-        self.editModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/grab-mode.svg"), self.tr("Edit Mode"), self)
+        self.editModeAct = QtGui.QAction(QtGui.QIcon(":/images/grab-mode.svg"), self.tr("Edit Mode"), self)
         self.editModeAct.setCheckable(True)
         self.editModeAct.triggered.connect(self.setMode)
 
-        self.presentationModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-presentation.svg"), self.tr("Presentation Mode"), self)
+        self.presentationModeAct = QtGui.QAction(QtGui.QIcon(":/images/view-presentation.svg"), self.tr("Presentation Mode"), self)
         self.presentationModeAct.setCheckable(True)
         self.presentationModeAct.triggered.connect(self.setMode)
 
-        self.recordModeAct = QtWidgets.QAction(QtGui.QIcon(":/images/microphone.svg"), self.tr("Record Mode"), self)
+        self.recordModeAct = QtGui.QAction(QtGui.QIcon(":/images/microphone.svg"), self.tr("Record Mode"), self)
         self.recordModeAct.setCheckable(True)
         self.recordModeAct.triggered.connect(self.setMode)
 
-        modegroup = QtWidgets.QActionGroup(self)
+        modegroup = QtGui.QActionGroup(self)
         modegroup.addAction(self.editModeAct)
         modegroup.addAction(self.presentationModeAct)
         modegroup.addAction(self.recordModeAct)
@@ -1685,20 +1685,20 @@ class MainWindow(QtWidgets.QMainWindow):
         # ----------------------------------------------------------------------------------
         # Recording
         #
-        self.recStartAct = QtWidgets.QAction(QtGui.QIcon(":/images/record.svg"), self.tr("Start Recording"), self)
+        self.recStartAct = QtGui.QAction(QtGui.QIcon(":/images/record.svg"), self.tr("Start Recording"), self)
         self.recStartAct.setCheckable(True)
         self.recStartAct.triggered.connect(self.recordStart)
 
-        self.recPauseAct = QtWidgets.QAction(QtGui.QIcon(":/images/pause.svg"), self.tr("Pause Recording"), self)
+        self.recPauseAct = QtGui.QAction(QtGui.QIcon(":/images/pause.svg"), self.tr("Pause Recording"), self)
         self.recPauseAct.setCheckable(True)
         self.recPauseAct.triggered.connect(self.recordPause)
         self.recPauseAct.setShortcut("Esc")
 
-        self.recEndAct = QtWidgets.QAction(QtGui.QIcon(":/images/stop.svg"), self.tr("End Recording"), self)
+        self.recEndAct = QtGui.QAction(QtGui.QIcon(":/images/stop.svg"), self.tr("End Recording"), self)
         self.recEndAct.setCheckable(True)
         self.recEndAct.triggered.connect(self.recordEnd)
 
-        # self.recSourceAct = QtWidgets.QAction(QtGui.QIcon(":/images/sound.svg"), self.tr("Microphone Source"), self)
+        # self.recSourceAct = QtGui.QAction(QtGui.QIcon(":/images/sound.svg"), self.tr("Microphone Source"), self)
         # self.recSourceAct.triggered.connect(self.recordSetSource)
 
         # The Start/Pause/End don't form an action group as their state
@@ -1710,43 +1710,43 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.viewsAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
-        self.viewsNextAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-forward.svg"),self.tr("Forward"), self)
+        self.viewsNextAct = QtGui.QAction(QtGui.QIcon(":/images/view-forward.svg"),self.tr("Forward"), self)
         self.viewsNextAct.triggered.connect(self.viewsNext)
         #self.viewsNextAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
-        self.viewsPreviousAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-back.svg"),self.tr("Back"), self)
+        self.viewsPreviousAct = QtGui.QAction(QtGui.QIcon(":/images/view-back.svg"),self.tr("Back"), self)
         self.viewsPreviousAct.triggered.connect(self.viewsPrevious)
         #self.viewsPreviousAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
-        self.viewsHomeAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-home.svg"),self.tr("Home"), self)
+        self.viewsHomeAct = QtGui.QAction(QtGui.QIcon(":/images/view-home.svg"),self.tr("Home"), self)
         self.viewsHomeAct.triggered.connect(self.viewsHome)
         #self.viewsHomeAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
-        self.viewsFirstAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-first.svg"),self.tr("First"), self)
+        self.viewsFirstAct = QtGui.QAction(QtGui.QIcon(":/images/view-first.svg"),self.tr("First"), self)
         self.viewsFirstAct.triggered.connect(self.viewsFirst)
         #self.viewsFirstAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
-        self.viewsFramesAct = QtWidgets.QAction(self.tr("Show Frames"), self)
+        self.viewsFramesAct = QtGui.QAction(self.tr("Show Frames"), self)
         self.viewsFramesAct.triggered.connect(self.viewsFrames)
         self.viewsFramesAct.setCheckable(True)
         self.viewsFramesAct.setChecked(False)
         #self.viewsFramesAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
-        self.viewRotateAct = QtWidgets.QAction(self.tr("Allow Rotations"), self)
+        self.viewRotateAct = QtGui.QAction(self.tr("Allow Rotations"), self)
         self.viewRotateAct.setCheckable(True)
         self.viewRotateAct.setChecked(False)
 
         # ----------------------------------------------------------------------------------
-        self.setBackgroundAct = QtWidgets.QAction(self.tr("Set Background..."), self)
+        self.setBackgroundAct = QtGui.QAction(self.tr("Set Background..."), self)
         self.setBackgroundAct.triggered.connect(self.sceneSetBackground)
 
         # ----------------------------------------------------------------------------------
-        self.hidePointerAct = QtWidgets.QAction(self.tr("Hide Pointer"), self)
+        self.hidePointerAct = QtGui.QAction(self.tr("Hide Pointer"), self)
         self.hidePointerAct.setCheckable(True)
         self.hidePointerAct.setChecked(False)
         self.hidePointerAct.triggered.connect(self.hidePointer)
@@ -1756,11 +1756,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recentFileActs = []
         for ii in range(self.MaxRecentFiles):
             self.recentFileActs.append(
-                QtWidgets.QAction(self, visible=False, triggered=self.openRecentFile)
+                QtGui.QAction(self, visible=False, triggered=self.openRecentFile)
             )
 
         # ----------------------------------------------------------------------------------
-        self.runStreamingServerAct = QtWidgets.QAction(self.tr("Stream View"), self)
+        self.runStreamingServerAct = QtGui.QAction(self.tr("Stream View"), self)
         self.runStreamingServerAct.triggered.connect(app.toggleStreaminServer)
         self.runStreamingServerAct.setCheckable(True)
         self.runStreamingServerAct.setChecked(app.streaming)
@@ -2423,7 +2423,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 existing = app.raiseOrOpen(path)
 
                 if self.presentationModeAct.isChecked():
-                    existing.presentationModeAct.activate(QtWidgets.QAction.Trigger)
+                    existing.presentationModeAct.activate(QtGui.QAction.Trigger)
                     existing.jumpToView(existing.viewsModel.firstView())
 
             else:
@@ -3715,15 +3715,15 @@ class ViewsWidget(QtWidgets.QWidget):
         layout.addWidget(self.viewsListView)
 
         ## create actions
-        self.resetViewAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-reset.svg"), self.tr("&Reset View"), self)
+        self.resetViewAct = QtGui.QAction(QtGui.QIcon(":/images/view-reset.svg"), self.tr("&Reset View"), self)
         self.resetViewAct.setStatusTip(self.tr("Reset item to current view"))
         self.resetViewAct.triggered.connect(self.resetView)
 
-        self.addViewAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-add.svg"), self.tr("&Add View"), self)
+        self.addViewAct = QtGui.QAction(QtGui.QIcon(":/images/view-add.svg"), self.tr("&Add View"), self)
         self.addViewAct.setStatusTip(self.tr("Add new View"))
         self.addViewAct.triggered.connect(self.addCurrentView)
 
-        self.deleteViewAct = QtWidgets.QAction(QtGui.QIcon(":/images/view-remove.svg"), self.tr("&Delete View"), self)
+        self.deleteViewAct = QtGui.QAction(QtGui.QIcon(":/images/view-remove.svg"), self.tr("&Delete View"), self)
         self.deleteViewAct.setStatusTip(self.tr("Delete selected View"))
         self.deleteViewAct.triggered.connect(self.deleteView)
 

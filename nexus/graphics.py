@@ -16,8 +16,8 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Nexus.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import pyqtSlot
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtCore import pyqtSlot
 
 from math import sqrt, atan2, cos, sin, pi, asin, degrees, pow, exp, fmod
 import logging
@@ -173,7 +173,7 @@ class InputDialog(QtWidgets.QDialog):
         super().__init__(None)
 
         self.setSizeGripEnabled(True)
-        self.setWindowFlag(QtCore.Qt.Window, True)
+        self.setWindowFlag(QtCore.Qt.WindowType.Window, True)
 
         ## create main layout
         layout = QtWidgets.QVBoxLayout()
@@ -185,7 +185,7 @@ class InputDialog(QtWidgets.QDialog):
         layout.addWidget(dialogMenuBar)
 
         self.toolbar = QtWidgets.QToolBar()
-        self.toolbar.setOrientation(QtCore.Qt.Horizontal)
+        self.toolbar.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.toolbar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
         #self.toolbar.setMovable(True)
         #self.toolbar.setFloatable(True)
@@ -235,7 +235,7 @@ class InputDialog(QtWidgets.QDialog):
         self.highlightmode.setCheckable(True)
         self.erasermode.setCheckable(True)
         self.selectmode.setCheckable(True)
-        modegroup = QtWidgets.QActionGroup(self.toolbar)
+        modegroup = QtGui.QActionGroup(self.toolbar)
         modegroup.addAction(self.textmode)
         modegroup.addAction(self.penmode)
         modegroup.addAction(self.highlightmode)
@@ -597,105 +597,105 @@ class InputDialog(QtWidgets.QDialog):
 
     def createActions(self):
 
-        self.closeAct = QtWidgets.QAction(QtGui.QIcon(":/images/exit.svg"),self.tr("Close"), self)
+        self.closeAct = QtGui.QAction(QtGui.QIcon(":/images/exit.svg"),self.tr("Close"), self)
         self.closeAct.triggered.connect(self.saveClose)
 
         ## ----------------------------------------------------------------------------------
-        self.propmode = QtWidgets.QAction(QtGui.QIcon(":/images/cog.svg"),self.tr("Properties"), self)
+        self.propmode = QtGui.QAction(QtGui.QIcon(":/images/cog.svg"),self.tr("Properties"), self)
         self.propmode.setCheckable(True)
         self.propmode.triggered.connect(self.setPropMode)
 
         ## ----------------------------------------------------------------------------------
-        self.textmode = QtWidgets.QAction(QtGui.QIcon(":/images/text.svg"),self.tr("&Text mode"), self)
+        self.textmode = QtGui.QAction(QtGui.QIcon(":/images/text.svg"),self.tr("&Text mode"), self)
         self.textmode.triggered.connect(self.setTextMode)
 
-        self.penmode = QtWidgets.QAction(QtGui.QIcon(":/images/pencil.svg"),self.tr("&Pen mode"), self)
+        self.penmode = QtGui.QAction(QtGui.QIcon(":/images/pencil.svg"),self.tr("&Pen mode"), self)
         self.penmode.setShortcut("b")
         self.penmode.triggered.connect(self.setPenModeClicked)
 
-        self.highlightmode = QtWidgets.QAction(QtGui.QIcon(":/images/highlighter.svg"),self.tr("&Highlight mode"), self)
+        self.highlightmode = QtGui.QAction(QtGui.QIcon(":/images/highlighter.svg"),self.tr("&Highlight mode"), self)
         self.highlightmode.setShortcut("h")
         self.highlightmode.triggered.connect(self.setHighlightModeClicked)
 
-        self.erasermode = QtWidgets.QAction(QtGui.QIcon(":/images/eraser.svg"),self.tr("&Eraser mode"), self)
+        self.erasermode = QtGui.QAction(QtGui.QIcon(":/images/eraser.svg"),self.tr("&Eraser mode"), self)
         self.erasermode.setShortcut("e")
         self.erasermode.triggered.connect(self.setEraserMode)
 
-        self.selectmode = QtWidgets.QAction(QtGui.QIcon(":/images/pointer.svg"),self.tr("&Select mode"), self)
+        self.selectmode = QtGui.QAction(QtGui.QIcon(":/images/pointer.svg"),self.tr("&Select mode"), self)
         self.selectmode.triggered.connect(self.setSelectMode)
 
         ## ----------------------------------------------------------------------------------
-        self.cutAct = QtWidgets.QAction(QtGui.QIcon(":/images/edit-cut.svg"),self.tr("Cu&t"), self)
-        self.cutAct.setShortcut(QtGui.QKeySequence.Cut)
+        self.cutAct = QtGui.QAction(QtGui.QIcon(":/images/edit-cut.svg"),self.tr("Cu&t"), self)
+        self.cutAct.setShortcut(QtGui.QKeySequence.StandardKey.Cut)
         self.cutAct.setStatusTip(self.tr("Cut selected to clipboard"))
         self.cutAct.triggered.connect(self.cutEvent)
 
         ## ----------------------------------------------------------------------------------
-        self.copyAct = QtWidgets.QAction(QtGui.QIcon(":/images/edit-copy.svg"),self.tr("&Copy"), self)
-        self.copyAct.setShortcut(QtGui.QKeySequence.Copy)
+        self.copyAct = QtGui.QAction(QtGui.QIcon(":/images/edit-copy.svg"),self.tr("&Copy"), self)
+        self.copyAct.setShortcut(QtGui.QKeySequence.StandardKey.Copy)
         self.copyAct.setStatusTip(self.tr("Copy selected to clipboard"))
         self.copyAct.triggered.connect(self.copyEvent)
 
         ## ----------------------------------------------------------------------------------
-        self.pasteAct = QtWidgets.QAction(QtGui.QIcon(":/images/edit-paste.svg"), self.tr("&Paste"), self)
-        self.pasteAct.setShortcut(QtGui.QKeySequence.Paste)
+        self.pasteAct = QtGui.QAction(QtGui.QIcon(":/images/edit-paste.svg"), self.tr("&Paste"), self)
+        self.pasteAct.setShortcut(QtGui.QKeySequence.StandardKey.Paste)
         self.pasteAct.setStatusTip(self.tr("Paste the clipboard's contents"))
         self.pasteAct.triggered.connect(self.pasteEvent)
 
         ## ----------------------------------------------------------------------------------
-        self.deleteAct = QtWidgets.QAction(QtGui.QIcon(":/images/edit-delete.svg"), self.tr("&Delete"), self)
-        self.deleteAct.setShortcut(QtGui.QKeySequence.Delete)
+        self.deleteAct = QtGui.QAction(QtGui.QIcon(":/images/edit-delete.svg"), self.tr("&Delete"), self)
+        self.deleteAct.setShortcut(QtGui.QKeySequence.StandardKey.Delete)
         self.deleteAct.setStatusTip(self.tr("Delete selected"))
         self.deleteAct.triggered.connect(self.deleteEvent)
 
         ## ----------------------------------------------------------------------------------
-        self.zoomInAct = QtWidgets.QAction(QtGui.QIcon(":/images/zoom-in.svg"), self.tr("Zoom In"), self)
-        self.zoomInAct.setShortcut(QtGui.QKeySequence.ZoomIn)
+        self.zoomInAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-in.svg"), self.tr("Zoom In"), self)
+        self.zoomInAct.setShortcut(QtGui.QKeySequence.StandardKey.ZoomIn)
         self.zoomInAct.setStatusTip(self.tr("Zoom in"))
         self.zoomInAct.triggered.connect(self.view.zoomIn)
 
         ## ----------------------------------------------------------------------------------
-        self.zoomOutAct = QtWidgets.QAction(QtGui.QIcon(":/images/zoom-out.svg"), self.tr("Zoom Out"), self)
-        self.zoomOutAct.setShortcut(QtGui.QKeySequence.ZoomOut)
+        self.zoomOutAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-out.svg"), self.tr("Zoom Out"), self)
+        self.zoomOutAct.setShortcut(QtGui.QKeySequence.StandardKey.ZoomOut)
         self.zoomOutAct.setStatusTip(self.tr("Zoom out"))
         self.zoomOutAct.triggered.connect(self.view.zoomOut)
 
         ## ----------------------------------------------------------------------------------
-        self.zoomOriginalAct = QtWidgets.QAction(QtGui.QIcon(":/images/zoom-one.svg"), self.tr("Reset Zoom"), self)
+        self.zoomOriginalAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-one.svg"), self.tr("Reset Zoom"), self)
         self.zoomOriginalAct.setStatusTip(self.tr("Reset Zoom"))
-        self.zoomOriginalAct.triggered.connect(self.view.zoomOriginal)
+        self.zoomOriginalAct.triggered.connect(self.view.StandardKey.zoomOriginal)
 
         ## ----------------------------------------------------------------------------------
-        self.raiseAct = QtWidgets.QAction(QtGui.QIcon(":/images/raise.svg"), self.tr("Raise"), self)
+        self.raiseAct = QtGui.QAction(QtGui.QIcon(":/images/raise.svg"), self.tr("Raise"), self)
         self.raiseAct.setStatusTip(self.tr("Raise selected items"))
         self.raiseAct.setVisible(False)
         self.raiseAct.triggered.connect(self.raiseItemsEvent)
 
         ## ----------------------------------------------------------------------------------
-        self.raiseTopAct = QtWidgets.QAction(QtGui.QIcon(":/images/raise-top.svg"), self.tr("Raise to top"), self)
+        self.raiseTopAct = QtGui.QAction(QtGui.QIcon(":/images/raise-top.svg"), self.tr("Raise to top"), self)
         self.raiseTopAct.setStatusTip(self.tr("Raise selected items to top"))
         self.raiseTopAct.setVisible(False)
         self.raiseTopAct.triggered.connect(self.raiseItemsTopEvent)
 
         ## ----------------------------------------------------------------------------------
-        self.lowerAct = QtWidgets.QAction(QtGui.QIcon(":/images/lower.svg"), self.tr("Lower"), self)
+        self.lowerAct = QtGui.QAction(QtGui.QIcon(":/images/lower.svg"), self.tr("Lower"), self)
         self.lowerAct.setStatusTip(self.tr("Lower selected items"))
         self.lowerAct.setVisible(False)
         self.lowerAct.triggered.connect(self.lowerItemsEvent)
 
         ## ----------------------------------------------------------------------------------
-        self.lowerBottomAct = QtWidgets.QAction(QtGui.QIcon(":/images/lower-bottom.svg"), self.tr("Lower to bottom"), self)
+        self.lowerBottomAct = QtGui.QAction(QtGui.QIcon(":/images/lower-bottom.svg"), self.tr("Lower to bottom"), self)
         self.lowerBottomAct.setStatusTip(self.tr("Lower selected items to bottom"))
         self.lowerBottomAct.setVisible(False)
         self.lowerBottomAct.triggered.connect(self.lowerItemsBottomEvent)
 
         ## ----------------------------------------------------------------------------------
-        self.sourceAct = QtWidgets.QAction(QtGui.QIcon(":/images/source.svg"), self.tr("Show source"), self)
+        self.sourceAct = QtGui.QAction(QtGui.QIcon(":/images/source.svg"), self.tr("Show source"), self)
         self.sourceAct.setStatusTip(self.tr("Edit the source"))
         self.sourceAct.setVisible(False)
         self.sourceAct.triggered.connect(self.showTextSourceEvent)
 
-        self.boldAct = QtWidgets.QAction(QtGui.QIcon(":/images/text-bold.svg"), self.tr("Bold"), self)
+        self.boldAct = QtGui.QAction(QtGui.QIcon(":/images/text-bold.svg"), self.tr("Bold"), self)
         self.boldAct.setStatusTip(self.tr("Bold Selection"))
         self.boldAct.setVisible(False)
         self.boldAct.setCheckable(True)
@@ -704,7 +704,7 @@ class InputDialog(QtWidgets.QDialog):
         self.boldAct.setFont(bold)
         self.boldAct.triggered.connect(self.textBoldEvent)
 
-        self.italicAct = QtWidgets.QAction(QtGui.QIcon(":/images/text-italic.svg"), self.tr("Italic"), self)
+        self.italicAct = QtGui.QAction(QtGui.QIcon(":/images/text-italic.svg"), self.tr("Italic"), self)
         self.italicAct.setStatusTip(self.tr("Italic Selection"))
         self.italicAct.setVisible(False)
         self.italicAct.setCheckable(True)
@@ -713,7 +713,7 @@ class InputDialog(QtWidgets.QDialog):
         self.italicAct.setFont(italic)
         self.italicAct.triggered.connect(self.textItalicEvent)
 
-        self.underlineAct = QtWidgets.QAction(QtGui.QIcon(":/images/text-underline.svg"), self.tr("Underline"), self)
+        self.underlineAct = QtGui.QAction(QtGui.QIcon(":/images/text-underline.svg"), self.tr("Underline"), self)
         self.underlineAct.setStatusTip(self.tr("Underline Selection"))
         self.underlineAct.setVisible(False)
         self.underlineAct.setCheckable(True)
@@ -724,24 +724,24 @@ class InputDialog(QtWidgets.QDialog):
 
         pix = QtGui.QPixmap(16,16)
         pix.fill(QtCore.Qt.black)
-        self.textColorAct = QtWidgets.QAction(QtGui.QIcon(pix), self.tr("Color"), self)
+        self.textColorAct = QtGui.QAction(QtGui.QIcon(pix), self.tr("Color"), self)
         self.textColorAct.setStatusTip(self.tr("Foreground Color"))
         self.textColorAct.setVisible(False)
         self.textColorAct.triggered.connect(self.textColorEvent)
 
         pix = QtGui.QPixmap(16,16)
         pix.fill(QtCore.Qt.yellow)
-        self.textBackColorAct = QtWidgets.QAction(QtGui.QIcon(pix), self.tr("Background Color"), self)
+        self.textBackColorAct = QtGui.QAction(QtGui.QIcon(pix), self.tr("Background Color"), self)
         self.textBackColorAct.setStatusTip(self.tr("Background Color"))
         self.textBackColorAct.setVisible(False)
         self.textBackColorAct.triggered [ bool ].connect(self.textBackColorEvent)
 
-        self.fontAct = QtWidgets.QAction(QtGui.QIcon(":/images/text-font.svg"), self.tr("Font"), self)
+        self.fontAct = QtGui.QAction(QtGui.QIcon(":/images/text-font.svg"), self.tr("Font"), self)
         self.fontAct.setStatusTip(self.tr("Font Selection"))
         self.fontAct.setVisible(True)
         self.fontAct.triggered.connect(self.textFontEvent)
 
-        self.clearFormatAct = QtWidgets.QAction(QtGui.QIcon(":/images/text-clear.svg"), self.tr("Clear"), self)
+        self.clearFormatAct = QtGui.QAction(QtGui.QIcon(":/images/text-clear.svg"), self.tr("Clear"), self)
         self.clearFormatAct.setStatusTip(self.tr("Clear Format"))
         self.clearFormatAct.setVisible(False)
         self.clearFormatAct.triggered.connect(self.textClearFormatEvent)
@@ -1805,28 +1805,28 @@ class InkView(QtWidgets.QGraphicsView):
 
         super().__init__(scene, parent)
 
-        self.setRenderHint(QtGui.QPainter.Antialiasing)
-        self.setRenderHint(QtGui.QPainter.TextAntialiasing)
-        self.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
-        self.setRenderHint(QtGui.QPainter.HighQualityAntialiasing)
-        self.setCacheMode(QtWidgets.QGraphicsView.CacheBackground)
+        self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        self.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
+        self.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+        #QT6 self.setRenderHint(QtGui.QPainter.HighQualityAntialiasing)
+        self.setCacheMode(QtWidgets.QGraphicsView.CacheModeFlag.CacheBackground)
         #self.setDragMode(QtGui.QGraphicsView.NoDrag)
         #self.setDragMode(QtGui.QGraphicsView.ScrollHandDrag)
         #self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
-        self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         #self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         #self.setTransformationAnchor(QtGui.QGraphicsView.NoAnchor)
 
 
-        #self.grabGesture(QtCore.Qt.PanGesture)
-        self.grabGesture(QtCore.Qt.PinchGesture)
+        #self.grabGesture(QtCore.Qt.GestureType.PanGesture)
+        self.grabGesture(QtCore.Qt.GestureType.PinchGesture)
 
-        self.setViewportUpdateMode(QtWidgets.QGraphicsView.SmartViewportUpdate)
+        self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.SmartViewportUpdate)
 
         self.setAcceptDrops(True)
 
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self._eventstate = Free
 
@@ -1840,7 +1840,7 @@ class InkView(QtWidgets.QGraphicsView):
         # Extra potential filter to separate mouse and tablet
         self.tablettime = 0
 
-        self.setAttribute(QtCore.Qt.WA_AcceptTouchEvents, True)
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
 
     def tabletEvent(self, event):
         '''
@@ -2200,15 +2200,15 @@ class InkView(QtWidgets.QGraphicsView):
 
     def event(self, event):
 
-        if event.type() == QtCore.QEvent.Gesture:
+        if event.type() == QtCore.QEvent.Type.Gesture:
             return self.gestureEvent(event)
-        elif event.type() == QtCore.QEvent.TouchBegin:
+        elif event.type() == QtCore.QEvent.Type.TouchBegin:
             return self.touchBegin(event)
-        elif event.type() == QtCore.QEvent.TouchUpdate:
+        elif event.type() == QtCore.QEvent.Type.TouchUpdate:
             return self.touchUpdate(event)
-        elif event.type() == QtCore.QEvent.TouchEnd:
+        elif event.type() == QtCore.QEvent.Type.TouchEnd:
             return self.touchEnd(event)
-        elif event.type() == QtCore.QEvent.TouchCancel:
+        elif event.type() == QtCore.QEvent.Type.TouchCancel:
             return self.touchCancel(event)
         else:
             return QtWidgets.QGraphicsView.event(self, event)
@@ -2230,7 +2230,7 @@ class InkView(QtWidgets.QGraphicsView):
         return True
 
     def gestureEvent(self, event):
-        pinch = event.gesture(QtCore.Qt.PinchGesture)
+        pinch = event.gesture(QtCore.Qt.GestureType.PinchGesture)
 
         if pinch is not None:
             #logging.debug('I PinchGesture [%d]',pinch.state())
@@ -2664,11 +2664,11 @@ class NexusView(QtWidgets.QGraphicsView):
         self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
 
         self.setOptimizationFlags(self.DontSavePainterState | self.DontAdjustForAntialiasing)
-        self.setAttribute(QtCore.Qt.WA_TranslucentBackground, False)
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
-        self.grabGesture(QtCore.Qt.PanGesture)
-        self.grabGesture(QtCore.Qt.PinchGesture)
-        #self.grabGesture(QtCore.Qt.SwipeGesture)
+        self.grabGesture(QtCore.Qt.GestureType.PanGesture)
+        self.grabGesture(QtCore.Qt.GestureType.PinchGesture)
+        #self.grabGesture(QtCore.Qt.GestureType.SwipeGesture)
 
         # some data structures to hold the pointer trail
         # the points are in a list of lists in reverse order
@@ -3028,9 +3028,9 @@ class NexusView(QtWidgets.QGraphicsView):
             return QtWidgets.QGraphicsView.event(self, event)
 
     def gestureEvent(self, event):
-        pinch = event.gesture(QtCore.Qt.PinchGesture)
-        pan = event.gesture(QtCore.Qt.PanGesture)
-        swipe = event.gesture(QtCore.Qt.SwipeGesture)
+        pinch = event.gesture(QtCore.Qt.GestureType.PinchGesture)
+        pan = event.gesture(QtCore.Qt.GestureType.PanGesture)
+        swipe = event.gesture(QtCore.Qt.GestureType.SwipeGesture)
 
         if swipe is not None:
             # logging.debug('N SwipeGesture [%s]',swipe.state())
@@ -3625,7 +3625,7 @@ class InkItem(QtWidgets.QGraphicsPathItem):
 
     def handleKeyPressEvent(self, event):
 
-        if event.matches(QtGui.QKeySequence.Delete):
+        if event.matches(QtGui.QKeySequence.StandardKey.Delete):
             self.scene().removeItem(self)
 
     # def mouseMoveEvent(self, event):
@@ -4311,7 +4311,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
 
     def handleKeyPressEvent(self, event):
 
-        if event.matches(QtGui.QKeySequence.Delete):
+        if event.matches(QtGui.QKeySequence.StandardKey.Delete):
             self.scene().removeItem(self)
 
     def linkHover(self, url):

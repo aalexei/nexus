@@ -18,7 +18,7 @@
 ##
 ## Originally based on example classes from Qt toolkit, substantially modified
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 
 import logging
