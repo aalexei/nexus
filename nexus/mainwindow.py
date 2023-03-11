@@ -1479,10 +1479,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # ----------------------------------------------------------------------------------
         self.exitAct = QtGui.QAction(self.tr("Q&uit"), self)
-        self.exitAct.setMenuRole(QtGui.QAction.QuitRole)
+        self.exitAct.setMenuRole(QtGui.QAction.MenuRole.QuitRole)
         self.exitAct.setShortcut(self.tr("Ctrl+Q"))
         self.exitAct.setStatusTip(self.tr("Quit the application"))
-        self.exitAct.triggered.connect(QtWidgets.qApp.closeAllWindows)
+        #self.exitAct.triggered.connect(QtWidgets.qApp.closeAllWindows)
+        self.exitAct.triggered.connect(QtWidgets.QApplication.instance().closeAllWindows)
 
 
         # ----------------------------------------------------------------------------------
@@ -1619,7 +1620,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # ----------------------------------------------------------------------------------
         self.aboutAct = QtGui.QAction(self.tr("About"), self)
-        self.aboutAct.setMenuRole(QtGui.QAction.AboutRole)
+        self.aboutAct.setMenuRole(QtGui.QAction.MenuRole.AboutRole)
         self.aboutAct.setStatusTip(self.tr("Show the application's About box"))
         self.aboutAct.triggered.connect(self.about)
 
@@ -3639,15 +3640,15 @@ class ViewsListView(QtWidgets.QListView):
         self.setMovement(self.Movement.Snap)
         self.setResizeMode( self.ResizeMode.Adjust )
         self.setSelectionRectVisible( True )
-        self.setSelectionMode( self.ExtendedSelection )
+        self.setSelectionMode( self.SelectionMode.ExtendedSelection )
         self.setSpacing(0)
-        self.setVerticalScrollMode(self.ScrollPerPixel)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
+        self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
+        self.setHorizontalScrollMode(self.ScrollMode.ScrollPerPixel)
 
         # NOTE: the dragDropMode must be set AFTER the viewMode!!!
         self.setAcceptDrops(True)
         self.setDragEnabled(True)
-        self.setDragDropMode( self.InternalMove )
+        self.setDragDropMode( self.DragDropMode.InternalMove )
 
         # TODO implement re-ordering:
         # https://stackoverflow.com/a/66867145

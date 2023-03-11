@@ -2147,7 +2147,7 @@ class InkView(QtWidgets.QGraphicsView):
             for x1,y1,z1,t1 in scene._tmppath[1:]:
                 pen.setWidthF(scene.pen.widthF()*z1)
                 line = scene.addLine(x0,y0,x1,y1,pen)
-                line.setFlag(line.ItemIsSelectable,False)
+                line.setFlag(line.GraphicsItemFlag.ItemIsSelectable,False)
                 line.setEnabled(False)
                 scene.tmpgroup.addToGroup(line)
                 x0,y0,z0,t0 = x1,y1,z1,t1
