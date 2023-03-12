@@ -22,6 +22,7 @@ import sys,  zipfile,  io,  os, time, random, hashlib, json, shutil
 from pathlib import Path
 from PyQt6 import QtCore, QtGui, QtOpenGL, QtSvg, QtWidgets, QtPrintSupport
 #QT6 from PyQt6.QtMultimedia import QAudioRecorder, QAudioEncoderSettings, QMultimedia
+#from PyQt6.QtMultimedia import QMultimedia
 import gzip
 from functools import reduce
 import webbrowser, tempfile
@@ -371,7 +372,7 @@ def createViewImage(view, width, height, removebackground=False):
     rect.setTop(int(rect.top()+dh/2))
     rect.setBottom(int(rect.bottom()-dh/2))
 
-    image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32_Premultiplied)
+    image = QtGui.QImage(width, height, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
     image.fill(QtCore.Qt.GlobalColor.transparent)
 
     if removebackground:
@@ -696,8 +697,8 @@ class NexusApplication(QtWidgets.QApplication):
         # ---- method 1 ----
         # Create a Image the same size as your graphicsview
         # make larger based on retina?
-        #image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format_ARGB32)
-        image = QtGui.QImage(1920,1080, QtGui.QImage.Format_ARGB32_Premultiplied)
+        #image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format.Format_ARGB32)
+        image = QtGui.QImage(1920,1080, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(QtCore.Qt.GlobalColor.transparent)
         painter = QtGui.QPainter(image)
 
@@ -720,7 +721,7 @@ class NexusApplication(QtWidgets.QApplication):
 
         # # convert QImage to bytes
         # buffer = QtCore.QBuffer()
-        # buffer.open(QtCore.QIODevice.WriteOnly)
+        # buffer.open(QtCore.QIODevice.OpenModeFlag.WriteOnly)
         # ok = image.save(buffer, "PNG")
         # self.view_bytes = buffer.data().data()
 
@@ -774,7 +775,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         tic = time.time()
         # convert QImage to bytes
         buffer = QtCore.QBuffer()
-        buffer.open(QtCore.QIODevice.WriteOnly)
+        buffer.open(QtCore.QIODevice.OpenModeFlag.WriteOnly)
         ok = self.server.app.view_image.save(buffer, "PNG")
         view_bytes = buffer.data().data()
         toc = time.time()
@@ -1068,7 +1069,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptOpen)
         dialog.setFileMode(QtWidgets.QFileDialog.Directory)
         dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly)
-        if not dialog.exec_():
+        if not dialog.exec():
             return
         directory = Path(dialog.selectedFiles()[0])
 
@@ -1285,7 +1286,7 @@ class MainWindow(QtWidgets.QMainWindow):
         HEIGHT = sourceRect.height()
 
         buff = QtCore.QBuffer()
-        buff.open(QtCore.QIODevice.ReadWrite)
+        buff.open(QtCore.QIODevice.OpenModeFlag.ReadWrite)
 
         generator = QtSvg.QSvgGenerator()
 
@@ -2160,7 +2161,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #
         # Create a intermediate image to control the resolution
         #
-        image = QtGui.QImage(W*factor, H*factor, QtGui.QImage.Format_ARGB32_Premultiplied)
+        image = QtGui.QImage(W*factor, H*factor, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(QtCore.Qt.GlobalColor.transparent)
         painteri = QtGui.QPainter(image)
         self.view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
@@ -2171,18 +2172,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def printIt(self, views=False):
 
-        self.printer = QtPrintSupport.QPrinter(QtPrintSupport.QPrinter.HighResolution)
+        self.printer = QtPrintSupport.QPrinter(QtPrintSupport.QPrinter.PrinterMode.HighResolution)
         self.printer = QtPrintSupport.QPrinter()
-        self.printer.setOutputFormat(QtPrintSupport.QPrinter.NativeFormat)
+        self.printer.setOutputFormat(QtPrintSupport.QPrinter.OutputFormat.NativeFormat)
 
-        self.printer.setColorMode(QtPrintSupport.QPrinter.Color)
+        self.printer.setColorMode(QtPrintSupport.QPrinter.ColorMode.Color)
         self.printer.setCreator('Nexus %s' % str(graphics.VERSION))
 
         filename = os.path.basename(str(self.scene.graph.path))
         self.printer.setDocName(filename)
-        self.printer.setOrientation(QtPrintSupport.QPrinter.Landscape)
+        self.printer.setPageOrientation(QtGui.QPageLayout.Orientation.Landscape)
 
-        self.printer.setOutputFormat(QtPrintSupport.QPrinter.NativeFormat)
+        self.printer.setOutputFormat(QtPrintSupport.QPrinter.OutputFormat.NativeFormat)
 
         # XXX PyInstaller BUG
         # XXX normal print dialog noshow with a "QPrintDialog: Cannot be used on non-native printers" error
@@ -2212,13 +2213,13 @@ class MainWindow(QtWidgets.QMainWindow):
             ## Used for print preview:
             #dialog.paintRequested.connect(self.printViews)
 
-            if dialog.exec_():
+            if dialog.exec():
                 self.printViews(self.printer)
         else:
             ## Used for print preview:
             #dialog.paintRequested.connect(self.printMap)
 
-            if dialog.exec_():
+            if dialog.exec():
                 self.printMap(self.printer)
 
         ## restore frames visibility
@@ -2705,11 +2706,12 @@ class MainWindow(QtWidgets.QMainWindow):
         # for i in range(0, numdevices):
         #     if (self.audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
         #         devices.append(self.audio.get_device_info_by_host_api_device_index(0, i).get('name'))
+
         self.audiorecorder = QAudioRecorder()
 
-        codecs = self.audiorecorder.supportedAudioCodecs()
-        containers = self.audiorecorder.supportedContainers()
-        sample_rates = self.audiorecorder.supportedAudioSampleRates()
+        #codecs = self.audiorecorder.supportedAudioCodecs()
+        #containers = self.audiorecorder.supportedContainers()
+        #sample_rates = self.audiorecorder.supportedAudioSampleRates()
         sources = self.audiorecorder.audioInputs()
         default_source = self.audiorecorder.defaultAudioInput()
         sources.remove(default_source)
@@ -3065,7 +3067,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # dy = (viewrect.height()-H)/2
 
         # XXX need to add the pen strokes
-        # image = QtGui.QImage(W,H, QtGui.QImage.Format_ARGB32)
+        # image = QtGui.QImage(W,H, QtGui.QImage.Format.Format_ARGB32)
         # image.fill(QtCore.Qt.GlobalColor.transparent)
         # painter = QtGui.QPainter(image)
         # painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
@@ -3495,7 +3497,7 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
         #self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.darkRed, 5))
         #self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.darkRed, 5))
         self.setBrush(QtGui.QBrush(QtGui.QColor(100,100,100,60)))
-        self.setFlag(self.ItemIsMovable, True)
+        self.setFlag(self.GraphicsItemFlag.ItemIsMovable, True)
         self.setCursor(QtCore.Qt.CursorShape.SizeAllCursor)
         #self.setFlag(self.ItemIsSelectable, True)
 

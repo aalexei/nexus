@@ -100,7 +100,7 @@ class ColorSwatch(QtWidgets.QLabel):
         self.clicked.emit(self.color)
 
     def longClickEvent(self, event):
-        out=QtWidgets.QColorDialog.getColor(self.color, options=QtWidgets.QColorDialog.ShowAlphaChannel)
+        out=QtWidgets.QColorDialog.getColor(self.color, options=QtWidgets.QColorDialog.ColorDialogOption.ShowAlphaChannel)
         if out.isValid():
             self.color = out
             self.drawSwatch()
@@ -208,7 +208,7 @@ class PenDialog(QtWidgets.QDialog):
                     swatchcolor = QtGui.QColor(settings.value("input/pencolor[%d,%d]"%(r,c), DEFAULTpencols[r][c]))
                 else:
                     swatchcolor = QtGui.QColor(settings.value("input/hicolor[%d,%d]"%(r,c), DEFAULThicols[r][c]))
-                w = ColorSwatch((r,c), swatchcolor, selected=(pencolor.name(QtGui.QColor.HexArgb)==swatchcolor.name(QtGui.QColor.HexArgb)), parent=self)
+                w = ColorSwatch((r,c), swatchcolor, selected=(pencolor.name(QtGui.QColor.NameFormat.HexArgb)==swatchcolor.name(QtGui.QColor.NameFormat.HexArgb)), parent=self)
                 grid.addWidget(w,r,c)
                 w.clicked.connect(self.setColor)
                 w.colorChanged.connect(self.changeColor)
@@ -243,7 +243,7 @@ class PenDialog(QtWidgets.QDialog):
     @staticmethod
     def changeColor(idx0, idx1, color):
         settings = QtCore.QSettings("Ectropy", "Nexus")
-        settings.setValue("input/pencolor[%d,%d]"%(idx0, idx1), color.name(QtGui.QColor.HexArgb))
+        settings.setValue("input/pencolor[%d,%d]"%(idx0, idx1), color.name(QtGui.QColor.NameFormat.HexArgb))
 
     @staticmethod
     def changeSize(idx, size):

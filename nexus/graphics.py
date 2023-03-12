@@ -586,7 +586,7 @@ class InputDialog(QtWidgets.QDialog):
             pix = QtGui.QPixmap(50, 50)
             pix.fill(color)
             self.branchcolorbutton.setIcon(QtGui.QIcon(pix))
-            colorhex=color.name(QtGui.QColor.HexArgb)
+            colorhex=color.name(QtGui.QColor.NameFormat.HexArgb)
             self.scene.node['branchcolor'] = colorhex
             self.scene.node.save(setchange=True)
             self.stem.renew(reload=False, children=False, recurse=True, position=False)
@@ -879,8 +879,8 @@ class InputDialog(QtWidgets.QDialog):
         if self.scene.mode == PenMode and self.ishighlighter:
             ## clicked while selected
             d = tools.PenDialog(self.scene.pen, "highlighter", self)
-            d.exec_()
-            color = self.scene.pen.color().name(QtGui.QColor.HexArgb)
+            d.exec()
+            color = self.scene.pen.color().name(QtGui.QColor.NameFormat.HexArgb)
             size = self.scene.pen.widthF()
             self.scene.graph.savesetting('hicolor', color)
             self.scene.graph.savesetting('hisize', size)
@@ -895,8 +895,8 @@ class InputDialog(QtWidgets.QDialog):
         if self.scene.mode == PenMode and not self.ishighlighter:
             ## clicked while selected
             d = tools.PenDialog(self.scene.pen, "pen", self)
-            d.exec_()
-            color = self.scene.pen.color().name(QtGui.QColor.HexArgb)
+            d.exec()
+            color = self.scene.pen.color().name(QtGui.QColor.NameFormat.HexArgb)
             size = self.scene.pen.widthF()
             self.scene.graph.savesetting('pencolor', color)
             self.scene.graph.savesetting('pensize', size)
@@ -991,7 +991,7 @@ class InputDialog(QtWidgets.QDialog):
     def setTextControls(self, cursor):
         fmt = cursor.charFormat()
 
-        self.boldAct.setChecked(fmt.fontWeight()==QtGui.QFont.Bold)
+        self.boldAct.setChecked(fmt.fontWeight()==QtGui.QFont.Weight.Bold)
         self.italicAct.setChecked(fmt.fontItalic())
         self.underlineAct.setChecked(fmt.fontUnderline())
 
@@ -1056,9 +1056,9 @@ class InputDialog(QtWidgets.QDialog):
             if isinstance(item, TextItem) and item.hasFocus():
                 fmt = QtGui.QTextCharFormat()
                 if state:
-                    fmt.setFontWeight(QtGui.QFont.Bold)
+                    fmt.setFontWeight(QtGui.QFont.Weight.Bold)
                 else:
-                    fmt.setFontWeight(QtGui.QFont.Normal)
+                    fmt.setFontWeight(QtGui.QFont.Weight.Normal)
                 cursor=item.textCursor()
                 cursor.mergeCharFormat(fmt)
                 item.setTextCursor(cursor)
@@ -1196,7 +1196,6 @@ class InputDialog(QtWidgets.QDialog):
         pixmap.fill( QtGui.QColor(0,0,0,0))
         painter = QtGui.QPainter(pixmap)
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
-        painter.setRenderHint(QtGui.QPainter.RenderHint.HighQualityAntialiasing)
         painter.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
         painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
 
@@ -1808,7 +1807,6 @@ class InkView(QtWidgets.QGraphicsView):
         self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         self.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
         self.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
-        #QT6 self.setRenderHint(QtGui.QPainter.RenderHint.HighQualityAntialiasing)
         self.setCacheMode(QtWidgets.QGraphicsView.CacheModeFlag.CacheBackground)
         #self.setDragMode(QtGui.QGraphicsView.NoDrag)
         #self.setDragMode(QtGui.QGraphicsView.ScrollHandDrag)
@@ -1856,12 +1854,12 @@ class InkView(QtWidgets.QGraphicsView):
         pressure = event.pressure()
         event.setAccepted(True)
         scene = self.scene()
-        scenePos = self.mapToScene(event.pos())
+        scenePos = self.mapToScene(event.position().toPoint())
 
         # Report what was received for debugging
-        tev = {QtGui.QTabletEvent.TabletPress:"TabletPress",
-               QtGui.QTabletEvent.TabletMove:"TabletMove",
-               QtGui.QTabletEvent.TabletRelease:"TabletRelease"}
+        tev = {QtGui.QTabletEvent.Type.TabletPress:"TabletPress",
+               QtGui.QTabletEvent.Type.TabletMove:"TabletMove",
+               QtGui.QTabletEvent.Type.TabletRelease:"TabletRelease"}
         etype = tev.get(eventtype,"OtherTabletEvent")
 
         # logging.debug("I {} pointer={} pressure={} tilt=({},{}) buttons={} device={} id={}".format(
@@ -1876,7 +1874,7 @@ class InkView(QtWidgets.QGraphicsView):
 
         T=self.viewportTransform()
         Tinv,dummy = T.inverted()
-        scenePosF = event.posF()*Tinv
+        scenePosF = event.position()*Tinv
         scenePosF = (scenePosF.x(), scenePosF.y())
         etime = time.time()
 
@@ -1885,13 +1883,13 @@ class InkView(QtWidgets.QGraphicsView):
         #
         itemunder = scene.itemAt(scenePos, self.transform())
 
-        if eventtype==QtGui.QTabletEvent.TabletPress:
+        if eventtype==QtGui.QTabletEvent.Type.TabletPress:
             self._eventstate = Tablet
 
             pevent = PointerEvent(event, etype="press", scenePos=scenePosF)
             self._event = pevent
 
-            if pointertype == QtGui.QTabletEvent.Eraser \
+            if pointertype == QtGui.QPointingDevice.PointerType.Eraser \
                                 or scene.mode == EraserMode:
                 self.eraserPressEvent(scenePos)
 
@@ -1901,13 +1899,13 @@ class InkView(QtWidgets.QGraphicsView):
             else:
                 self.pointerPressEvent(self._event)
 
-        elif eventtype==QtGui.QTabletEvent.TabletMove:
+        elif eventtype==QtGui.QTabletEvent.Type.TabletMove:
             if self._eventstate != Tablet:
                 return
 
             self._event.update("move", scenePosF)
 
-            if pointertype == QtGui.QTabletEvent.Eraser \
+            if pointertype == QtGui.QPointingDevice.PointerType.Eraser \
                                 or scene.mode == EraserMode:
                 self.eraserMoveEvent(scenePos, self.transform())
 
@@ -1917,14 +1915,14 @@ class InkView(QtWidgets.QGraphicsView):
             else:
                 self.pointerMoveEvent(self._event)
 
-        elif eventtype==QtGui.QTabletEvent.TabletRelease:
+        elif eventtype==QtGui.QTabletEvent.Type.TabletRelease:
             if self._eventstate != Tablet:
                 return
             self._eventstate = Free
 
             self._event.update("release", scenePos=scenePosF)
 
-            if pointertype == QtGui.QTabletEvent.Eraser \
+            if pointertype == QtGui.QPointingDevice.PointerType.Eraser \
                                 or scene.mode == EraserMode:
                 self.eraserReleaseEvent(self._event)
 
@@ -2038,7 +2036,7 @@ class InkView(QtWidgets.QGraphicsView):
         '''
         # t = time.time()
         scene = self.scene()
-        itemunder = scene.itemAt(QtCore.QPoint(*[int(x) for x in event.scenePos]), self.transform())
+        itemunder = scene.itemAt(QtCore.QPointF(*[int(x) for x in event.scenePos]), self.transform())
         if isinstance(itemunder, (OverRect,TransformationHandle, TextWidthWidget)):
             self._itemUnder = itemunder
             itemunder.pointerPressEvent(event)
@@ -2246,12 +2244,12 @@ class InkView(QtWidgets.QGraphicsView):
             #v1 = self.mapFromGlobal(QtGui.QCursor.pos())
             v1 = pinch.centerPoint().toPoint()
         else:
-            v1 = self.mapFromGlobal(pinch.centerPoint().toPoint())
+            v1 = self.mapFromGlobal(pinch.centerPoint())
 
         anchor = self.transformationAnchor()
         self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.NoAnchor)
 
-        if pinch.state() == 1:
+        if pinch.state() == QtCore.Qt.GestureState.GestureStarted:
             # gesture begin
             if self._eventstate == Free:
                 self._eventstate = Gesture
@@ -2268,7 +2266,8 @@ class InkView(QtWidgets.QGraphicsView):
             self._sticky = True
             return  True
 
-        elif pinch.state() == 3:
+        elif pinch.state() == QtCore.Qt.GestureState.GestureFinished:
+            #QT6 above was hard-coded at 3
             if self._eventstate != Gesture:
                 #logging.debug("    (ignoring pinch release)")
                 return False
@@ -2683,6 +2682,7 @@ class NexusView(QtWidgets.QGraphicsView):
         # track when pinch events occur
         self.pinchtime = 0
 
+        #Qt6 self._v0 = QtCore.QPoint()
         self._sticky = True
 
     def scaleView(self, scaleFactor, point=None):
@@ -3051,12 +3051,13 @@ class NexusView(QtWidgets.QGraphicsView):
         # self.pinchtime = time.time()
 
         if platform.system() == 'Darwin':
-            # On a mac the centre of the pinch gesture is not useful at the trackpad is relative
+            # On a mac the centre of the pinch gesture is not useful as the trackpad is relative
             # Need to use the cursor position as the centre:
             #v1 = self.mapFromGlobal(QtGui.QCursor.pos())
-            v1 = pinch.centerPoint().toPoint()
+            #QT6 v1 = pinch.centerPoint().toPoint()
+            v1 = pinch.centerPoint()
         else:
-            v1 = self.mapFromGlobal(pinch.centerPoint().toPoint())
+            v1 = self.mapFromGlobal(pinch.centerPoint())
 
         anchor = self.transformationAnchor()
         self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.NoAnchor)
@@ -3075,7 +3076,8 @@ class NexusView(QtWidgets.QGraphicsView):
             pass
             #v1 = QtCore.QPointF(0,0)
 
-        if pinch.state() == 1:
+        #print(f'pinch state {pinch.state()}')
+        if pinch.state() == QtCore.Qt.GestureState.GestureStarted:
             # gesture begin
             # if self._eventstate == Free:
             #     self._eventstate = Gesture
@@ -3087,10 +3089,10 @@ class NexusView(QtWidgets.QGraphicsView):
             #     return
             self._g_transform = self.transform()
             self._v0 = v1
-            self._s0 = self.mapToScene(self._v0)
+            self._s0 = self.mapToScene(self._v0.toPoint())
             self._sticky = True
             return
-        elif pinch.state() == 3:
+        elif pinch.state() == QtCore.Qt.GestureState.GestureFinished:
             # self._eventstate = Free
             self._sticky = True
 
@@ -3278,7 +3280,7 @@ class BackgroundDialog(QtWidgets.QDialog):
     def setColor(self):
 
         brush = self.scene.backgroundBrush()
-        col = QtWidgets.QColorDialog.getColor(brush.color(), options=QtWidgets.QColorDialog.ShowAlphaChannel )
+        col = QtWidgets.QColorDialog.getColor(brush.color(), options=QtWidgets.QColorDialog.ColorDialogOption.ShowAlphaChannel )
         if col.isValid():
 
             pix = QtGui.QPixmap(16,16)
@@ -4106,7 +4108,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
 
         cursor = self.textCursor()
         cursor.clearSelection()
-        cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.MoveAnchor)
+        cursor.movePosition(QtGui.QTextCursor.MoveOperation.End, QtGui.QTextCursor.MoveMode.MoveAnchor)
         self.setTextCursor(cursor)
 
         self.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextEditorInteraction)
@@ -4145,7 +4147,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
 
         cursor = self.textCursor()
         cursor.clearSelection()
-        cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.MoveAnchor)
+        cursor.movePosition(QtGui.QTextCursor.MoveOperation.End, QtGui.QTextCursor.MoveMode.MoveAnchor)
         self.setTextCursor(cursor)
 
         self.setTextWidth(CONFIG['text_item_width'])
@@ -4276,9 +4278,9 @@ class TextItem(QtWidgets.QGraphicsTextItem):
                 ## set bold
                 cursor = self.textCursor()
                 fmt = cursor.charFormat()
-                fmt.setFontWeight(QtGui.QFont.Normal \
-                                if fmt.fontWeight() > QtGui.QFont.Normal \
-                                else QtGui.QFont.Bold)
+                fmt.setFontWeight(QtGui.QFont.Weight.Normal \
+                                if fmt.fontWeight() > QtGui.QFont.Weight.Normal \
+                                else QtGui.QFont.Weight.Bold)
                 cursor.mergeCharFormat(fmt)
 
             elif event.key() == QtCore.Qt.Key.Key_I:
@@ -4442,21 +4444,21 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
     def setMode(self, mode):
 
         if mode == PenMode:
-            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsSelectable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsMovable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsFocusable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
             self.setSelected(False)
 
         elif mode == SelectMode:
-            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsSelectable, True)
-            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsMovable, True)
-            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsFocusable, True)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, True)
             self.setSelected(False)
 
         else:
-            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsSelectable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsMovable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.GraphicstemFlag.ItemIsFocusable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
             self.setSelected(False)
 
     def hoverEnterEvent(self, event):
@@ -5214,7 +5216,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         #     if self.presstime !=0 and (t-self.presstime) > 1:
         #         popup = QtWidgets.QMenu()
         #         addnote = popup.addAction('Add note')
-        #         action = popup.exec_(event.screenPos())
+        #         action = popup.exec(event.screenPos())
         #         if action  == addnote:
         #             x,y = self.suggestChildPosition()
         #             self.newStem(p=QtCore.QPointF(x,y), fullscreen=True, iconified=True)
@@ -5255,7 +5257,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         cmenu.addSeparator()
         #presentation_action=cmenu.addAction("Presentation")
 
-        action = cmenu.exec_(global_pos)
+        action = cmenu.exec(global_pos)
 
         if action==edit_action:
             self.editStem()
@@ -5556,7 +5558,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         self.scene().showEditDialog.emit(newstem)
         # d.setDialog(newnode, newedge, self)
         # d.show()
-        # d.exec_()
+        # d.exec()
 
         #self.renew(reload=False)
 
@@ -5586,7 +5588,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         self.scene().showEditDialog.emit(self)
         #d.setDialog(self.node, edge, self)
         #d.show()
-        # d.exec_()
+        # d.exec()
 
         # if self.node.exists:
             # stem may be deleted after edit (i.e. all items removed)

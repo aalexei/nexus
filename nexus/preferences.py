@@ -247,4 +247,4 @@ if __name__ == '__main__':
 
     app = QtWidgets.QApplication(sys.argv)
     dialog = ConfigDialog()
-    sys.exit(dialog.exec_())
+    sys.exit(dialog.exec())
