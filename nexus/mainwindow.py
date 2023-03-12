@@ -22,7 +22,7 @@ import sys,  zipfile,  io,  os, time, random, hashlib, json, shutil
 from pathlib import Path
 from PyQt6 import QtCore, QtGui, QtOpenGL, QtSvg, QtWidgets, QtPrintSupport
 #QT6 from PyQt6.QtMultimedia import QAudioRecorder, QAudioEncoderSettings, QMultimedia
-#from PyQt6.QtMultimedia import QMultimedia
+from PyQt6.QtMultimedia import QMediaCaptureSession, QAudioInput, QMediaRecorder, QMediaDevices, QAudioInput
 import gzip
 from functools import reduce
 import webbrowser, tempfile
@@ -2707,42 +2707,91 @@ class MainWindow(QtWidgets.QMainWindow):
         #     if (self.audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
         #         devices.append(self.audio.get_device_info_by_host_api_device_index(0, i).get('name'))
 
-        self.audiorecorder = QAudioRecorder()
+        self.audiosession = QMediaCaptureSession()
 
-        #codecs = self.audiorecorder.supportedAudioCodecs()
-        #containers = self.audiorecorder.supportedContainers()
-        #sample_rates = self.audiorecorder.supportedAudioSampleRates()
-        sources = self.audiorecorder.audioInputs()
-        default_source = self.audiorecorder.defaultAudioInput()
-        sources.remove(default_source)
-        sources.insert(0, default_source)
+        devices = QMediaDevices()
+        inputs = devices.audioInputs()
+        self.audio_inputs = { a.description():a for a in inputs}
+        default_input = devices.defaultAudioInput()
+
+        # maximumChannelCount 16
+        # maximumSampleRate 96000
+        # minimumChannelCount 1
+        # minimumSampleRate 1
+        # print(f'DEFAULT default_input  MEMBERS {dir(default_input)}')
+        # for i in inputs:
+        #     for attr in ['channelConfiguration', 'description', 'id', 'isDefault',
+        #                  #'isFormatSupported',
+        #                  'isNull', 'maximumChannelCount', 'maximumSampleRate',
+        #                  'minimumChannelCount', 'minimumSampleRate', 'mode',
+        #                  'preferredFormat', 'supportedSampleFormats',
+        #                  #'swap'
+        #                  ]:
+        #         print(attr, getattr(i,attr)())
+        #     print()
+        #     # print(i.id(),i.description(),i.channelConfiguration(),i.isDefault(),i.isFormatSupported(),)
+        inputs.remove(default_input)
+        inputs.insert(0, default_input)
+
+
         self.recSourceCombo.clear()
-        self.recSourceCombo.addItems(sources)
-        self.recSourceCombo.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
+        self.recSourceCombo.addItems([i.description() for i in inputs])
+        #self.recSourceCombo.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
 
-        settings = QAudioEncoderSettings()
-        settings.setCodec('audio/pcm')
-        settings.setSampleRate(44100)
-        settings.setChannelCount(2)
+        #self.audiosession.setAudioInput(default_input)
 
-        self.audiorecorder.setAudioSettings(settings)
-        self.audiorecorder.setContainerFormat('audio/x-wav')
+        self.recorder = QMediaRecorder()
+        self.audiosession.setRecorder(self.recorder)
+        self.recorder.setQuality(QMediaRecorder.Quality.HighQuality)
+        self.recorder.setAudioSampleRate(44100)
+        self.recorder.setAudioChannelCount(2)
+        # self.recorder.setMediaFormat(QMediaFormat.AudioCodec.Wave)
+        # self.recorder.setOutputLocation(QtCore.QUrl.fromLocalFile("test.mp3"))
 
         self.recStartAct.setEnabled(True)
         self.recPauseAct.setEnabled(False)
         self.recEndAct.setEnabled(False)
 
-        self.audiorecorder.stateChanged.connect(self.audioRecorderStateChange)
+        self.recorder.recorderStateChanged.connect(self.audioRecorderStateChange)
         self.audioRecorderStateChange()
+
+        # OLD
+        #self.audiorecorder = QAudioRecorder()
+
+        # #codecs = self.audiorecorder.supportedAudioCodecs()
+        # #containers = self.audiorecorder.supportedContainers()
+        # #sample_rates = self.audiorecorder.supportedAudioSampleRates()
+        # sources = self.audiorecorder.audioInputs()
+        # default_source = self.audiorecorder.defaultAudioInput()
+        # sources.remove(default_source)
+        # sources.insert(0, default_source)
+        # self.recSourceCombo.clear()
+        # self.recSourceCombo.addItems(sources)
+        # self.recSourceCombo.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
+
+        # settings = QAudioEncoderSettings()
+        # settings.setCodec('audio/pcm')
+        # settings.setSampleRate(44100)
+        # settings.setChannelCount(2)
+
+        # self.audiorecorder.setAudioSettings(settings)
+        # self.audiorecorder.setContainerFormat('audio/x-wav')
+
+        # self.recStartAct.setEnabled(True)
+        # self.recPauseAct.setEnabled(False)
+        # self.recEndAct.setEnabled(False)
+
+        # self.audiorecorder.stateChanged.connect(self.audioRecorderStateChange)
+        # self.audioRecorderStateChange()
 
     def storeRecordingEvent(self, event):
         self.event_stream.append(event)
 
     def audioRecorderStateChange(self):
 
-        if self.audiorecorder.state()==QAudioRecorder.RecordingState:
+        if self.recorder.recorderState()==QMediaRecorder.RecorderState.RecordingState:
             logging.debug("Recording")
-        elif self.audiorecorder.state()==QAudioRecorder.PausedState:
+        elif self.recorder.recorderState()==QMediaRecorder.RecorderState.PausedState:
             logging.debug("Paused")
         else:
             logging.debug("Stopped")
@@ -2790,7 +2839,8 @@ class MainWindow(QtWidgets.QMainWindow):
         Start recording has been triggered
         '''
 
-        if self.audiorecorder.state()==QAudioRecorder.StoppedState:
+        print(f'STATE {self.recorder.recorderState()}')
+        if self.recorder.recorderState()==QMediaRecorder.RecorderState.StoppedState:
             # This is the initial state of the recorder
            
             # create a temporary directory to store files for movie
@@ -2800,11 +2850,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
             logging.info("Created temporary directory %s for movie", self.tmprecdir)
             url = QtCore.QUrl("{}/audio.wav".format(self.tmprecdir))
-            self.audiorecorder.setOutputLocation(url)
-            self.audiorecorder.setAudioInput(self.recSourceCombo.currentText())
+            self.recorder.setOutputLocation(url)
+            print(f'output location: {self.recorder.outputLocation()}')
+            #self.recorder.setAudioInput(self.recSourceCombo.currentText())
 
             # initialise stream
             self.event_stream = []
+
+            audio_input = self.audio_inputs[self.recSourceCombo.currentText()]
+            self.audiosession.setAudioInput(QAudioInput(audio_input))
+
 
 
         self.startRecordTimer()
@@ -2816,7 +2871,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # The following applies for initial start and resuming from pause
         self.view.recordStateEvent.connect(self.storeRecordingEvent)
-        self.audiorecorder.record()
+        self.recorder.record()
         t = time.time()
         sides = self.view.getViewSides()
                                 
@@ -2832,7 +2887,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def recordPause(self):
-        self.audiorecorder.pause()
+        self.recorder.pause()
         self.event_stream.append({'t':time.time(),'cmd':'pause'})
         self.view.recordStateEvent.disconnect(self.storeRecordingEvent)
 
@@ -2845,7 +2900,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recEndAct.setEnabled(True)
 
     def recordEnd(self):
-        self.audiorecorder.stop()
+        self.recorder.stop()
         self.event_stream.append({'t':time.time(),'cmd':'end'})
         try:
             self.view.recordStateEvent.disconnect(self.storeRecordingEvent)
