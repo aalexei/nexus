@@ -362,6 +362,13 @@ def convert_to_full_tree(g):
     g2.savesetting('version', graphics.VERSION)
     return g2
 
+def convert_to_partial_tree(g):
+    '''
+    Convert <0.9 to 0.9 style where stems are nodes in the graph
+    internal structure to stems is a json list.
+    '''
+    return g
+
 
 def createViewImage(view, width, height, removebackground=False):
 
@@ -1996,6 +2003,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if version < 0.8:
             self.showMessage("{} version < 0.8, converting...".format(filename))
             g = convert_to_full_tree(g)
+        if version < 0.9:
+            self.showMessage("{} version < 0.9, converting...".format(filename))
+            g = convert_to_partial_tree(g)
+
 
         return g
 
