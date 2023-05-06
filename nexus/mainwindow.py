@@ -2711,7 +2711,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         devices = QMediaDevices()
         inputs = devices.audioInputs()
-        self.audio_inputs = { a.description():a for a in inputs}
+        self.audio_inputs = { a.description() for a in inputs}
         default_input = devices.defaultAudioInput()
 
         # maximumChannelCount 16

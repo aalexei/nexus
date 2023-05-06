@@ -2244,6 +2244,7 @@ class InkView(QtWidgets.QGraphicsView):
             #v1 = self.mapFromGlobal(QtGui.QCursor.pos())
             v1 = pinch.centerPoint().toPoint()
         else:
+            # TODO convert to PointF only when needed
             v1 = self.mapFromGlobal(pinch.centerPoint()).toPoint()
 
         anchor = self.transformationAnchor()
