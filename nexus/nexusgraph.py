@@ -159,6 +159,7 @@ class NexusGraph(graphydb.Graph):
 
     def getCopyNode(self, clear=False):
 
+        # TODO v09 delete
         # Clear contents of CopyNode
         copynode = self.fetch('(n:CopyNode)').one
         if copynode is None:

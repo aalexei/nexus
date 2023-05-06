@@ -286,7 +286,7 @@ def convert_to_full_tree(g):
         raise Exception("Something went wrong in copying '%s' to '%s'"%(path,oldformat))
 
     g2 = g
-    # clear the undo stack as it may make sense after changes
+    # clear the undo stack as it may not make sense after changes
     g2.clearchanges()
 
     imageshas = {}
@@ -367,6 +367,76 @@ def convert_to_partial_tree(g):
     Convert <0.9 to 0.9 style where stems are nodes in the graph
     internal structure to stems is a json list.
     '''
+
+    # New Format
+    #
+    # Root -Child-> Stem
+    # Stem -Child-> Stem
+    # Stem -In-> Image
+    # View -Transition-> View
+    # Image -With-> ImageData
+
+    # First move old file aside
+    logging.info("Backing up pre 0.9 file")
+    path = Path(g.path)
+
+    oldformat = path.with_suffix(".nex_pre09")
+    if oldformat.exists():
+        logging.exception("Can't convert, '%s' already exists!",oldformat)
+        raise Exception("Can't convert, '%s' already exists!"%oldformat)
+
+    shutil.copy2(path, oldformat)
+
+    if not oldformat.exists():
+        logging.exeption("Something went wrong in copying '%s' to '%s'",path,oldformat)
+        raise Exception("Something went wrong in copying '%s' to '%s'"%(path,oldformat))
+
+    # Change graph in place
+    # Clear undo chnages as they may not make sense anymore
+    g.clearchanges()
+
+    stems = g.fetch('[n:Stem]')
+
+    for s in stems:
+        edges = s.bothE('e.kind = "In"')
+        content = []
+        for e in edges:
+            end = e.end
+            content.append(end.data)
+            if end['kind'] == 'Image':
+                # Relink image data from stem itself
+                edata = end.outE('e.kind="With"').one
+                g.Edge(s,'With', edata.end).save(setchange=False)
+                edata.delete(setchange=False)
+
+        # Clean up the content, sort by z-value
+        content.sort(key = lambda n:n['z'])
+
+        # Now remove some redundant fields
+        for c in content:
+            for k in ['uid', 'z', 'mtime', 'ctime']:
+                if k in c:
+                    del c[k]
+
+        # Save content
+        s['content'] = content
+        s.save(setchange=False)
+
+        # Delete old content nodes and edges
+        for e in edges:
+            n = e.end
+            e.delete(setchange=False)
+            n.delete(setchange=False)
+
+    # Delete copynode and subtree
+    copynode = g.fetch('(n:CopyNode)').one
+    if copynode is not None:
+        g.deleteOutFromNodes(copynode.outN())
+        copynode.delete(setchange=False)
+
+    g.savesetting('version', graphics.VERSION)
+
+    sys.exit()
     return g
 
 
