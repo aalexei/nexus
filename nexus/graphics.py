@@ -433,17 +433,18 @@ class InputDialog(QtWidgets.QDialog):
         # itemnumbers are used to set the mode
         itemnumbers = collections.Counter()
         itemrect = QtCore.QRectF()
-        for k in self.scene.node.outN('e.kind = "In"'):
+        #for k in self.scene.node.outN('e.kind = "In"'):
+        for z,k in enumerate(self.scene.node['content']):
             if k['kind'] == 'Stroke':
-                item = InkItem(k, scene=self.scene)
+                item = InkItem(k, self.scene.node, z, scene=self.scene)
                 itemnumbers['stroke']+=1
             elif k['kind'] == 'Text':
-                item = TextItem(k, scene=self.scene)
+                item = TextItem(k, self.scene.node, z, scene=self.scene)
                 ## this is needed to make alignments work:
                 item.positionChanged.connect(self.setTextControls)
                 itemnumbers['text']+=1
             elif k['kind'] == 'Image':
-                item = PixmapItem(k, scene=self.scene)
+                item = PixmapItem(k, self.scene.node, z, scene=self.scene)
                 itemnumbers['image']+=1
             else:
                 item = None
@@ -1289,7 +1290,7 @@ class InputDialog(QtWidgets.QDialog):
             self.scene.maxZ += 1
             n['z'] = self.scene.maxZ
             if n['kind'] == 'Stroke':
-                item=InkItem(n, scene=self.scene)
+                item=InkItem(n,  scene=self.scene)
             elif n['kind'] == 'Text':
                 item=TextItem(n, scene=self.scene)
             elif n['kind'] == 'Image':
@@ -1576,6 +1577,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         #QtWidgets.QGraphicsItem.mouseReleaseEvent(self, event)
 
         # save any changed items
+        # TODO v09
         batch = graphydb.generateUUID()
         for item in self.selected:
             if item._changed:
@@ -3540,7 +3542,7 @@ class InkItem(QtWidgets.QGraphicsPathItem):
 ##----------------------------------------------------------------------
 
 
-    def __init__(self, node, scene=None, parent=None):
+    def __init__(self, node, basenode, z=0, scene=None, parent=None):
         ## Rendered in one of two ways:
         ## 1) in tree: parent = leaf container item, scene = None
         ## 2) in edit dialog: parent = None and scene = edit scene
@@ -3552,6 +3554,7 @@ class InkItem(QtWidgets.QGraphicsPathItem):
             super().__init__(parent)
 
         self.node = node
+        self.basenode = basenode
 
         self.setAcceptHoverEvents(True)
         self.originalCursor = None
@@ -3560,7 +3563,8 @@ class InkItem(QtWidgets.QGraphicsPathItem):
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
-        self.setZValue(node['z'])
+        #self.setZValue(node['z'])
+        self.setZValue(z)
 
         self.width = node['width']
         self.color = QtGui.QColor(node.get('color','#000000'))
@@ -3834,7 +3838,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
     linkClicked = QtCore.pyqtSignal(str)
     positionChanged = QtCore.pyqtSignal(QtGui.QTextCursor)
 
-    def __init__(self, node, parent=None, scene=None):
+    def __init__(self, node, basenode, z=0, parent=None, scene=None):
         ## Rendered in one of two ways:
         ## 1) in tree: parent = leaf container item, scene = None
         ## 2) in edit dialog: parent = None and scene = edit scene
@@ -3846,6 +3850,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
             super().__init__(parent)
 
         self.node = node
+        self.basenode = basenode
 
         self.DefaultFont = QtGui.QFont(node.get("font_family", CONFIG['text_item_font_family']),
                                        node.get("font_size", CONFIG['text_item_font_size']))
@@ -3856,7 +3861,8 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
-        self.setZValue(node['z'])
+        #self.setZValue(node['z'])
+        self.setZValue(z)
 
         self.setTabChangesFocus(True)
 
@@ -4370,7 +4376,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
 
     # TODO lossless encoding? png/jpg .. preserve details
 
-    def __init__(self, node, parent=None, scene=None):
+    def __init__(self, node, basenode, z=0, parent=None, scene=None):
         ## Rendered in one of two ways:
         ## 1) in tree: parent = leaf container item, scene = None
         ## 2) in edit dialog: parent = None and scene = edit scene
@@ -4382,13 +4388,15 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
             super().__init__(parent)
 
         self.node = node
+        self.basenode = basenode
 
         self.setAcceptHoverEvents(True)
-        self.setZValue(node['z'])
+        #self.setZValue(node['z'])
+        self.setZValue(z)
         self.setTransform(Transform(*node['frame']))
 
         ## set pixmap from stored data
-        datanode = node.outN('n.kind="ImageData"').one
+        datanode = self.basenode.outN('n.kind="ImageData"').one
         imagedata = nexusgraph.DataToImage(datanode['data'])
         self.setPixmap(QtGui.QPixmap.fromImage(imagedata))
 
@@ -4500,15 +4508,16 @@ class Leaf(QtWidgets.QGraphicsItem):
             self.leaf = QtWidgets.QGraphicsPixmapItem(QtGui.QPixmap(":/images/iconified.svg"), parent=self)
 
         else:
-            for k in node.outN('e.kind = "In"'):
+            #for k in node.outN('e.kind = "In"'):
+            for z,k in enumerate(node['content']):
                 if k['kind'] == 'Stroke':
-                    item = InkItem(k, parent=self)
+                    item = InkItem(k, node, z=z, parent=self)
                 elif k['kind'] == 'Text':
-                    item = TextItem(k, parent=self)
+                    item = TextItem(k, node, z=z, parent=self)
                     ## this is needed to make alignments work:
                     item.setTextWidth(item.boundingRect().width())
                 elif k['kind'] == 'Image':
-                    item = PixmapItem(k, parent=self)
+                    item = PixmapItem(k, node, z=z, parent=self)
 
 
         # this is the size of the leaf before adding tags etc
