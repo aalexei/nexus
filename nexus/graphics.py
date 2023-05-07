@@ -507,17 +507,30 @@ class InputDialog(QtWidgets.QDialog):
                 item.deleteOrSave()
        
         # Check for empty text items, delete them if they exist
-        for n in self.scene.node.outN('n.kind="Text"'):
-            # XXX this will not work for qt source
-            if len(n['source'])==0:
-                n.delete(setchange=True)
+        # for n in self.scene.node.outN('n.kind="Text"'):
+        #     # XXX this will not work for qt source
+        #     if len(n['source'])==0:
+        #         n.delete(setchange=True)
 
         # If there are no items, delete branch
         # outgoing links: In, Child
-        if self.scene.node.outE('e.kind="In"', COUNT=True)==0 and \
-           self.scene.node.outE('e.kind="Child"', COUNT=True)==0:
+        # if self.scene.node.outE('e.kind="In"', COUNT=True)==0 and \
+        #    self.scene.node.outE('e.kind="Child"', COUNT=True)==0:
 
-            self.scene.graph.deleteOutFromNodes(graphydb.NSet([self.scene.node]), setchange=True)
+        # TODO v09 Hold the deletion:
+        # empty = True
+        # print( self.scene.node['content'])
+        # for item in self.scene.node['content']:
+        #     if item['kind'] != 'Text':
+        #         empty = False
+        #     elif len(item['source'])>0:
+        #         empty = False
+
+        # if empty:
+        #     self.scene.node.delete(setchange=True, disconnect=True)
+        #     # TODO what if nodes attached?
+
+            #self.scene.graph.deleteOutFromNodes(graphydb.NSet([self.scene.node]), setchange=True)
 
         # TODO this will delete a text item that never lost focus (so no node created)
 
@@ -4210,10 +4223,10 @@ class TextItem(QtWidgets.QGraphicsTextItem):
             self.stemnode['content'] = self.stemnode['content']
             # self.stemnode._changedkeys.add('content')
             self.stemnode.save(setchange=True)
-            print("1", self.stemnode.data)
-            print("2", self.stemnode.graph.getuid(self.stemnode['uid']).data)
+            # print("1", self.stemnode.data)
+            # print("2", self.stemnode.graph.getuid(self.stemnode['uid']).data)
             scene.refreshStem()
-            print("3", self.stemnode.data)
+            # print("3", self.stemnode.data)
 
     def focusOutEvent(self,  event):
         QtWidgets.QGraphicsTextItem.focusOutEvent(self, event)
