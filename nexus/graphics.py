@@ -853,12 +853,17 @@ class InputDialog(QtWidgets.QDialog):
 
         if not textitempresent:
             ## Add a blank TextItem
-            batch = graphydb.generateUUID()
-            n = self.scene.graph.Node('Text', source='', z=1,
-                       frame=Transform().tolist()).save(setchange=True, batch=batch)
-            e = self.scene.graph.Edge(self.scene.node, 'In', n).save(setchange=True, batch=batch) 
+            # TODO v09
 
-            textitem = TextItem(n, scene=self.scene)
+            item = {'kind':'Text', 'source':'', 'frame':Transform().tolist()}
+            self.scene.node['content'].append(item)
+            self.scene.node.save(setchange=True)
+            # batch = graphydb.generateUUID()
+            # n = self.scene.graph.Node('Text', source='', z=1,
+            #            frame=Transform().tolist()).save(setchange=True, batch=batch)
+            # e = self.scene.graph.Edge(self.scene.node, 'In', n).save(setchange=True, batch=batch)
+
+            textitem = TextItem(item, self.scene.node, scene=self.scene)
             textitem.positionChanged.connect(self.setTextControls)
             textitem.setMode(TextMode)
             textitem.setFocus()
@@ -2163,6 +2168,7 @@ class InkView(QtWidgets.QGraphicsView):
         scene.maxZ +=1
         coords = smoothInkPath(scene.strokecoords)
 
+        # TODO v09  this is the onlu use of new()
         stroke = InkItem.new(scene.node, scene=scene,
                              z=scene.maxZ, width=scene.pen.widthF(),
                              color=scene.pen.color(), coords=coords)
@@ -3542,7 +3548,7 @@ class InkItem(QtWidgets.QGraphicsPathItem):
 ##----------------------------------------------------------------------
 
 
-    def __init__(self, node, basenode, z=0, scene=None, parent=None):
+    def __init__(self, node, stemnode, z=0, scene=None, parent=None):
         ## Rendered in one of two ways:
         ## 1) in tree: parent = leaf container item, scene = None
         ## 2) in edit dialog: parent = None and scene = edit scene
@@ -3554,7 +3560,7 @@ class InkItem(QtWidgets.QGraphicsPathItem):
             super().__init__(parent)
 
         self.node = node
-        self.basenode = basenode
+        self.stemnode = stemnode
 
         self.setAcceptHoverEvents(True)
         self.originalCursor = None
@@ -3584,6 +3590,7 @@ class InkItem(QtWidgets.QGraphicsPathItem):
         Convenience method to create a new DB node from QT objects
         '''
 
+        # TODO v09 only this one used .. remove
         newnode = stemnode.graph.Node('Stroke')
         newedge = stemnode.graph.Edge(stemnode, 'In', newnode)
 
@@ -3838,7 +3845,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
     linkClicked = QtCore.pyqtSignal(str)
     positionChanged = QtCore.pyqtSignal(QtGui.QTextCursor)
 
-    def __init__(self, node, basenode, z=0, parent=None, scene=None):
+    def __init__(self, data, stemnode, z=0, parent=None, scene=None):
         ## Rendered in one of two ways:
         ## 1) in tree: parent = leaf container item, scene = None
         ## 2) in edit dialog: parent = None and scene = edit scene
@@ -3849,14 +3856,14 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         else:
             super().__init__(parent)
 
-        self.node = node
-        self.basenode = basenode
+        self.data = data
+        self.stemnode = stemnode
 
-        self.DefaultFont = QtGui.QFont(node.get("font_family", CONFIG['text_item_font_family']),
-                                       node.get("font_size", CONFIG['text_item_font_size']))
+        self.DefaultFont = QtGui.QFont(data.get("font_family", CONFIG['text_item_font_family']),
+                                       data.get("font_size", CONFIG['text_item_font_size']))
 
         self.setFont(self.DefaultFont)
-        self.setDefaultTextColor(QtGui.QColor(node.get("color", CONFIG['text_item_color'])))
+        self.setDefaultTextColor(QtGui.QColor(data.get("color", CONFIG['text_item_color'])))
 
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
@@ -3866,7 +3873,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
 
         self.setTabChangesFocus(True)
 
-        self.maxTextWidth = node.get('maxwidth', CONFIG['text_item_width'])
+        self.maxTextWidth = data.get('maxwidth', CONFIG['text_item_width'])
         self.widthWidget = TextWidthWidget(self)
         self.widthWidget.hide()
 
@@ -3874,49 +3881,49 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         self.linkHovered.connect(self.linkHover)
 
         ## set the default mode
-        self.setHtml(self.node['source'])
+        self.setHtml(data['source'])
         self.setStaticMode()
 
-        self.setTransform(Transform(*node['frame']))
+        self.setTransform(Transform(*data['frame']))
 
         # used to track moves, scales, etc
         self._changed = False
 
-    @classmethod
-    def new(cls, stemnode, scene, transform=Transform(),
-            z=1, maxwidth=None, color=None, source="",
-            batch=None, setchange=True):
-        '''
-        Convenience method to create a new DB node from QT objects
-        '''
+    # @classmethod
+    # def new(cls, stemnode, scene, transform=Transform(),
+    #         z=1, maxwidth=None, color=None, source="",
+    #         batch=None, setchange=True):
+    #     '''
+    #     Convenience method to create a new DB node from QT objects
+    #     '''
 
-        # make copy of transform otherwise default one instantiated on
-        # definition accumulates translations
-        T=Transform(transform)
+    #     # make copy of transform otherwise default one instantiated on
+    #     # definition accumulates translations
+    #     T=Transform(transform)
 
-        newnode = stemnode.graph.Node('Text')
-        newedge = stemnode.graph.Edge(stemnode, 'In', newnode)
+    #     newnode = stemnode.graph.Node('Text')
+    #     newedge = stemnode.graph.Edge(stemnode, 'In', newnode)
 
-        newnode['z'] = z
-        if maxwidth is not None:
-            newnode['maxwidth'] = maxwidth
+    #     newnode['z'] = z
+    #     if maxwidth is not None:
+    #         newnode['maxwidth'] = maxwidth
 
-        # TODO Add font changing
-        if color is not None:
-            newnode['color'] = str(color.name())
-            newnode['opacity'] = color.alphaF()
+    #     # TODO Add font changing
+    #     if color is not None:
+    #         newnode['color'] = str(color.name())
+    #         newnode['opacity'] = color.alphaF()
 
-        newnode['source'] = source
-        newnode['frame'] = T.tolist()
-        newnode['z'] = z
+    #     newnode['source'] = source
+    #     newnode['frame'] = T.tolist()
+    #     newnode['z'] = z
 
-        if batch is None and setchange:
-            # store node and edge in same change
-            batch = graphydb.generateUUID()
-        newnode.save(batch=batch, setchange=setchange)
-        newedge.save(batch=batch, setchange=setchange)
+    #     if batch is None and setchange:
+    #         # store node and edge in same change
+    #         batch = graphydb.generateUUID()
+    #     newnode.save(batch=batch, setchange=setchange)
+    #     newedge.save(batch=batch, setchange=setchange)
 
-        return cls(newnode, scene)
+    #     return cls(newnode, scene)
 
     # def save(self, batch=None, setchange=True):
     #     if self.mode == self.EditSourceMode:
@@ -4195,10 +4202,18 @@ class TextItem(QtWidgets.QGraphicsTextItem):
             # delete blank text items
             scene.removeItem(self)
 
-        elif src != self.node['source']:
-            self.node['source'] = src
-            self.node.save(setchange=True)
+        elif src != self.data['source']:
+            # TODO v09 the following is obliterating the saved node
+            # refesh goes of scene.stem which is a copu of self.stemnode?
+            self.data['source'] = src
+            # Need to mark node as changed
+            self.stemnode['content'] = self.stemnode['content']
+            # self.stemnode._changedkeys.add('content')
+            self.stemnode.save(setchange=True)
+            print("1", self.stemnode.data)
+            print("2", self.stemnode.graph.getuid(self.stemnode['uid']).data)
             scene.refreshStem()
+            print("3", self.stemnode.data)
 
     def focusOutEvent(self,  event):
         QtWidgets.QGraphicsTextItem.focusOutEvent(self, event)
@@ -4376,7 +4391,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
 
     # TODO lossless encoding? png/jpg .. preserve details
 
-    def __init__(self, node, basenode, z=0, parent=None, scene=None):
+    def __init__(self, node, stemnode, z=0, parent=None, scene=None):
         ## Rendered in one of two ways:
         ## 1) in tree: parent = leaf container item, scene = None
         ## 2) in edit dialog: parent = None and scene = edit scene
@@ -4388,7 +4403,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
             super().__init__(parent)
 
         self.node = node
-        self.basenode = basenode
+        self.stemnode = stemnode
 
         self.setAcceptHoverEvents(True)
         #self.setZValue(node['z'])
@@ -4396,43 +4411,43 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
         self.setTransform(Transform(*node['frame']))
 
         ## set pixmap from stored data
-        datanode = self.basenode.outN('n.kind="ImageData"').one
+        datanode = self.stemnode.outN('n.kind="ImageData"').one
         imagedata = nexusgraph.DataToImage(datanode['data'])
         self.setPixmap(QtGui.QPixmap.fromImage(imagedata))
 
         # used to track moves, scales, etc
         self._changed = False
 
-    @classmethod
-    def new(cls, stemnode, scene, transform=Transform(),
-            z=1, maxwidth=None, color=None, pixmap=None,
-            batch=None, setchange=True):
-        '''
-        Convenience method to create a new DB node from QT objects
-        '''
-        newnode = stemnode.graph.Node('Image')
-        newedge = stemnode.graph.Edge(stemnode, 'In', newnode)
+    # @classmethod
+    # def new(cls, stemnode, scene, transform=Transform(),
+    #         z=1, maxwidth=None, color=None, pixmap=None,
+    #         batch=None, setchange=True):
+    #     '''
+    #     Convenience method to create a new DB node from QT objects
+    #     '''
+    #     newnode = stemnode.graph.Node('Image')
+    #     newedge = stemnode.graph.Edge(stemnode, 'In', newnode)
 
-        # make copy of transform otherwise default one instantiated on
-        # definition accumulates translations
-        T=Transform(transform)
-        newnode['frame'] = T.tolist()
-        newnode['z'] = z
+    #     # make copy of transform otherwise default one instantiated on
+    #     # definition accumulates translations
+    #     T=Transform(transform)
+    #     newnode['frame'] = T.tolist()
+    #     newnode['z'] = z
 
-        # XXX should check to see it it exists already
-        batch = graphydb.generateUUID()
-        datnode = newnode.graph.Node("ImageData")
-        datnode['data'] = nexusgraph.ImageToData(pixmap.toImage())
-        datnode['sha1'] = hashlib.sha1(datnode['data'].encode('utf-8')).hexdigest()
-        datnode.save(setchange=True, batch=batch)
+    #     # XXX should check to see it it exists already
+    #     batch = graphydb.generateUUID()
+    #     datnode = newnode.graph.Node("ImageData")
+    #     datnode['data'] = nexusgraph.ImageToData(pixmap.toImage())
+    #     datnode['sha1'] = hashlib.sha1(datnode['data'].encode('utf-8')).hexdigest()
+    #     datnode.save(setchange=True, batch=batch)
 
-        newnode['sha1'] = datnode['sha1']
-        newnode.save(setchange=True, batch=batch)
+    #     newnode['sha1'] = datnode['sha1']
+    #     newnode.save(setchange=True, batch=batch)
 
-        edge = newnode.graph.Edge(newnode, "With", datnode)
-        edge.save(setchange=True, batch=batch)
+    #     edge = newnode.graph.Edge(newnode, "With", datnode)
+    #     edge.save(setchange=True, batch=batch)
 
-        return cls(newnode, scene)
+    #     return cls(newnode, scene)
 
 
     def mouseMoveEvent(self, event):
@@ -5463,7 +5478,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
     def addChildStem(self, data, batch=None):
 
-        newnode = self.node.graph.Node('Stem')
+        newnode = self.node.graph.Node('Stem', content=[])
         newedge = self.node.graph.Edge(self.node, 'Child', newnode)
 
         settings = QtCore.QSettings("Ectropy", "Nexus")
@@ -5531,7 +5546,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         ## add new db items but don't save then yet in case user cancels
         G = self.node.graph
-        newnode = G.Node('Stem')
+        newnode = G.Node('Stem', content=[])
         newedge = G.Edge(self.node, 'Child', newnode)
 
         settings = QtCore.QSettings("Ectropy", "Nexus")
