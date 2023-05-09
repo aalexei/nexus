@@ -1586,12 +1586,13 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         #QtWidgets.QGraphicsItem.mouseReleaseEvent(self, event)
 
         # save any changed items
-        # TODO v09
         batch = graphydb.generateUUID()
         for item in self.selected:
             if item._changed:
                 item.node['frame']=Transform(item.transform()).tolist()
-                item.node.save(setchange=True, batch=batch)
+                # Trigger a change
+                item.stemnode['content'] = item.stemnode['content']
+                item.stemnode.save(setchange=True, batch=batch)
                 item._changed = False
         self.scene.refreshStem()
         # sp = event.screenPos()
