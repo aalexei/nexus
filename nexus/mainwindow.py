@@ -372,9 +372,8 @@ def convert_to_partial_tree(g):
     #
     # Root -Child-> Stem
     # Stem -Child-> Stem
-    # Stem -In-> Image
+    # Stem -With-> ImageData
     # View -Transition-> View
-    # Image -With-> ImageData
 
     # First move old file aside
     logging.info("Backing up pre 0.9 file")

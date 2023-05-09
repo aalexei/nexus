@@ -504,37 +504,28 @@ class InputDialog(QtWidgets.QDialog):
         # If a text item has been entered but has not lost focus it will not have been saved yet
         for item in self.scene.getItems():
             if isinstance(item, TextItem):
-                item.deleteOrSave()
+                item.saveIfChanged()
        
-        # Check for empty text items, delete them if they exist
-        # for n in self.scene.node.outN('n.kind="Text"'):
-        #     # XXX this will not work for qt source
-        #     if len(n['source'])==0:
-        #         n.delete(setchange=True)
+        # If there are no outgoing links (With, Child) and
+        # there are no items (or just blank Text items) delete branch
+        if self.scene.node.outE('e.kind="With"', COUNT=True)==0 and \
+           self.scene.node.outE('e.kind="Child"', COUNT=True)==0:
 
-        # If there are no items, delete branch
-        # outgoing links: In, Child
-        # if self.scene.node.outE('e.kind="In"', COUNT=True)==0 and \
-        #    self.scene.node.outE('e.kind="Child"', COUNT=True)==0:
+           empty = True
+           print('content', self.scene.node['content'] )
+           for item in self.scene.node['content']:
+               if item['kind'] != 'Text':
+                   empty = False
+               elif len(item['source'])>0:
+                   empty = False
 
-        # TODO v09 Hold the deletion:
-        # empty = True
-        # print( self.scene.node['content'])
-        # for item in self.scene.node['content']:
-        #     if item['kind'] != 'Text':
-        #         empty = False
-        #     elif len(item['source'])>0:
-        #         empty = False
+           if empty:
+               self.scene.node.delete(setchange=True, disconnect=True)
+               # TODO This will fail if item has been saves even is blank because
+               # QT will add a <p> tag with attributes etc.
+               # solution: reimplement Text with clean source not QT's interpretation.
 
-        # if empty:
-        #     self.scene.node.delete(setchange=True, disconnect=True)
-        #     # TODO what if nodes attached?
-
-            #self.scene.graph.deleteOutFromNodes(graphydb.NSet([self.scene.node]), setchange=True)
-
-        # TODO this will delete a text item that never lost focus (so no node created)
-
-        self.stem.renew(reload=False, children=False)
+        self.stem.parentStem().renew(reload=False, children=True)
 
         self.inputgeometry = self.geometry()
 
@@ -4207,30 +4198,18 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         scene.focusedTextItem = self
         self.positionChanged.emit(self.textCursor())
 
-    def deleteOrSave(self):
+    def saveIfChanged(self):
         src = self.getSrc()
-        scene = self.scene()
 
-        if len(self.toPlainText().strip())==0:
-            # delete blank text items
-            scene.removeItem(self)
-
-        elif src != self.data['source']:
-            # TODO v09 the following is obliterating the saved node
-            # refesh goes of scene.stem which is a copu of self.stemnode?
+        if src != self.data['source']:
             self.data['source'] = src
             # Need to mark node as changed
             self.stemnode['content'] = self.stemnode['content']
-            # self.stemnode._changedkeys.add('content')
             self.stemnode.save(setchange=True)
-            # print("1", self.stemnode.data)
-            # print("2", self.stemnode.graph.getuid(self.stemnode['uid']).data)
-            scene.refreshStem()
-            # print("3", self.stemnode.data)
 
     def focusOutEvent(self,  event):
         QtWidgets.QGraphicsTextItem.focusOutEvent(self, event)
-        self.deleteOrSave()
+        self.saveIfChanged()
 
     def mouseDoubleClickEvent(self, event):
         if self.isSelected() and self.mode in [SelectMode]:
