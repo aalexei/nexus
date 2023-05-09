@@ -512,7 +512,7 @@ class InputDialog(QtWidgets.QDialog):
            self.scene.node.outE('e.kind="Child"', COUNT=True)==0:
 
            empty = True
-           print('content', self.scene.node['content'] )
+           # print('content', self.scene.node['content'] )
            for item in self.scene.node['content']:
                if item['kind'] != 'Text':
                    empty = False
@@ -2173,15 +2173,47 @@ class InkView(QtWidgets.QGraphicsView):
         coords = smoothInkPath(scene.strokecoords)
 
         # TODO v09  this is the onlu use of new()
-        stroke = InkItem.new(scene.node, scene=scene,
-                             z=scene.maxZ, width=scene.pen.widthF(),
-                             color=scene.pen.color(), coords=coords)
+        # stroke = InkItem.new(scene.node, scene=scene,
+        #                      z=scene.maxZ, width=scene.pen.widthF(),
+        #                      color=scene.pen.color(), coords=coords)
+
+        color = scene.pen.color()
+        data = {
+            'kind': 'Stroke',
+            'width': scene.pen.widthF(),
+            'color': str(color.name()),
+            'opacity': color.alphaF(),
+        }
+
+        XYZ = len(coords[0])>2
+        data['type'] = 'XYZ' if XYZ else 'XY'
+
+        p0 = coords[0]
+        out = []
+        for p in coords:
+            if XYZ:
+                out.append([p[0]-p0[0], p[1]-p0[1],p[2]])
+            else:
+                out.append([p[0]-p0[0], p[1]-p0[1]])
+        data['stroke'] = out
+
+        # make copy of transform otherwise default one instantiated on definition
+        # accumulates translations
+        T=Transform()
+        T.translate(p0[0], p0[1])
+        data['frame'] = T.tolist()
+
+        stemnode = scene.node
+        stemnode['content'].append(data)
+        stemnode['content'] = stemnode['content']
+        stemnode.save(setchange=True)
 
         scene.refreshStem()
-        if hasattr(scene, "tmpgroup"):
-            for item in scene.tmpgroup.childItems():
-                scene.removeItem(item)
-            scene.removeItem(scene.tmpgroup)
+
+        # if hasattr(scene, "tmpgroup"):
+        #     for item in scene.tmpgroup.childItems():
+        #         scene.removeItem(item)
+        #     scene.removeItem(scene.tmpgroup)
 
         self.viewChangeStream.emit(self)
 
@@ -3587,14 +3619,14 @@ class InkItem(QtWidgets.QGraphicsPathItem):
         self._changed = False
 
     @classmethod
-    def new(cls, stemnode, scene, coords=[], transform=Transform(),
+    def new_old(cls, stemnode, scene, coords=[], transform=Transform(),
             z=1, width=1.0, color=QtGui.QColor("Black"),
             batch=None, setchange=True):
         '''
         Convenience method to create a new DB node from QT objects
         '''
 
-        # TODO v09 only this one used .. remove
+        # TODO v09 only this one used .. remove?
         newnode = stemnode.graph.Node('Stroke')
         newedge = stemnode.graph.Edge(stemnode, 'In', newnode)
 
@@ -3634,6 +3666,64 @@ class InkItem(QtWidgets.QGraphicsPathItem):
         newedge.save(batch=batch, setchange=setchange)
 
         return cls(newnode, scene)
+
+    @classmethod
+    def new(cls, stemnode, scene, coords=[], transform=Transform(),
+            z=1, width=1.0, color=QtGui.QColor("Black"),
+            batch=None, setchange=True):
+        '''
+        Convenience method to create a new DB node from QT objects
+        '''
+
+        # TODO v09 only this one used .. remove?
+        data = {
+            'kind': 'Stroke',
+            'z': z,
+            'width': width,
+            'color': str(color.name()),
+            'opacity': color.alphaF(),
+            'type': 'XYZ' if len(coords[0])>2 else 'XY'
+        }
+        # data['z'] = z
+        # data['width'] = width
+        # data['color'] = str(color.name())
+        # data['opacity'] = color.alphaF()
+
+        # XYZ = len(coords[0])>2
+        # if XYZ:
+        #     data['type'] = "XYZ"
+        # else:
+        #     data['type'] = "XY"
+
+        # coords are relative to first point for compression
+        # position carried in frame
+        p0 = coords[0]
+        out = []
+        for p in coords:
+            if XYZ:
+                out.append([p[0]-p0[0], p[1]-p0[1],p[2]])
+            else:
+                out.append([p[0]-p0[0], p[1]-p0[1]])
+        data['stroke'] = out
+
+        # make copy of transform otherwise default one instantiated on definition
+        # accumulates translations
+        T=Transform(transform)
+        T.translate(p0[0], p0[1])
+        data['frame'] = T.tolist()
+
+        stemnode['content'].append(data)
+        stemnode['content'] = self.stemnode['content']
+
+        stemnode.save(setchange=True)
+        # if batch is None and setchange:
+        #     # store node and edge in same change
+        #     batch = graphydb.generateUUID()
+        # newnode.save(batch=batch, setchange=setchange)
+        # newedge.save(batch=batch, setchange=setchange)
+
+        return cls(newnode, scene)
+
 
     def keyPressEvent(self, event):
 
