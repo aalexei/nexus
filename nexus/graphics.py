@@ -1167,9 +1167,10 @@ class InputDialog(QtWidgets.QDialog):
         selected = self.scene.selectedItems()
         batch = graphydb.generateUUID()
         for item in selected:
-            self.scene.removeItem(item, batch=batch)
+            item.deleteNodeItem(batch)
+            #self.scene.removeItem(item)
         self.scene.setSelectionWidget()
-        self.scene.refreshStem()
+        self.scene.refreshStem(reload=False)
 
     def cutEvent(self):
         self.copyEvent()
@@ -1360,20 +1361,21 @@ class InkScene(QtWidgets.QGraphicsScene):
         self.transformationWidget.hide()
         self.transformationWidget.setZValue(9000)  # make sure it's on top
 
-    def refreshStem(self):
+    def refreshStem(self, reload=True):
         '''
         Refresh the stem on the map
         '''
-        self.stem.renew(reload=True, create=True, position=False, children=False, recurse=True)
+        self.stem.renew(reload=reload, create=True, position=False, children=False, recurse=True)
 
     def addItem(self, item):
         QtWidgets.QGraphicsScene.addItem(self, item)
 
-    def removeItem(self, item, batch=None, setchange=True):
-        if hasattr(item, 'node'):
-            # this will correctly handle linked data nodes
-            self.graph.deleteOutFromNodes(graphydb.NSet([item.node]),batch=batch, setchange=setchange)
-        super().removeItem(item)
+    # def removeItem(self, item, batch=None, setchange=True):
+    #     if hasattr(item, 'stemnode'):
+    #         item.stemnode['content'].remove(item.node)
+    #         # this will correctly handle linked data nodes
+    #         # self.graph.deleteOutFromNodes(graphydb.NSet([item.node]),batch=batch, setchange=setchange)
+    #     super().removeItem(item)
 
     def getItems(self):
         '''
@@ -1591,10 +1593,12 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
             if item._changed:
                 item.node['frame']=Transform(item.transform()).tolist()
                 # Trigger a change
-                item.stemnode['content'] = item.stemnode['content']
+                item.stemnode.keyChanged('content')
                 item.stemnode.save(setchange=True, batch=batch)
                 item._changed = False
-        self.scene.refreshStem()
+
+        ## NB if stem reloaded it will break node reference
+        self.scene.refreshStem(reload=False)
         # sp = event.screenPos()
         # t = time.time()
 
@@ -2206,7 +2210,8 @@ class InkView(QtWidgets.QGraphicsView):
 
         stemnode = scene.node
         stemnode['content'].append(data)
-        stemnode['content'] = stemnode['content']
+        stemnode.keyChanged('content')
+        # print('content', stemnode['data']['content'])
         stemnode.save(setchange=True)
 
         scene.refreshStem()
@@ -2231,7 +2236,9 @@ class InkView(QtWidgets.QGraphicsView):
 
         ## only erase pen strokes, this makes is easy to annotate images
         if item is not None and isinstance(item, InkItem):
-            scene.removeItem(item)
+            #scene.removeItem(item)
+            item.deleteNodeItem()
+            self.scene().refreshStem(reload=False)
 
         self.viewChangeStream.emit(self)
 
@@ -3619,111 +3626,112 @@ class InkItem(QtWidgets.QGraphicsPathItem):
         # used to track moves, scales, etc
         self._changed = False
 
-    @classmethod
-    def new_old(cls, stemnode, scene, coords=[], transform=Transform(),
-            z=1, width=1.0, color=QtGui.QColor("Black"),
-            batch=None, setchange=True):
-        '''
-        Convenience method to create a new DB node from QT objects
-        '''
+    # @classmethod
+    # def new_old(cls, stemnode, scene, coords=[], transform=Transform(),
+    #         z=1, width=1.0, color=QtGui.QColor("Black"),
+    #         batch=None, setchange=True):
+    #     '''
+    #     Convenience method to create a new DB node from QT objects
+    #     '''
 
-        # TODO v09 only this one used .. remove?
-        newnode = stemnode.graph.Node('Stroke')
-        newedge = stemnode.graph.Edge(stemnode, 'In', newnode)
+    #     # TODO v09 only this one used .. remove?
+    #     newnode = stemnode.graph.Node('Stroke')
+    #     newedge = stemnode.graph.Edge(stemnode, 'In', newnode)
 
-        newnode['z'] = z
-        newnode['width'] = width
+    #     newnode['z'] = z
+    #     newnode['width'] = width
 
-        newnode['color'] = str(color.name())
-        newnode['opacity'] = color.alphaF()
+    #     newnode['color'] = str(color.name())
+    #     newnode['opacity'] = color.alphaF()
 
-        XYZ = len(coords[0])>2
-        if XYZ:
-            newnode['type'] = "XYZ"
-        else:
-            newnode['type'] = "XY"
+    #     XYZ = len(coords[0])>2
+    #     if XYZ:
+    #         newnode['type'] = "XYZ"
+    #     else:
+    #         newnode['type'] = "XY"
 
-        # coords are relative to first point for compression
-        # position carried in frame
-        p0 = coords[0]
-        out = []
-        for p in coords:
-            if XYZ:
-                out.append([p[0]-p0[0], p[1]-p0[1],p[2]])
-            else:
-                out.append([p[0]-p0[0], p[1]-p0[1]])
-        newnode['stroke'] = out
+    #     # coords are relative to first point for compression
+    #     # position carried in frame
+    #     p0 = coords[0]
+    #     out = []
+    #     for p in coords:
+    #         if XYZ:
+    #             out.append([p[0]-p0[0], p[1]-p0[1],p[2]])
+    #         else:
+    #             out.append([p[0]-p0[0], p[1]-p0[1]])
+    #     newnode['stroke'] = out
 
-        # make copy of transform otherwise default one instantiated on definition
-        # accumulates translations
-        T=Transform(transform)
-        T.translate(p0[0], p0[1])
-        newnode['frame'] = T.tolist()
+    #     # make copy of transform otherwise default one instantiated on definition
+    #     # accumulates translations
+    #     T=Transform(transform)
+    #     T.translate(p0[0], p0[1])
+    #     newnode['frame'] = T.tolist()
 
-        if batch is None and setchange:
-            # store node and edge in same change
-            batch = graphydb.generateUUID() 
-        newnode.save(batch=batch, setchange=setchange)
-        newedge.save(batch=batch, setchange=setchange)
+    #     if batch is None and setchange:
+    #         # store node and edge in same change
+    #         batch = graphydb.generateUUID()
+    #     newnode.save(batch=batch, setchange=setchange)
+    #     newedge.save(batch=batch, setchange=setchange)
 
-        return cls(newnode, scene)
+    #     return cls(newnode, scene)
 
-    @classmethod
-    def new(cls, stemnode, scene, coords=[], transform=Transform(),
-            z=1, width=1.0, color=QtGui.QColor("Black"),
-            batch=None, setchange=True):
-        '''
-        Convenience method to create a new DB node from QT objects
-        '''
+    # @classmethod
+    # def new(cls, stemnode, scene, coords=[], transform=Transform(),
+    #         z=1, width=1.0, color=QtGui.QColor("Black"),
+    #         batch=None, setchange=True):
+    #     '''
+    #     Convenience method to create a new DB node from QT objects
+    #     '''
 
-        # TODO v09 only this one used .. remove?
-        data = {
-            'kind': 'Stroke',
-            'z': z,
-            'width': width,
-            'color': str(color.name()),
-            'opacity': color.alphaF(),
-            'type': 'XYZ' if len(coords[0])>2 else 'XY'
-        }
-        # data['z'] = z
-        # data['width'] = width
-        # data['color'] = str(color.name())
-        # data['opacity'] = color.alphaF()
+    #     # TODO v09 only this one used .. remove?
+    #     data = {
+    #         'kind': 'Stroke',
+    #         'z': z,
+    #         'width': width,
+    #         'color': str(color.name()),
+    #         'opacity': color.alphaF(),
+    #         'type': 'XYZ' if len(coords[0])>2 else 'XY'
+    #     }
+    #     # data['z'] = z
+    #     # data['width'] = width
+    #     # data['color'] = str(color.name())
+    #     # data['opacity'] = color.alphaF()
 
-        # XYZ = len(coords[0])>2
-        # if XYZ:
-        #     data['type'] = "XYZ"
-        # else:
-        #     data['type'] = "XY"
+    #     # XYZ = len(coords[0])>2
+    #     # if XYZ:
+    #     #     data['type'] = "XYZ"
+    #     # else:
+    #     #     data['type'] = "XY"
 
-        # coords are relative to first point for compression
-        # position carried in frame
-        p0 = coords[0]
-        out = []
-        for p in coords:
-            if XYZ:
-                out.append([p[0]-p0[0], p[1]-p0[1],p[2]])
-            else:
-                out.append([p[0]-p0[0], p[1]-p0[1]])
-        data['stroke'] = out
+    #     # coords are relative to first point for compression
+    #     # position carried in frame
+    #     p0 = coords[0]
+    #     out = []
+    #     for p in coords:
+    #         if XYZ:
+    #             out.append([p[0]-p0[0], p[1]-p0[1],p[2]])
+    #         else:
+    #             out.append([p[0]-p0[0], p[1]-p0[1]])
+    #     data['stroke'] = out
 
-        # make copy of transform otherwise default one instantiated on definition
-        # accumulates translations
-        T=Transform(transform)
-        T.translate(p0[0], p0[1])
-        data['frame'] = T.tolist()
+    #     # make copy of transform otherwise default one instantiated on definition
+    #     # accumulates translations
+    #     T=Transform(transform)
+    #     T.translate(p0[0], p0[1])
+    #     data['frame'] = T.tolist()
 
-        stemnode['content'].append(data)
-        stemnode['content'] = self.stemnode['content']
+    #     stemnode['content'].append(data)
+    #     stemnode.keyChanged('content')
+    #     # stemnode['content'] = self.stemnode['content']
 
-        stemnode.save(setchange=True)
-        # if batch is None and setchange:
-        #     # store node and edge in same change
-        #     batch = graphydb.generateUUID()
-        # newnode.save(batch=batch, setchange=setchange)
-        # newedge.save(batch=batch, setchange=setchange)
+    #     stemnode.save(setchange=True)
+    #     # if batch is None and setchange:
+    #     #     # store node and edge in same change
+    #     #     batch = graphydb.generateUUID()
+    #     # newnode.save(batch=batch, setchange=setchange)
+    #     # newedge.save(batch=batch, setchange=setchange)
 
-        return cls(newnode, scene)
+    #     return cls(newnode, scene)
 
 
     def keyPressEvent(self, event):
@@ -3735,7 +3743,15 @@ class InkItem(QtWidgets.QGraphicsPathItem):
     def handleKeyPressEvent(self, event):
 
         if event.matches(QtGui.QKeySequence.StandardKey.Delete):
-            self.scene().removeItem(self)
+            self.deleteNodeItem()
+            self.scene().refreshStem(reload=False)
+
+    def deleteNodeItem(self, batch=None):
+
+        self.stemnode['content'].remove(self.node)
+        self.stemnode.keyChanged('content')
+        self.stemnode.save(setchange=True, batch=batch)
+        self.scene().removeItem(self)
 
     # def mouseMoveEvent(self, event):
 
@@ -4295,7 +4311,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         if src != self.data['source']:
             self.data['source'] = src
             # Need to mark node as changed
-            self.stemnode['content'] = self.stemnode['content']
+            self.stemnode.keyChanged('content')
             self.stemnode.save(setchange=True)
 
     def focusOutEvent(self,  event):
@@ -4419,7 +4435,14 @@ class TextItem(QtWidgets.QGraphicsTextItem):
     def handleKeyPressEvent(self, event):
 
         if event.matches(QtGui.QKeySequence.StandardKey.Delete):
-            self.scene().removeItem(self)
+            self.deleteNodeItem()
+
+    def deleteNodeItem(self, batch=None):
+
+        self.stemnode['content'].remove(self.node)
+        self.stemnode.keyChanged('content')
+        self.stemnode.save(setchange=True, batch=batch)
+        self.scene().removeItem(self)
 
     def linkHover(self, url):
         '''
@@ -4532,6 +4555,27 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
 
     #     return cls(newnode, scene)
 
+    def deleteNodeItem(self, batch=None):
+
+        self.stemnode['content'].remove(self.node)
+        self.stemnode.keyChanged('content')
+
+        # deleting an image is always a batch brocess due to the data
+        if batch is None:
+            batch = graphydb.generateUUID()
+
+        # TODO should we check for multiple edges? or delegate to DB health function?
+        dataedge = self.stemnode.outE('e.kind="With"').one
+        datanode = dataedge.end
+
+        self.stemnode.save(setchange=True, batch=batch)
+        dataedge.delete(batch=batch)
+
+        # also remove the data if no refenreces to it
+        if datanode.inE('e.kind="With"', COUNT=True)==0:
+            datanode.delete(batch=batch)
+
+        self.scene().removeItem(self)
 
     def mouseMoveEvent(self, event):
         p0 = event.lastScenePos()
@@ -4771,7 +4815,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         ## store reference to database node
         self.node = node
-        node['_qt'] = self
+        #node['_qt'] = self
 
         ## keep refrence to QT child stems
         self.childStems2 = []
@@ -5559,69 +5603,69 @@ class StemItem(QtWidgets.QGraphicsItem):
         return X,Y
 
 
-    def addChildStem(self, data, batch=None):
+    # def addChildStem(self, data, batch=None):
 
-        newnode = self.node.graph.Node('Stem', content=[])
-        newedge = self.node.graph.Edge(self.node, 'Child', newnode)
+    #     newnode = self.node.graph.Node('Stem', content=[])
+    #     newedge = self.node.graph.Edge(self.node, 'Child', newnode)
 
-        settings = QtCore.QSettings("Ectropy", "Nexus")
-        if self.depth == 0:
-            scale = float(settings.value('new/stemscale'))
-        else:
-            scale = self.transform().m11()
+    #     settings = QtCore.QSettings("Ectropy", "Nexus")
+    #     if self.depth == 0:
+    #         scale = float(settings.value('new/stemscale'))
+    #     else:
+    #         scale = self.transform().m11()
 
-        ## Place the new stem below the children following the rough pattern
-        tip = self.tip()
-        points = [-c.mapFromParent(c.parentStem().tip()) for c in self.childStems2]
-        if len(points)>1:
-            ## Get the rough position of the children
-            maxy = points[0].y()
-            miny = points[0].y()
-            meanx=points[0].x()
-            for p in points[1:]:
-                maxy = max(maxy, p.y())
-                miny = min(miny, p.y())
-                meanx += p.x()
-            meanx = meanx/float(len(points))
+    #     ## Place the new stem below the children following the rough pattern
+    #     tip = self.tip()
+    #     points = [-c.mapFromParent(c.parentStem().tip()) for c in self.childStems2]
+    #     if len(points)>1:
+    #         ## Get the rough position of the children
+    #         maxy = points[0].y()
+    #         miny = points[0].y()
+    #         meanx=points[0].x()
+    #         for p in points[1:]:
+    #             maxy = max(maxy, p.y())
+    #             miny = min(miny, p.y())
+    #             meanx += p.x()
+    #         meanx = meanx/float(len(points))
 
-            x = meanx
-            y = maxy+(maxy-miny)/float(len(points)-1)
+    #         x = meanx
+    #         y = maxy+(maxy-miny)/float(len(points)-1)
 
-        elif len(points)==1:
-            x = points[0].x()
-            y = points[0].y()+50
+    #     elif len(points)==1:
+    #         x = points[0].x()
+    #         y = points[0].y()+50
 
-        else:
-            x = self.direction()*30
-            y = -50
+    #     else:
+    #         x = self.direction()*30
+    #         y = -50
 
-        if scale != 1:
-            newnode['scale'] = scale
-        newnode['pos'] = [x*scale, y*scale]
-        newnode['flip'] = sign(x)*self.direction()
+    #     if scale != 1:
+    #         newnode['scale'] = scale
+    #     newnode['pos'] = [x*scale, y*scale]
+    #     newnode['flip'] = sign(x)*self.direction()
 
-        newnode.update(data)
+    #     newnode.update(data)
 
-        if batch is None:
-            batch = graphydb.generateUUID()
-        newnode.save(batch=batch, setchange=True)
-        newedge.save(batch=batch, setchange=True)
+    #     if batch is None:
+    #         batch = graphydb.generateUUID()
+    #     newnode.save(batch=batch, setchange=True)
+    #     newedge.save(batch=batch, setchange=True)
 
-        stem = StemItem(newnode, parent=self, scene=self.scene())
+    #     stem = StemItem(newnode, parent=self, scene=self.scene())
 
-        leaf = Leaf(stem.node, None)
-        if stem.direction()<0:
-            p = leaf.w()-leaf.e()
-        else:
-            p = leaf.e()-leaf.w()
+    #     leaf = Leaf(stem.node, None)
+    #     if stem.direction()<0:
+    #         p = leaf.w()-leaf.e()
+    #     else:
+    #         p = leaf.e()-leaf.w()
 
-        self.childStems2.append(stem)
-        stem.renew(reload=False, create=False, position=False)
-        stem.parentStem().reindexChildren()
+    #     self.childStems2.append(stem)
+    #     stem.renew(reload=False, create=False, position=False)
+    #     stem.parentStem().reindexChildren()
 
-        self.openclose.setSymbol()
+    #     self.openclose.setSymbol()
 
-        return stem
+    #     return stem
 
         # XXX .. images?
 
@@ -5685,32 +5729,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         '''
         Bring up a dialog to edit the stem and then reimplement
         '''
-
-        # TODO clean up code
-        # edge = self.node.inE('e.kind="Child"').one
-        # fullscreen = True if self.scene().presentation else False
-        # cur = self.cursor()
-        # d = InputDialog(self.node, edge, stem=self,
-        #                 state = self.scene().dialogstate,
-        #                 fullscreen = fullscreen)
         self.scene().showEditDialog.emit(self)
-        #d.setDialog(self.node, edge, self)
-        #d.show()
-        # d.exec()
-
-        # if self.node.exists:
-            # stem may be deleted after edit (i.e. all items removed)
-            # so this item may be about to be garbage collected
-            # only renew if it exists
-            # self.renew(children=False, reload=False)
-
-            ## store the geometry of input window
-            #self.scene().dialogstate['geometry'] = d.inputgeometry
-            ## remember new-stem dialog state
-            #self.scene().dialogstate['mode'] = d.scene.mode
-
-            #self.view.viewport().setCursor(cur)
-            # self.setCursor(cur)
 
 
     def parentStem(self):

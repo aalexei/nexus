@@ -1114,7 +1114,13 @@ class GraphyDBItem(MutableMapping):
             self._changedkeys = set(self.keys())
         else:
             self._changedkeys = set()   
-            
+
+    def keyChanged(self, key):
+        '''
+        mark key as having changed
+        '''
+        self._changedkeys.add(key)
+
     @property   
     def changed(self):
         return len(self._changedkeys)>0
