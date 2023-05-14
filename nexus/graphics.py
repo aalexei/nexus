@@ -1197,7 +1197,7 @@ class InputDialog(QtWidgets.QDialog):
             item.setSelected(False)
 
         ## grab all items that will show up in the region
-        # TODO isn't this the same as above?
+        # TODO isn't this the same as above?,
         allregionitems = self.scene.items(rect)
 
         ## build a pixmap at 2x the size for better resolution
@@ -1229,7 +1229,7 @@ class InputDialog(QtWidgets.QDialog):
             item.setVisible(True)
 
         ##
-        ## Store nexus internal data as a node for pasting elsewhere in tree
+        ## Copy Nexus internal data pasting elsewhere in tree
         ##
         g = self.scene.node.graph
         copynode = g.getCopyNode(clear=True)
@@ -3747,6 +3747,11 @@ class InkItem(QtWidgets.QGraphicsPathItem):
             self.scene().refreshStem(reload=False)
 
     def deleteNodeItem(self, batch=None):
+        '''
+        Delete this item's data in node of graph database
+        Remove from scene
+        Update main view
+        '''
 
         self.stemnode['content'].remove(self.node)
         self.stemnode.keyChanged('content')
@@ -4438,6 +4443,11 @@ class TextItem(QtWidgets.QGraphicsTextItem):
             self.deleteNodeItem()
 
     def deleteNodeItem(self, batch=None):
+        '''
+        Delete this item's data in node of graph database
+        Remove from scene
+        Update main view
+        '''
 
         self.stemnode['content'].remove(self.node)
         self.stemnode.keyChanged('content')
@@ -4446,7 +4456,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
 
     def linkHover(self, url):
         '''
-        give some feed back when over a link
+        Give some feed back when over a link.
         '''
 
         if len(url) > 0:
@@ -4556,6 +4566,12 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
     #     return cls(newnode, scene)
 
     def deleteNodeItem(self, batch=None):
+        '''
+        Delete this item's data in node of graph database
+        Remove from scene
+        Update main view
+        Also remove edge to data and data node if orphaned.
+        '''
 
         self.stemnode['content'].remove(self.node)
         self.stemnode.keyChanged('content')

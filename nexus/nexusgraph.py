@@ -18,7 +18,7 @@
 
 
 from . import graphydb, config, graphics, devonthink
-import logging, re, base64, hashlib, os, json
+import logging, re, base64, hashlib, os, json, copy
 import bleach
 from bleach.linkifier import Linker
 import urllib.parse
@@ -75,73 +75,123 @@ class NexusGraph(graphydb.Graph):
         idnode = self.fetch('(n:ImageData)','n.data.sha1=:sha1', sha1=sha1).one
         return idnode
 
-    def copyTrees(self, basenodes, batch=None, setchange=False):
+    # def copyTrees_old(self, basenodes, batch=None, setchange=False):
+    #     '''
+    #     Recursively copy nodes to graph following out-edges from basenodes.
+    #       basenodes: NSet of the base of trees to copy
+    #       find_resources: use existing ImageData nodes if present
+
+    #     Return: copied basenodes
+    #     '''
+
+    #     nodes = graphydb.NSet(basenodes)
+    #     basenodesuids = basenodes.get('uid')
+    #     edges = graphydb.ESet()
+    #     ns = nodes
+    #     # Grab all the edges and nodes downstream (out)
+    #     for ii in range(1000):
+    #         # exclude any edges we have already looked at
+    #         # (in case multiple selections includes children)
+    #         es = ns.outE() - edges
+    #         if len(es)==0:
+    #             break
+    #         ns = es.end
+    #         edges |= es
+    #         nodes |= ns
+    #     else:
+    #         logging.warn("Copy depth exceeded")
+
+    #     D = {}
+    #     nodes2 = graphydb.NSet()
+    #     basenodes2 = graphydb.NSet()
+    #     edges2 = graphydb.ESet()
+
+    #     # copy nodes and assign new uids
+    #     for n in nodes:
+    #         found = False
+    #         # if find_resources and n['kind'] == 'Tag':
+    #         #     nt = self.findTag(n['text'])
+    #         #     if nt is not None:
+    #         #         D[n['uid']] = nt['uid']
+    #         #         found = True
+
+    #         if n['kind'] in ['ImageData']:
+    #             nt = self.findImageData(n['sha1'])
+    #             if nt is not None:
+    #                 D[n['uid']] = nt['uid']
+    #                 found = True
+
+    #         if not found:
+    #             n2 = n.copy(newuid=True)
+    #             n2.setGraph(self)
+    #             nodes2.add(n2)
+    #             D[n['uid']] = n2['uid']
+    #             if n['uid'] in basenodesuids:
+    #                 basenodes2.add(n2)
+
+    #     # re-link everything with new uids
+    #     # potentially change graphs too
+    #     for e in edges:
+    #         e2 = e.copy(newuid=True)
+    #         e2.setGraph(self)
+    #         e2['startuid'] = D[e2['startuid']]
+    #         e2['enduid'] = D[e2['enduid']]
+    #         edges2.add(e2)
+
+    #     nodes2.save(setchange=setchange, batch=batch)
+    #     edges2.save(setchange=setchange, batch=batch)
+
+    #     return basenodes2
+
+    def copyTrees(self, basenodes):
         '''
-        Recursively copy nodes to graph following out-edges from basenodes.
-          basenodes: NSet of the base pf trees to copy
-          find_resources: use existing ImageData nodes if present
+        Recursively copy nodes following out-edges from basenodes.
+          basenodes: NSet of the base of trees to copy
 
-        Return: copied basenodes
+        Return JSON of data:
+            [ {kind:Stem, content:[], children:[Stem]
+                tags, flip, branchcolor, z, scale, iconified, pos,}, ...
+                {kind: ImageData, sha1, data}, ...
+            ]
+
+            Raw content is wrapped in Stem
         '''
 
-        nodes = graphydb.NSet(basenodes)
-        basenodesuids = basenodes.get('uid')
-        edges = graphydb.ESet()
-        ns = nodes
-        # Grab all the edges and nodes downstream (out)
-        for ii in range(1000):
-            # exclude any edges we have already looked at
-            # (in case multiple selections includes children)
-            es = ns.outE() - edges
-            if len(es)==0:
-                break
-            ns = es.end
-            edges |= es
-            nodes |= ns
-        else:
-            logging.warn("Copy depth exceeded")
+        def recursiveExtract(node, seen, imageshas):
+            if node['uid'] in seen:
+                return None
+            seen.add(node['uid'])
 
-        D = {}
-        nodes2 = graphydb.NSet()
-        basenodes2 = graphydb.NSet()
-        edges2 = graphydb.ESet()
+            for c in node['content']:
+                if c['kind'] == 'Image':
+                    imageshas.add(c['sha1'])
 
-        # copy nodes and assign new uids
-        for n in nodes:
-            found = False
-            # if find_resources and n['kind'] == 'Tag':
-            #     nt = self.findTag(n['text'])
-            #     if nt is not None:
-            #         D[n['uid']] = nt['uid']
-            #         found = True
+            # TODO deepcopy?
+            data = graphydb.cleandata(node.data)
+            children = []
+            for child in node.outN('n.kind="Stem"'):
+                childdata = recursiveExtract(child, seen, imageshas)
+                if childdata is not None:
+                    children.append(childdata)
 
-            if n['kind'] in ['ImageData']:
-                nt = self.findImageData(n['sha1'])
-                if nt is not None:
-                    D[n['uid']] = nt['uid']
-                    found = True
+            data['children']=children
+            return data
 
-            if not found:
-                n2 = n.copy(newuid=True)
-                n2.setGraph(self)
-                nodes2.add(n2)
-                D[n['uid']] = n2['uid']
-                if n['uid'] in basenodesuids:
-                    basenodes2.add(n2)
+        seen = set()
+        imageshas = set()
 
-        # re-link everything with new uids
-        # potentially change graphs too
-        for e in edges:
-            e2 = e.copy(newuid=True)
-            e2.setGraph(self)
-            e2['startuid'] = D[e2['startuid']]
-            e2['enduid'] = D[e2['enduid']]
-            edges2.add(e2)
+        out = []
+        for n in basenodes:
+            data = recursiveExtract(n, seen, imageshas)
+            if data is not None:
+                out.append(data)
 
-        nodes2.save(setchange=setchange, batch=batch)
-        edges2.save(setchange=setchange, batch=batch)
+        for sha in imageshas:
+            node = self.findImageData(sha)
+            data = graphydb.cleandata(node.data)
+            out.append(data)
 
-        return basenodes2
+        return out
 
     def deleteOutFromNodes(self, nodes, batch=None, setchange=False):
         '''
