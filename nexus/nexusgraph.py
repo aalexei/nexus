@@ -207,19 +207,19 @@ class NexusGraph(graphydb.Graph):
             n.delete(disconnect=True, batch=batch, setchange=setchange)
         self.deleteOutFromNodes(children, batch=batch, setchange=setchange)
 
-    def getCopyNode(self, clear=False):
+    # def getCopyNode(self, clear=False):
 
-        # TODO v09 delete
-        # Clear contents of CopyNode
-        copynode = self.fetch('(n:CopyNode)').one
-        if copynode is None:
-            copynode = self.Node('CopyNode')
-            copynode.save(setchange=False)
+    #     # TODO v09 delete
+    #     # Clear contents of CopyNode
+    #     copynode = self.fetch('(n:CopyNode)').one
+    #     if copynode is None:
+    #         copynode = self.Node('CopyNode')
+    #         copynode.save(setchange=False)
 
-        if clear:
-            self.deleteOutFromNodes(copynode.outN())
+    #     if clear:
+    #         self.deleteOutFromNodes(copynode.outN())
 
-        return copynode
+    #     return copynode
 
     def getNodeLink(self, node=None):
 
@@ -234,33 +234,11 @@ class NexusGraph(graphydb.Graph):
 
         return link
 
-    def getNodeFromLink(self, link):
 
-        so = re.search('nexus:([^#]+)#(.+)\s*', link)
-        if not so:
-            return (None, "Unable to get nexus item link from data")
-        mappath = so.group(1)
-        nodeuid = so.group(2)
-
-        g = NexusGraph(mappath)
-        node = g.getuid(nodeuid)
-        if node is None:
-            return (None, "Node no longer exists in source")
-
-        # if node.graph.getsetting('version') != self.getsetting('version'):
-        #     return (None, "pasted graph version does not match current version %s"%str(VERSION))
-
-        return (node, "Success")
-
-    def copyNodeWithMimedata(self, mimedata):
+    def mimedataToCopydata(self, mimedata):
         '''
-        Add stems from mimedata to CopyNode
+        Converts from mimedata to Nexus copy format
         '''
-        # print('formats:', mimedata.formats())
-        # print('text:', mimedata.text())
-        # print('urls:', mimedata.urls())
-        # print(mimedata.html())
-
         # What about multiple formats present?
         logging.debug(f"mimedata available: {mimedata.formats()}")
         if mimedata.hasUrls():
@@ -270,37 +248,61 @@ class NexusGraph(graphydb.Graph):
         if mimedata.hasText():
             logging.debug(f"mimedata html: {mimedata.text()}")
 
-
+        # not sure abour copy and paste from link
+        # superceded now?
         if mimedata.hasFormat('application/x-nexus'):
+            # Already in right format
             data = mimedata.data('application/x-nexus')
-            nexuslink = bytes(data).decode('utf-8')
-            copynode, msg = self.getNodeFromLink(nexuslink)
+            copydata = json.loads(bytes(data).decode('utf-8'))
+            msg = 'OK'
+            # copydata, msg = self.getNodeFromLink(nexuslink)
 
-        if mimedata.hasFormat('application/json'):
+        elif mimedata.hasFormat('application/json'):
             rawdata = mimedata.data('application/json')
             data = json.loads(bytes(rawdata))
-            copynode, msg = self.itemFromJSON(data)
+            copydata, msg = self.itemFromJSON(data)
 
         elif mimedata.hasImage():
             imagedata = mimedata.imageData()
-            copynode, msg = self.itemFromImage(imagedata)
+            copydata, msg = self.itemFromImage(imagedata)
 
         elif mimedata.hasHtml():
             html = mimedata.html()
-            copynode, msg = self.itemFromHtml(html)
+            copydata, msg = self.itemFromHtml(html)
 
         elif mimedata.hasUrls():
             urls = mimedata.urls()
-            copynode, msg = self.itemFromUrls(urls)
+            copydata, msg = self.itemFromUrls(urls)
 
         elif mimedata.hasText():
             text = mimedata.text()
-            copynode, msg = self.itemFromText(text)
+            copydata, msg = self.itemFromText(text)
 
-        return copynode, msg
+        return copydata, msg
+
+    # def getNodeFromLink(self, link):
+
+    #     so = re.search('nexus:([^#]+)#(.+)\s*', link)
+    #     if not so:
+    #         return (None, "Unable to get nexus item link from data")
+    #     mappath = so.group(1)
+    #     nodeuid = so.group(2)
+
+    #     g = NexusGraph(mappath)
+    #     node = g.getuid(nodeuid)
+    #     if node is None:
+    #         return (None, "Node no longer exists in source")
+
+    #     # if node.graph.getsetting('version') != self.getsetting('version'):
+    #     #     return (None, "pasted graph version does not match current version %s"%str(VERSION))
+
+    #     return (node, "Success")
 
     def itemFromJSON(self, data):
 
+        sys.exit()
+
+        # In what cases is the data a pasted json image?
         dataenc = data['image']
         image = DataToImage(dataenc)
 
@@ -380,27 +382,28 @@ class NexusGraph(graphydb.Graph):
 
         T = [scale, 0.0, 0.0, 0.0, scale, 0.0, 0.0, 0.0, 1.0]
 
-        imgnode = self.Node('Image')
-        imgnode['frame'] = T
-        imgnode['z'] = 0
-        imgnode['sha1'] = sha1
-        imgnode.save(setchange=False)
+        # imgnode['frame'] = T
+        # imgnode['sha1'] = sha1
+        # imgnode.save(setchange=False)
 
         # TODO chack to see if data exists already
-        datanode = self.Node('ImageData')
-        datanode['data'] = dataenc
-        datanode['sha1'] = sha1
-        datanode.save(setchange=False)
+        datanode = {'kind':'ImageData', 'data':dataenc, 'sha1': sha1}
+        # datanode['data'] = dataenc
+        # datanode['sha1'] = sha1
+        # datanode.save(setchange=False)
 
-        copynode = self.getCopyNode(clear=True)
-        stem = self.Node('Stem', pos=[10,10], flip=1,
-                         scale=0.6).save(setchange=False)
+        imgnode = {'kind':'Stem',
+                   'content':[{'kind':'Image', 'frame':T, 'sha1':sha1}],
+                   'children':[datanode]}
+        # copynode = self.getCopyNode(clear=True)
+        # stem = self.Node('Stem', pos=[10,10], flip=1,
+        #                  scale=0.6).save(setchange=False)
 
-        self.Edge(copynode, 'Child', stem).save(setchange=False)
-        self.Edge(stem, 'In', imgnode).save(setchange=False)
-        self.Edge(imgnode, 'With', datanode).save(setchange=False)
+        # self.Edge(copynode, 'Child', stem).save(setchange=False)
+        # self.Edge(stem, 'In', imgnode).save(setchange=False)
+        # self.Edge(imgnode, 'With', datanode).save(setchange=False)
 
-        return copynode, "OK"
+        return [imgnode], 'OK'
 
     def itemFromUrls(self, urls):
 
@@ -456,51 +459,61 @@ class NexusGraph(graphydb.Graph):
                     text = '<a href="x-devonthink-item:%s">%s</a>'%(linkpath, info['name'])
 
 
-                elif str(url.scheme())=='bookends':
-                    uuid = str(url.path())[1:]
-                    data = devonthink.getBEinfo(uuid)
+                # elif str(url.scheme())=='bookends':
+                #     uuid = str(url.path())[1:]
+                #     data = devonthink.getBEinfo(uuid)
 
-                    authors = []
-                    for a in data.get('authors','').split('\n'):
-                        ns = a.split(',')
-                        if len(ns)>0:
-                            authors.append(ns[0])
-                    authors = ' '.join(authors)
-                    title = data.get('title','???')
-                    so = re.match('(1\d\d\d|2\d\d\d)', data.get('thedate','????'))
-                    if so:
-                        year = so.group()
-                    else:
-                        year = '????'
-                    journal = data.get('journal','')
-                    if len(journal)>0:
-                        journal = '<br/><i>'+journal+'</i>'
+                #     authors = []
+                #     for a in data.get('authors','').split('\n'):
+                #         ns = a.split(',')
+                #         if len(ns)>0:
+                #             authors.append(ns[0])
+                #     authors = ' '.join(authors)
+                #     title = data.get('title','???')
+                #     so = re.match('(1\d\d\d|2\d\d\d)', data.get('thedate','????'))
+                #     if so:
+                #         year = so.group()
+                #     else:
+                #         year = '????'
+                #     journal = data.get('journal','')
+                #     if len(journal)>0:
+                #         journal = '<br/><i>'+journal+'</i>'
 
-                    text = '<b>{year}</b> {authors}<br/><a href="{link}">{title}</a> {journal}'.format(
-                        link = url.toString(),
-                        title=title,
-                        authors=authors,
-                        year=year,
-                        journal=journal,
-                    )
+                #     text = '<b>{year}</b> {authors}<br/><a href="{link}">{title}</a> {journal}'.format(
+                #         link = url.toString(),
+                #         title=title,
+                #         authors=authors,
+                #         year=year,
+                #         journal=journal,
+                #     )
 
                 else:
                     text = '<a href="%s">%s</a>'%(url.toString(), name)
 
-            item =  self.Node('Text')
-            item['maxwidth'] = CONFIG['text_item_width'] 
-            item['source'] = text
-            item['frame'] = graphics.Transform().tolist()
-            item['z'] = 0
-            item.save(setchange=False)
+            textnode = {'kind':'Stem',
+                        'content':
+                        [
+                            {'kind':'Text',
+                             'maxwidth':CONFIG['text_item_width'],
+                             'source':text,
+                             'frame':graphics.Transform().tolist()
+                             }
+                        ]
+                        }
+            # item =  self.Node('Text')
+            # item['maxwidth'] = CONFIG['text_item_width']
+            # item['source'] = text
+            # item['frame'] = graphics.Transform().tolist()
+            # item['z'] = 0
+            # item.save(setchange=False)
 
-            stem = self.Node('Stem', pos=[10,10], flip=1,
-                             scale=0.6).save(setchange=False)
+            # stem = self.Node('Stem', pos=[10,10], flip=1,
+            #                  scale=0.6).save(setchange=False)
 
-            self.Edge(copynode, 'Child', stem).save(setchange=False)
-            self.Edge(stem, 'In', item).save(setchange=False)
+            # self.Edge(copynode, 'Child', stem).save(setchange=False)
+            # self.Edge(stem, 'In', item).save(setchange=False)
 
-        return copynode, 'OK'
+        return [textnode], 'OK'
 
 
     def itemFromHtml(self, html):
@@ -509,20 +522,30 @@ class NexusGraph(graphydb.Graph):
                             protocols = bleach.ALLOWED_PROTOCOLS+['papers3', 'omnifocus', 'zotero']
                             )
 
-        item = self.Node('Text')
-        item['maxwidth'] = CONFIG['text_item_width']
-        item['source'] = html
-        item['frame'] = graphics.Transform().tolist()
-        item['z'] = 0
-        item.save(setchange=False)
+        textnode = {'kind':'Stem',
+                    'content':
+                    [
+                        {'kind':'Text',
+                            'maxwidth':CONFIG['text_item_width'],
+                            'source':html,
+                            'frame':graphics.Transform().tolist()
+                            }
+                    ]
+                    }
+        # item = self.Node('Text')
+        # item['maxwidth'] = CONFIG['text_item_width']
+        # item['source'] = html
+        # item['frame'] = graphics.Transform().tolist()
+        # item['z'] = 0
+        # item.save(setchange=False)
 
-        copynode = self.getCopyNode(clear=True)
-        stem = self.Node('Stem', pos=[10,10], flip=1, z=0, scale=0.6).save(setchange=False)
+        # copynode = self.getCopyNode(clear=True)
+        # stem = self.Node('Stem', pos=[10,10], flip=1, z=0, scale=0.6).save(setchange=False)
 
-        self.Edge(copynode, 'Child', stem).save(setchange=False)
-        self.Edge(stem, 'In', item).save(setchange=False)
+        # self.Edge(copynode, 'Child', stem).save(setchange=False)
+        # self.Edge(stem, 'In', item).save(setchange=False)
 
-        return copynode, "OK"
+        return [textnode], "OK"
 
 
     def itemFromText(self, text):
@@ -574,17 +597,27 @@ class NexusGraph(graphydb.Graph):
         # now linkify any other urls
         html = bleach.linkify(html)
 
-        item = self.Node('Text')
-        item['maxwidth'] = CONFIG['text_item_width']
-        item['source'] = html
-        item['frame'] = graphics.Transform().tolist()
-        item['z'] = 0
-        item.save(setchange=False)
+        textnode = {'kind':'Stem',
+                    'content':
+                    [
+                        {'kind':'Text',
+                            'maxwidth':CONFIG['text_item_width'],
+                            'source':html,
+                            'frame':graphics.Transform().tolist()
+                            }
+                    ]
+                    }
+        # item = self.Node('Text')
+        # item['maxwidth'] = CONFIG['text_item_width']
+        # item['source'] = html
+        # item['frame'] = graphics.Transform().tolist()
+        # item['z'] = 0
+        # item.save(setchange=False)
 
-        copynode = self.getCopyNode(clear=True)
-        stem = self.Node('Stem', pos=[10,10], flip=1, z=0, scale=0.6).save(setchange=False)
+        # copynode = self.getCopyNode(clear=True)
+        # stem = self.Node('Stem', pos=[10,10], flip=1, z=0, scale=0.6).save(setchange=False)
 
-        self.Edge(copynode, 'Child', stem).save(setchange=False)
-        self.Edge(stem, 'In', item).save(setchange=False)
+        # self.Edge(copynode, 'Child', stem).save(setchange=False)
+        # self.Edge(stem, 'In', item).save(setchange=False)
 
-        return copynode, "OK"
+        return [textnode], "OK"

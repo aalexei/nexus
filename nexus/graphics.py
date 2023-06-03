@@ -1231,28 +1231,32 @@ class InputDialog(QtWidgets.QDialog):
         ##
         ## Copy Nexus internal data pasting elsewhere in tree
         ##
-        g = self.scene.node.graph
-        copynode = g.getCopyNode(clear=True)
+        # g = self.scene.node.graph
+        # copynode = g.getCopyNode(clear=True)
 
         ## Create a new Stem to hold the copy data
-        newstem = g.Node('Stem', z=0, flip=1,
-                         scale=1.0, pos=[10,10]).save(setchange=False)
-        newedge = g.Edge(copynode, "Child", newstem).save(setchange=False)
+        # newstem = g.Node('Stem', z=0, flip=1,
+        #                  scale=1.0, pos=[10,10]).save(setchange=False)
+        # newedge = g.Edge(copynode, "Child", newstem).save(setchange=False)
 
-        nodes = graphydb.NSet()
+        content = []
         for item in selected:
             if hasattr(item, 'node'):
-                nodes.add(item.node)
+                content.append(item.node)
 
-        items = g.copyTrees(nodes, setchange=False)
-        for item in items:
-            g.Edge(newstem, 'In', item).save(setchange=False)
+        copydata = [{'kind':'Stem', 'content':content}]
+
+        #data = g.copyTrees(nodes, setchange=False)
+        # for item in items:
+        #     g.Edge(newstem, 'In', item).save(setchange=False)
+
+        print(content)
 
         # store nexus link in clipboard
         clipboard = QtWidgets.QApplication.clipboard()
         mimedata = QtCore.QMimeData()
-        link = copynode.graph.getNodeLink(copynode)
-        mimedata.setData("application/x-nexus", bytes(link, 'utf-8'))
+        #link = copynode.graph.getNodeLink(copynode)
+        mimedata.setData("application/x-nexus", bytes(json.dumps(copydata), 'utf-8'))
         clipboard.setMimeData(mimedata)
 
     def pasteEvent(self):
@@ -1267,23 +1271,44 @@ class InputDialog(QtWidgets.QDialog):
         mimedata = clipboard.mimeData()
 
         g = self.scene.graph
-        copynode, msg = g.copyNodeWithMimedata(mimedata)
-        if copynode is None:
+        copydata, msg = g.mimedataToCopydata(mimedata)
+        if msg != "OK":
             QtWidgets.QMessageBox.information(None,"Warning", msg)
             return
 
-        # keep track so we can address new nodes
-        old_nodes = self.scene.node.outN('e.kind="In"')
+        if len(copydata)==0:
+            QtWidgets.QMessageBox.information(None,"Warning", "Nothing to paste")
+            return
 
+        print("C",copydata)
+        # keep track so we can address new nodes
+        # old_nodes = self.scene.node.outN('e.kind="In"')
+
+        # Copydata will be a list of Stems/ImageData
+        # Combine all the content and append to current node
+
+        # create batchid in case we need to add images
         batch = graphydb.generateUUID()
+        pasteditems = []
+        for data in copydata:
+            print("D",data)
+            if data['kind'] == 'Stem':
+                for item in data['content']:
+                    self.scene.node['content'].append(item)
+                    pasteditems.append(item)
+            # print(item['kind'])
+
         # Ignore the first level stems and just get the content
-        content_nodes = copynode.outN('e.kind="Child"').outN('e.kind="In"')
-        items = g.copyTrees(content_nodes, batch=batch, setchange=True)
-        for item in items:
-            g.Edge(self.scene.node, 'In', item).save(batch=batch, setchange=True)
+        # sys.exit()
+
+
+        # content_nodes = copynode.outN('e.kind="Child"').outN('e.kind="In"')
+        # items = g.copyTrees(content_nodes, batch=batch, setchange=True)
+        # for item in items:
+        #     g.Edge(self.scene.nodec, 'In', item).save(batch=batch, setchange=True)
 
         # Grab difference in nodes in case there where nested items in copied trees
-        new_nodes = self.scene.node.outN('e.kind="In"') - old_nodes
+        # new_nodes = self.scene.node.outN('e.kind="In"') - old_nodes
 
         # TODO clear selection or replace it?
         self.scene.clearSelection()
@@ -1296,15 +1321,16 @@ class InputDialog(QtWidgets.QDialog):
         # targetpos = self.scene.mapToScene(cp)
 
         pastedobjects = []
-        for n in new_nodes:
+        for n in pasteditems:
             self.scene.maxZ += 1
-            n['z'] = self.scene.maxZ
+            z = self.scene.maxZ
+            # n['z'] = self.scene.maxZ
             if n['kind'] == 'Stroke':
-                item=InkItem(n,  scene=self.scene)
+                item=InkItem(n, self.scene.node, z, scene=self.scene)
             elif n['kind'] == 'Text':
-                item=TextItem(n, scene=self.scene)
+                item=TextItem(n, self.scene.node, z, scene=self.scene)
             elif n['kind'] == 'Image':
-                item=PixmapItem(n, scene=self.scene)
+                item=PixmapItem(n, self.scene.node, z, scene=self.scene)
             pastedobjects.append(item)
 
 
@@ -1323,7 +1349,7 @@ class InputDialog(QtWidgets.QDialog):
             item.setTransform(item.transform()*t)
             item.node['frame'] = Transform(item.transform()).tolist()
 
-        new_nodes.save(batch=batch, setchange=True)
+        # new_nodes.save(batch=batch, setchange=True)
         self.scene.refreshStem()
         self.scene.transformationWidget.setSelectedItems(pastedobjects)
         self.scene.transformationWidget.show()
@@ -2494,7 +2520,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
             super(NexusScene, self).dragEnterEvent(event)
             return
 
-        copynode, msg = self.graph.copyNodeWithMimedata(mimedata)
+        copynode, msg = self.graph.mimedataToCopydata(mimedata)
         if copynode is None:
             QtWidgets.QMessageBox.information(None, "Warning", msg)
             return
@@ -2572,12 +2598,14 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
         clipboard.setMimeData(mimedata)
 
-    def copy(self, *param,stem=None):
+    def copy(self, *atrr, stem=None):
+        '''
+        Copy a set of stem trees as json data
+        '''
         # TODO create a Copy As function (plugins)
         # TODO skip hidden nodes (setting?)
 
-        g = self.graph
-        copynode = g.getCopyNode(clear=True)
+        #copynode = g.getCopyNode(clear=True)
 
         if stem is None:
             selected = set(self.selectedItems())
@@ -2592,16 +2620,16 @@ class NexusScene(QtWidgets.QGraphicsScene):
                 nodes.add(item.node)
 
         # Make copies of sub-trees from selected
-        basenodes = g.copyTrees(nodes)
+        data = self.graph.copyTrees(nodes)
         # link them to the copynode
-        for node in basenodes:
-            g.Edge(copynode, 'Child', node).save(setchange=True)
+        # for node in basenodes:
+        #     g.Edge(copynode, 'Child', node).save(setchange=True)
 
         # store nexus link in copy register
-        link = g.getNodeLink(copynode)
+        # link = g.getNodeLink(copynode)
         clipboard = QtWidgets.QApplication.clipboard()
         mimedata = QtCore.QMimeData()
-        mimedata.setData("application/x-nexus", bytes(link, 'utf-8'))
+        mimedata.setData("application/x-nexus", bytes(json.dumps(data), 'utf-8'))
         clipboard.setMimeData(mimedata)
 
     def paste(self, *param, stem=None):
@@ -2618,7 +2646,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         mimedata = clipboard.mimeData()
 
         g = self.graph
-        copynode, msg = g.copyNodeWithMimedata(mimedata)
+        copynode, msg = g.mimedataToCopydata(mimedata)
         if copynode is None:
             QtWidgets.QMessageBox.information(None,"Warning", msg)
             return
