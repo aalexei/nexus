@@ -1241,8 +1241,8 @@ class InputDialog(QtWidgets.QDialog):
 
         content = []
         for item in selected:
-            if hasattr(item, 'node'):
-                content.append(item.node)
+            if hasattr(item, 'data'):
+                content.append(item.data)
 
         copydata = [{'kind':'Stem', 'content':content}]
 
@@ -1347,7 +1347,7 @@ class InputDialog(QtWidgets.QDialog):
         for item in pastedobjects:
             ## note QTs backward transforms
             item.setTransform(item.transform()*t)
-            item.node['frame'] = Transform(item.transform()).tolist()
+            item.data['frame'] = Transform(item.transform()).tolist()
 
         # new_nodes.save(batch=batch, setchange=True)
         self.scene.refreshStem()
@@ -1617,7 +1617,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         batch = graphydb.generateUUID()
         for item in self.selected:
             if item._changed:
-                item.node['frame']=Transform(item.transform()).tolist()
+                item.data['frame']=Transform(item.transform()).tolist()
                 # Trigger a change
                 item.stemnode.keyChanged('content')
                 item.stemnode.save(setchange=True, batch=batch)
@@ -3620,7 +3620,7 @@ class InkItem(QtWidgets.QGraphicsPathItem):
 ##----------------------------------------------------------------------
 
 
-    def __init__(self, node, stemnode, z=0, scene=None, parent=None):
+    def __init__(self, data, stemnode, z=0, scene=None, parent=None):
         ## Rendered in one of two ways:
         ## 1) in tree: parent = leaf container item, scene = None
         ## 2) in edit dialog: parent = None and scene = edit scene
@@ -3631,7 +3631,7 @@ class InkItem(QtWidgets.QGraphicsPathItem):
         else:
             super().__init__(parent)
 
-        self.node = node
+        self.data = data
         self.stemnode = stemnode
 
         self.setAcceptHoverEvents(True)
@@ -3644,12 +3644,12 @@ class InkItem(QtWidgets.QGraphicsPathItem):
         #self.setZValue(node['z'])
         self.setZValue(z)
 
-        self.width = node['width']
-        self.color = QtGui.QColor(node.get('color','#000000'))
-        self.color.setAlphaF(node.get('opacity',1.0))
+        self.width = data['width']
+        self.color = QtGui.QColor(data.get('color','#000000'))
+        self.color.setAlphaF(data.get('opacity',1.0))
 
-        self.setinkpath(node['stroke'])
-        self.setTransform(Transform(*node['frame']))
+        self.setinkpath(data['stroke'])
+        self.setTransform(Transform(*data['frame']))
 
         # used to track moves, scales, etc
         self._changed = False
@@ -3781,7 +3781,7 @@ class InkItem(QtWidgets.QGraphicsPathItem):
         Update main view
         '''
 
-        self.stemnode['content'].remove(self.node)
+        self.stemnode['content'].remove(self.data)
         self.stemnode.keyChanged('content')
         self.stemnode.save(setchange=True, batch=batch)
         self.scene().removeItem(self)
@@ -4535,7 +4535,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
 
     # TODO lossless encoding? png/jpg .. preserve details
 
-    def __init__(self, node, stemnode, z=0, parent=None, scene=None):
+    def __init__(self, data, stemnode, z=0, parent=None, scene=None):
         ## Rendered in one of two ways:
         ## 1) in tree: parent = leaf container item, scene = None
         ## 2) in edit dialog: parent = None and scene = edit scene
@@ -4546,13 +4546,13 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
         else:
             super().__init__(parent)
 
-        self.node = node
+        self.data = data
         self.stemnode = stemnode
 
         self.setAcceptHoverEvents(True)
         #self.setZValue(node['z'])
         self.setZValue(z)
-        self.setTransform(Transform(*node['frame']))
+        self.setTransform(Transform(*data['frame']))
 
         ## set pixmap from stored data
         datanode = self.stemnode.outN('n.kind="ImageData"').one
