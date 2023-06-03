@@ -46,10 +46,32 @@ using ~graphydb~.
 
 ** Graph structure
 
+    # CONNECTIONS
+    # View -Transition-> View
+
+As the graph is using ~graphydb~, all nodes and edges  have the following attributes:
+
+| key   | description           |
+|-------+-----------------------|
+| kind  | The kind of Node/Edge |
+| uid   | A uniques random id   |
+| ctime | Creation time         |
+| mtime | Modification time     |
+
+Nodes may have additional attributes (see below).
+
+In addition, Edges have the following and no additional attributes:
+
+| key      | description               |
+|----------+---------------------------|
+| startuid | The uid of the start node |
+| enduid   | The uid of the end node   |
+
+
 *** Root
 
 Each graph has a single root (assumed) node of kind ~Root~ from which everything
-else is linked
+else is linked. No internal data on Root.
 
 Links: ~Root-Child->Stem~
 
@@ -57,23 +79,22 @@ Links: ~Root-Child->Stem~
 
 Stems hold the basic structure of the map as a DAG.
 
-| key           | description      |
-|---------------+------------------|
-| [iconified]   | True,False       |
-| scale         | scaling factor   |
-| z             |                  |
-| flip          | 0,1              |
-| pos           | [x,y]            |
-| tags          | List of strings  |
-| [branchcolor] | hex color string |
-| styleclauses  | ?                |
-|               |                  |
+| key           | description           |
+|---------------+-----------------------|
+| [iconified]   | True,False            |
+| scale         | scaling factor        |
+| z             |                       |
+| flip          | 0,1                   |
+| pos           | [x,y]                 |
+| tags          | List of strings       |
+| [branchcolor] | hex color string      |
+| content       | List of content items |
 
-Links: ~Stem-Child->Stem~ and ~Root-Child->Stem~
+Links: ~Stem-Child->Stem~, ~Root-Child->Stem~, ~Stem-With->ImageData~.
 
-**** TODO styleclauses? 
+The content attribute is a list of dicts. Each has a 'kind' key with the following kinds:
 
-*** Stroke
+**** Stroke
 
 | key     | description    |
 |---------+----------------|
@@ -83,38 +104,50 @@ Links: ~Stem-Child->Stem~ and ~Root-Child->Stem~
 | width   |                |
 | stroke  | list of tuples |
 | frame   |                |
-| z       |                |
 
-Links: ~Stem-In->Stroke~
-
-*** Text
+**** Text
 
 | key      | description |
 |----------+-------------|
 | source   |             |
 | maxwidth |             |
 | frame    |             |
-| z        |             |
 
-Links: ~Stem-In->Text~
-
-*** Image
+**** Image
 
 | key   | description |
 |-------+-------------|
 | frame |             |
 | sha1  |             |
-| z     |             |
-
-Links: ~Stem-In->Image~
-
-**** TODO sha1 redundant here
 
 *** ImageData
 
-| key  | description |
-|------+-------------|
-| data |             |
-| sha1 |             |
+| key  | description            |
+|------+------------------------|
+| data | The data for the image |
+| sha1 | A hash for the image   |
 
-Links: ~Image-With->ImageData~
+Links: ~Stem-With->ImageData~
+
+*** View
+
+| key   | description                 |
+|-------+-----------------------------|
+| left  | The mid-left point of view  |
+| right | The mid-right point of view |
+
+Links: ~View-Transition->View~
+
+By encoding the left and right points, the view position, scale, rotation can be encoded in a way that handles displaying on different aspect ratios in a predictable manner.
+
+* Copy format
+
+The copy format that is used internally is a cut-down version of the nodes and content.
+Links to both child Stems or ImageData are nested in 'children' list.
+
+#+begin_src python
+[
+    {'kind':'Stem', 'content':[...], 'children':[]},
+    {'kind':'Stem', 'content':[...]},
+]
+#+end_src

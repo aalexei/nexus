@@ -368,27 +368,6 @@ def convert_to_partial_tree(g):
     internal structure to stems is a json list.
     '''
 
-    # New Format
-    # All nodes and edges have {'kind', 'mtime', 'ctime', 'uid'}
-    # edges also have {'startuid', 'enduid'} as part of DB structure.
-    #
-    # NODES
-    # Root {}
-    # Stem {'tags', 'flip', 'branchcolor', 'z', 'content', 'scale', 'iconified', 'pos'}
-    # ImageData {'sha1', 'data'}
-    # View {'right', 'left'}
-    #
-    # EDGES
-    # Child {}
-    # Transition {}
-    # With {}
-    #
-    # CONNECTIONS
-    # Root -Child-> Stem
-    # Stem -Child-> Stem
-    # Stem -With-> ImageData
-    # View -Transition-> View
-
     # First move old file aside
     logging.info("Backing up pre 0.9 file")
     path = Path(g.path)
