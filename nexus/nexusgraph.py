@@ -55,6 +55,39 @@ def ImageToData(image):
 
     return dataenc
 
+class CopyFormat:
+    '''
+    Class to hold and serialise internal copy/paste data
+    '''
+
+    def __init__(self, nodes=[], images=[]):
+        self.nodes = list(nodes)
+        self.images = dict(images)
+
+    def setMimedata(self, mimedata):
+        '''
+        Set the application data on a QT mimedata object
+        '''
+        data = {'nodes':self.nodes, 'images':self.images}
+        mimedata.setData("application/x-nexus", bytes(json.dumps(data), 'utf-8'))
+
+    def addAsContent(self, content):
+        self.nodes.append(
+            {'kind':'Stem', 'content':content, 'children':[]}
+            )
+
+    @classmethod
+    def getMimedata(cls, mimedata):
+        '''
+        get CopyFormat data from QT mimedata object
+        '''
+        rawdata = mimedata.data('application/x-nexus')
+        data = json.loads(bytes(rawdata).decode('utf-8'))
+        return cls(nodes=data['nodes'], images=data['images'])
+
+    def __repr__(self):
+        return f"CopyFormat({repr({'nodes':self.nodes, 'images':list(self.images.keys())})})"
+
 ##----------------------------------------------------------------------
 class NexusGraph(graphydb.Graph):
     '''
@@ -181,17 +214,18 @@ class NexusGraph(graphydb.Graph):
         seen = set()
         imageshas = set()
 
-        out = {'nodes':[], 'images':{}}
+        out = CopyFormat()
+        # out = {'nodes':[], 'images':{}}
         for n in basenodes:
             data = recursiveExtract(n, seen, imageshas)
             if data is not None:
-                out['nodes'].append(data)
+                out.nodes.append(data)
 
         for sha in imageshas:
             node = self.findImageData(sha)
             data = graphydb.cleandata(node.data)
             del data['uid']
-            out['images'][data['sha1']] = data
+            out.images[data['sha1']] = data
 
         return out
 
@@ -254,8 +288,9 @@ class NexusGraph(graphydb.Graph):
         # superceded now?
         if mimedata.hasFormat('application/x-nexus'):
             # Already in right format
-            data = mimedata.data('application/x-nexus')
-            copydata = json.loads(bytes(data).decode('utf-8'))
+            # data = mimedata.data('application/x-nexus')
+            # copydata = json.loads(bytes(data).decode('utf-8'))
+            copydata = CopyFormat.getMimedata(mimedata)
             msg = 'OK'
             # copydata, msg = self.getNodeFromLink(nexuslink)
 
@@ -302,7 +337,8 @@ class NexusGraph(graphydb.Graph):
 
     def itemFromJSON(self, data):
 
-        sys.exit()
+        # TODO update from JSON to copydata
+        raise Exception("Need to implement from JSON to copydata")
 
         # In what cases is the data a pasted json image?
         dataenc = data['image']
@@ -388,15 +424,15 @@ class NexusGraph(graphydb.Graph):
         # imgnode['sha1'] = sha1
         # imgnode.save(setchange=False)
 
-        # TODO chack to see if data exists already
-        datanode = {'kind':'ImageData', 'data':dataenc, 'sha1': sha1}
+        # TODO check to see if data exists already
+        imgdatanode = {'kind':'ImageData', 'data':dataenc, 'sha1': sha1}
         # datanode['data'] = dataenc
         # datanode['sha1'] = sha1
         # datanode.save(setchange=False)
 
-        imgnode = {'kind':'Stem',
-                   'content':[{'kind':'Image', 'frame':T, 'sha1':sha1}],
-                   'children':[datanode]}
+        copydata = CopyFormat()
+        copydata.addAsContent([{'kind':'Image', 'frame':T, 'sha1':sha1}])
+        copydata.images[sha1] = imgdatanode
         # copynode = self.getCopyNode(clear=True)
         # stem = self.Node('Stem', pos=[10,10], flip=1,
         #                  scale=0.6).save(setchange=False)
@@ -405,7 +441,7 @@ class NexusGraph(graphydb.Graph):
         # self.Edge(stem, 'In', imgnode).save(setchange=False)
         # self.Edge(imgnode, 'With', datanode).save(setchange=False)
 
-        return [imgnode], 'OK'
+        return copydata, 'OK'
 
     def itemFromUrls(self, urls):
 
@@ -492,16 +528,14 @@ class NexusGraph(graphydb.Graph):
                 else:
                     text = '<a href="%s">%s</a>'%(url.toString(), name)
 
-            textnode = {'kind':'Stem',
-                        'content':
-                        [
-                            {'kind':'Text',
-                             'maxwidth':CONFIG['text_item_width'],
-                             'source':text,
-                             'frame':graphics.Transform().tolist()
-                             }
-                        ]
-                        }
+            copydata = CopyFormat()
+            copydata.addAsContent([{
+                'kind':'Text',
+                'maxwidth':CONFIG['text_item_width'],
+                'source':text,
+                'frame':graphics.Transform().tolist()
+            }])
+
             # item =  self.Node('Text')
             # item['maxwidth'] = CONFIG['text_item_width']
             # item['source'] = text
@@ -515,7 +549,7 @@ class NexusGraph(graphydb.Graph):
             # self.Edge(copynode, 'Child', stem).save(setchange=False)
             # self.Edge(stem, 'In', item).save(setchange=False)
 
-        return [textnode], 'OK'
+        return copydata, 'OK'
 
 
     def itemFromHtml(self, html):
@@ -524,16 +558,13 @@ class NexusGraph(graphydb.Graph):
                             protocols = bleach.ALLOWED_PROTOCOLS+['papers3', 'omnifocus', 'zotero']
                             )
 
-        textnode = {'kind':'Stem',
-                    'content':
-                    [
-                        {'kind':'Text',
-                            'maxwidth':CONFIG['text_item_width'],
-                            'source':html,
-                            'frame':graphics.Transform().tolist()
-                            }
-                    ]
-                    }
+        copydata = CopyFormat()
+        copydata.addAsContent([{
+            'kind':'Text',
+            'maxwidth':CONFIG['text_item_width'],
+            'source':html,
+            'frame':graphics.Transform().tolist()
+        }])
         # item = self.Node('Text')
         # item['maxwidth'] = CONFIG['text_item_width']
         # item['source'] = html
@@ -599,16 +630,13 @@ class NexusGraph(graphydb.Graph):
         # now linkify any other urls
         html = bleach.linkify(html)
 
-        textnode = {'kind':'Stem',
-                    'content':
-                    [
-                        {'kind':'Text',
-                            'maxwidth':CONFIG['text_item_width'],
-                            'source':html,
-                            'frame':graphics.Transform().tolist()
-                            }
-                    ]
-                    }
+        copydata = CopyFormat()
+        copydata.addAsContent([{
+            'kind':'Text',
+            'maxwidth':CONFIG['text_item_width'],
+            'source':html,
+            'frame':graphics.Transform().tolist()
+        }])
         # item = self.Node('Text')
         # item['maxwidth'] = CONFIG['text_item_width']
         # item['source'] = html

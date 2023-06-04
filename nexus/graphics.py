@@ -1231,6 +1231,7 @@ class InputDialog(QtWidgets.QDialog):
         ##
         ## Copy Nexus internal data pasting elsewhere in tree
         ##
+
         # g = self.scene.node.graph
         # copynode = g.getCopyNode(clear=True)
 
@@ -1239,24 +1240,41 @@ class InputDialog(QtWidgets.QDialog):
         #                  scale=1.0, pos=[10,10]).save(setchange=False)
         # newedge = g.Edge(copynode, "Child", newstem).save(setchange=False)
 
+        # TODO the following potentially changes the z-order
         content = []
+        imageshas = set()
         for item in selected:
-            if hasattr(item, 'data'):
-                content.append(item.data)
+            if not hasattr(item, 'data'):
+                # Skip items that are not node content items
+                continue
 
-        copydata = [{'kind':'Stem', 'content':content}]
+            content.append(item.data)
+
+            if item.data['kind']=='Image':
+                imageshas.add(item.data['sha1'])
+
+        # Collect under a single stem item
+        # copydata = {'nodes':[{'kind':'Stem', 'content':content}], 'images':{}}
+        copydata = nexusgraph.CopyFormat()
+        copydata.addAsContent(content)
+
+        for sha in imageshas:
+            node = self.scene.node.graph.findImageData(sha)
+            data = graphydb.cleandata(node.data)
+            copydata.images[sha] = data
 
         #data = g.copyTrees(nodes, setchange=False)
         # for item in items:
         #     g.Edge(newstem, 'In', item).save(setchange=False)
 
-        print(content)
+        print(copydata)
 
         # store nexus link in clipboard
         clipboard = QtWidgets.QApplication.clipboard()
         mimedata = QtCore.QMimeData()
+        copydata.setMimedata(mimedata)
         #link = copynode.graph.getNodeLink(copynode)
-        mimedata.setData("application/x-nexus", bytes(json.dumps(copydata), 'utf-8'))
+        # mimedata.setData("application/x-nexus", bytes(json.dumps(copydata), 'utf-8'))
         clipboard.setMimeData(mimedata)
 
     def pasteEvent(self):
@@ -1276,11 +1294,11 @@ class InputDialog(QtWidgets.QDialog):
             QtWidgets.QMessageBox.information(None,"Warning", msg)
             return
 
-        if len(copydata)==0:
+        if len(copydata.nodes)==0:
             QtWidgets.QMessageBox.information(None,"Warning", "Nothing to paste")
             return
 
-        print("C",copydata)
+        # print("C",copydata)
         # keep track so we can address new nodes
         # old_nodes = self.scene.node.outN('e.kind="In"')
 
@@ -1290,12 +1308,15 @@ class InputDialog(QtWidgets.QDialog):
         # create batchid in case we need to add images
         batch = graphydb.generateUUID()
         pasteditems = []
-        for data in copydata:
-            print("D",data)
+        imagedataitems = {}
+        for data in copydata.nodes:
+            # print("D",data)
             if data['kind'] == 'Stem':
                 for item in data['content']:
                     self.scene.node['content'].append(item)
                     pasteditems.append(item)
+            # elif data['kind'] == 'ImageData':
+            #     imagedataitems[data['sha1']] = data
             # print(item['kind'])
 
         # Ignore the first level stems and just get the content
@@ -1330,6 +1351,8 @@ class InputDialog(QtWidgets.QDialog):
             elif n['kind'] == 'Text':
                 item=TextItem(n, self.scene.node, z, scene=self.scene)
             elif n['kind'] == 'Image':
+                # PixmapItem expects the data to be in a subnode in the graph
+                print(f"IMG in graph:{g.findImageData(n['sha1'])} in paste:{copydata.images.keys()}" )
                 item=PixmapItem(n, self.scene.node, z, scene=self.scene)
             pastedobjects.append(item)
 
@@ -2629,7 +2652,8 @@ class NexusScene(QtWidgets.QGraphicsScene):
         # link = g.getNodeLink(copynode)
         clipboard = QtWidgets.QApplication.clipboard()
         mimedata = QtCore.QMimeData()
-        mimedata.setData("application/x-nexus", bytes(json.dumps(data), 'utf-8'))
+        data.setMimedata(mimedata)
+        # mimedata.setData("application/x-nexus", bytes(json.dumps(data), 'utf-8'))
         clipboard.setMimeData(mimedata)
 
     def paste(self, *param, stem=None):
