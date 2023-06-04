@@ -315,7 +315,7 @@ class NexusGraph(graphydb.Graph):
             text = mimedata.text()
             copydata, msg = self.itemFromText(text)
 
-        return copydata, msg
+        return copydata
 
     # def getNodeFromLink(self, link):
 

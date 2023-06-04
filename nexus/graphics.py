@@ -1289,10 +1289,10 @@ class InputDialog(QtWidgets.QDialog):
         mimedata = clipboard.mimeData()
 
         g = self.scene.graph
-        copydata, msg = g.mimedataToCopydata(mimedata)
-        if msg != "OK":
-            QtWidgets.QMessageBox.information(None,"Warning", msg)
-            return
+        copydata = g.mimedataToCopydata(mimedata)
+        # if msg != "OK":
+        #     QtWidgets.QMessageBox.information(None,"Warning", msg)
+        #     return
 
         if len(copydata.nodes)==0:
             QtWidgets.QMessageBox.information(None,"Warning", "Nothing to paste")
@@ -2543,9 +2543,9 @@ class NexusScene(QtWidgets.QGraphicsScene):
             super(NexusScene, self).dragEnterEvent(event)
             return
 
-        copynode, msg = self.graph.mimedataToCopydata(mimedata)
+        copynode = self.graph.mimedataToCopydata(mimedata)
         if copynode is None:
-            QtWidgets.QMessageBox.information(None, "Warning", msg)
+            QtWidgets.QMessageBox.information(None, "Warning", "No copy data")
             return
 
         view=self.views()[0]
@@ -2670,9 +2670,9 @@ class NexusScene(QtWidgets.QGraphicsScene):
         mimedata = clipboard.mimeData()
 
         g = self.graph
-        copynode, msg = g.mimedataToCopydata(mimedata)
+        copynode = g.mimedataToCopydata(mimedata)
         if copynode is None:
-            QtWidgets.QMessageBox.information(None,"Warning", msg)
+            QtWidgets.QMessageBox.information(None,"Warning", "No copy data")
             return
 
         batch = graphydb.generateUUID()
