@@ -142,12 +142,20 @@ By encoding the left and right points, the view position, scale, rotation can be
 
 * Copy format
 
-The copy format that is used internally is a cut-down version of the nodes and content.
-Links to both child Stems or ImageData are nested in 'children' list.
+The copy format that is used internally is a cut-down version of the nodes and content json data.
+UIDs are not stored, neither are local fields beginning with underscore '_'
+Child Stems are nested in 'children' list.
+Any linked ImageData nodes are added to 'images' dict under their sha1 hashes
+
+N.B. UIDs should be regenerated anyway on paste so no point in storing
 
 #+begin_src python
-[
-    {'kind':'Stem', 'content':[...], 'children':[]},
-    {'kind':'Stem', 'content':[...]},
-]
+{
+  'nodes': [
+      {'kind':'Stem', 'content':[...], 'children':[ {'kind':'Stem',...}, {'kind':'Stem',...} ]},
+  ],
+  'images':{
+      'sha1':{'kind':'ImageData',...},
+  }
+}
 #+end_src

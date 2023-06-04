@@ -168,6 +168,7 @@ class NexusGraph(graphydb.Graph):
 
             # TODO deepcopy?
             data = graphydb.cleandata(node.data)
+            del data['uid']
             children = []
             for child in node.outN('n.kind="Stem"'):
                 childdata = recursiveExtract(child, seen, imageshas)
@@ -180,16 +181,17 @@ class NexusGraph(graphydb.Graph):
         seen = set()
         imageshas = set()
 
-        out = []
+        out = {'nodes':[], 'images':{}}
         for n in basenodes:
             data = recursiveExtract(n, seen, imageshas)
             if data is not None:
-                out.append(data)
+                out['nodes'].append(data)
 
         for sha in imageshas:
             node = self.findImageData(sha)
             data = graphydb.cleandata(node.data)
-            out.append(data)
+            del data['uid']
+            out['images'][data['sha1']] = data
 
         return out
 
