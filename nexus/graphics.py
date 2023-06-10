@@ -534,7 +534,7 @@ class InputDialog(QtWidgets.QDialog):
         self.hide()
 
     def done(self, r):
-        # finilise closing dialog even if WM button clicked or ESC pressed
+        # finalise closing dialog even if WM button clicked or ESC pressed
         self.saveClose()
 
     def tagsChanged(self):
@@ -597,7 +597,6 @@ class InputDialog(QtWidgets.QDialog):
             self.stem.renew(reload=False, children=False, recurse=True, position=False)
 
     def opacityWidgetChanged(self, opacity):
-
         self.setWindowOpacity(opacity)
 
     def createActions(self):
@@ -811,7 +810,6 @@ class InputDialog(QtWidgets.QDialog):
 
         self.scene.pen = QtGui.QPen(QtGui.QColor(color))
         self.scene.pen.setWidthF(size)
-
 
 
     def setTextMode(self):
@@ -1325,9 +1323,12 @@ class InputDialog(QtWidgets.QDialog):
                 item=InkItem(n, self.scene.node, z, scene=self.scene)
             elif n['kind'] == 'Text':
                 item=TextItem(n, self.scene.node, z, scene=self.scene)
+                ## this is needed to make alignments work:
+                item.positionChanged.connect(self.setTextControls)
             elif n['kind'] == 'Image':
                 # N.B. PixmapItem expects the data to be in a subnode in the graph
                 item=PixmapItem(n, self.scene.node, z, scene=self.scene)
+            item.setMode(self.scene.mode)
             pastedobjects.append(item)
 
 
@@ -3969,8 +3970,9 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
         # QtWidgets.QGraphicsPathItem.mouseReleaseEvent(self, event)
         self.setSelected(False)
         p = self.parentItem()
-        p.node['maxwidth'] = p.textWidth()
-        p.node.save(setchange=True)
+        p.data['maxwidth'] = p.textWidth()
+        p.stemnode.keyChanged('content')
+        p.stemnode.save(setchange=True)
 
 
 
@@ -4480,7 +4482,7 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         Update main view
         '''
 
-        self.stemnode['content'].remove(self.node)
+        self.stemnode['content'].remove(self.data)
         self.stemnode.keyChanged('content')
         self.stemnode.save(setchange=True, batch=batch)
         self.scene().removeItem(self)
@@ -4604,7 +4606,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
         Also remove edge to data and data node if orphaned.
         '''
 
-        self.stemnode['content'].remove(self.node)
+        self.stemnode['content'].remove(self.data)
         self.stemnode.keyChanged('content')
 
         # deleting an image is always a batch brocess due to the data
