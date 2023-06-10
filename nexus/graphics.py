@@ -407,7 +407,7 @@ class InputDialog(QtWidgets.QDialog):
         self.tagsEdit.setText(' '.join(tags))
 
         self.scalewidget.setValue(float(self.scene.node.get('scale', 1.0)))
-       
+
         pix = QtGui.QPixmap(50, 50)
         if 'branchcolor' in self.scene.node:
             branchcolor = self.scene.node['branchcolor']
@@ -425,7 +425,7 @@ class InputDialog(QtWidgets.QDialog):
         self.setPenCursor()
         self.ishighlighter = False
         self.setPenCursor()
-        
+
         #
         # Add items
         #
@@ -505,7 +505,7 @@ class InputDialog(QtWidgets.QDialog):
         for item in self.scene.getItems():
             if isinstance(item, TextItem):
                 item.saveIfChanged()
-       
+
         # If there are no outgoing links (With, Child) and
         # there are no items (or just blank Text items) delete branch
         if self.scene.node.outE('e.kind="With"', COUNT=True)==0 and \
@@ -1231,15 +1231,6 @@ class InputDialog(QtWidgets.QDialog):
         ##
         ## Copy Nexus internal data pasting elsewhere in tree
         ##
-
-        # g = self.scene.node.graph
-        # copynode = g.getCopyNode(clear=True)
-
-        ## Create a new Stem to hold the copy data
-        # newstem = g.Node('Stem', z=0, flip=1,
-        #                  scale=1.0, pos=[10,10]).save(setchange=False)
-        # newedge = g.Edge(copynode, "Child", newstem).save(setchange=False)
-
         # TODO the following potentially changes the z-order
         content = []
         imageshas = set()
@@ -1253,8 +1244,6 @@ class InputDialog(QtWidgets.QDialog):
             if item.data['kind']=='Image':
                 imageshas.add(item.data['sha1'])
 
-        # Collect under a single stem item
-        # copydata = {'nodes':[{'kind':'Stem', 'content':content}], 'images':{}}
         copydata = nexusgraph.CopyFormat()
         copydata.addAsContent(content)
 
@@ -1263,18 +1252,9 @@ class InputDialog(QtWidgets.QDialog):
             data = graphydb.cleandata(node.data)
             copydata.images[sha] = data
 
-        #data = g.copyTrees(nodes, setchange=False)
-        # for item in items:
-        #     g.Edge(newstem, 'In', item).save(setchange=False)
-
-        print(copydata)
-
-        # store nexus link in clipboard
         clipboard = QtWidgets.QApplication.clipboard()
         mimedata = QtCore.QMimeData()
         copydata.setMimedata(mimedata)
-        #link = copynode.graph.getNodeLink(copynode)
-        # mimedata.setData("application/x-nexus", bytes(json.dumps(copydata), 'utf-8'))
         clipboard.setMimeData(mimedata)
 
     def pasteEvent(self):
@@ -1290,46 +1270,41 @@ class InputDialog(QtWidgets.QDialog):
 
         g = self.scene.graph
         copydata = g.mimedataToCopydata(mimedata)
-        # if msg != "OK":
-        #     QtWidgets.QMessageBox.information(None,"Warning", msg)
-        #     return
 
         if len(copydata.nodes)==0:
             QtWidgets.QMessageBox.information(None,"Warning", "Nothing to paste")
             return
 
-        # print("C",copydata)
-        # keep track so we can address new nodes
-        # old_nodes = self.scene.node.outN('e.kind="In"')
-
-        # Copydata will be a list of Stems/ImageData
-        # Combine all the content and append to current node
-
-        # create batchid in case we need to add images
+        # create batch_id in case we need to add images
         batch = graphydb.generateUUID()
         pasteditems = []
-        imagedataitems = {}
+        imageshas = set()
+        contentchanged = False
         for data in copydata.nodes:
-            # print("D",data)
-            if data['kind'] == 'Stem':
-                for item in data['content']:
-                    self.scene.node['content'].append(item)
-                    pasteditems.append(item)
-            # elif data['kind'] == 'ImageData':
-            #     imagedataitems[data['sha1']] = data
-            # print(item['kind'])
+            for item in data['content']:
+                if item['kind'] == 'Image':
+                    img = g.findImageData(item['sha1'])
+                    if img is None:
+                        # Add ImageData and edge
+                        if item['sha1'] not in copydata.images:
+                            logging.warn('Image data missing, not pasting!')
+                            continue
+                        imagedata = g.Node('ImageData')
+                        imagedata.update(copydata.images[item['sha1']])
+                        imagedata.save(batch=batch)
+                        g.Edge(self.scene.node, "With", imagedata).save(setchange=True, batch=batch)
+                    else:
+                        # ImageData already in graph, just link
+                        # Only link if edge not already there, so first scan them all
+                        for e in self.scene.node.outE('e.kind="With"'):
+                            if e.end['sha1'] == item['sha1']:
+                                break
+                        else:
+                            g.Edge(self.scene.node, "With", img).save(setchange=True, batch=batch)
 
-        # Ignore the first level stems and just get the content
-        # sys.exit()
-
-
-        # content_nodes = copynode.outN('e.kind="Child"').outN('e.kind="In"')
-        # items = g.copyTrees(content_nodes, batch=batch, setchange=True)
-        # for item in items:
-        #     g.Edge(self.scene.nodec, 'In', item).save(batch=batch, setchange=True)
-
-        # Grab difference in nodes in case there where nested items in copied trees
-        # new_nodes = self.scene.node.outN('e.kind="In"') - old_nodes
+                self.scene.node['content'].append(item)
+                pasteditems.append(item)
+                contentchanged = True
 
         # TODO clear selection or replace it?
         self.scene.clearSelection()
@@ -1351,8 +1326,7 @@ class InputDialog(QtWidgets.QDialog):
             elif n['kind'] == 'Text':
                 item=TextItem(n, self.scene.node, z, scene=self.scene)
             elif n['kind'] == 'Image':
-                # PixmapItem expects the data to be in a subnode in the graph
-                print(f"IMG in graph:{g.findImageData(n['sha1'])} in paste:{copydata.images.keys()}" )
+                # N.B. PixmapItem expects the data to be in a subnode in the graph
                 item=PixmapItem(n, self.scene.node, z, scene=self.scene)
             pastedobjects.append(item)
 
@@ -1371,6 +1345,11 @@ class InputDialog(QtWidgets.QDialog):
             ## note QTs backward transforms
             item.setTransform(item.transform()*t)
             item.data['frame'] = Transform(item.transform()).tolist()
+            contentchanged = True
+
+        if contentchanged:
+            self.scene.node.keyChanged('content')
+            self.scene.node.save(setchange=True, batch=batch)
 
         # new_nodes.save(batch=batch, setchange=True)
         self.scene.refreshStem()
@@ -2543,8 +2522,8 @@ class NexusScene(QtWidgets.QGraphicsScene):
             super(NexusScene, self).dragEnterEvent(event)
             return
 
-        copynode = self.graph.mimedataToCopydata(mimedata)
-        if copynode is None:
+        copydata = self.graph.mimedataToCopydata(mimedata)
+        if copydata is None:
             QtWidgets.QMessageBox.information(None, "Warning", "No copy data")
             return
 
@@ -2563,11 +2542,11 @@ class NexusScene(QtWidgets.QGraphicsScene):
                 closest = target
 
         batch = graphydb.generateUUID()
-        nodes = copynode.outN('e.kind="Child"')
-        basenodes = self.graph.copyTrees(nodes, batch=batch, setchange=True)
-        for b in basenodes:
-            self.graph.Edge(closest.node, 'Child', b).save(batch=batch, setchange=True)
-        closest.renew(create=False)
+        # nodes = copynode.outN('e.kind="Child"')
+        # basenodes = self.graph.copyTrees(nodes, batch=batch, setchange=True)
+        # for b in basenodes:
+        #     self.graph.Edge(closest.node, 'Child', b).save(batch=batch, setchange=True)
+        # closest.renew(create=False)
 
     def delete(self, *param, stem=None):
         '''
@@ -3068,7 +3047,7 @@ class NexusView(QtWidgets.QGraphicsView):
         # start a new stroke
         self.pointertrail.append([])
         self._trailTimer.start()
-       
+
 
         if not self.scene().mode in ["presentation", "record"]:
             self.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
@@ -3215,7 +3194,7 @@ class NexusView(QtWidgets.QGraphicsView):
         # XXX Following not working on mac?
         dist = sqrt(dv.x()**2+dv.y()**2)
         #logging.debug('Pinch dist %f', dist)
- 
+
         # base movement stickiness on view coordinates (finger motion)
         if not ( CONFIG['pinch_no_scale_threshold'][0]<Stot<CONFIG['pinch_no_scale_threshold'][1] \
                  and abs(Rtot)<CONFIG['pinch_no_rotate_threshold'] \
@@ -3967,7 +3946,7 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
         QtWidgets.QGraphicsPathItem.hoverLeaveEvent(self, event)
 
     def pointerPressEvent(self, event):
-        
+
         # QtWidgets.QGraphicsPathItem.mousePressEvent(self, event)
         self.parentItem().setSelected(True)
         self.parentItem().setFocus()
@@ -5883,5 +5862,3 @@ class StemItem(QtWidgets.QGraphicsItem):
     def shape(self):
 
         return self.selectpath.shape()
-
- 
