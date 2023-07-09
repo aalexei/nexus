@@ -393,11 +393,7 @@ class InputDialog(QtWidgets.QDialog):
 
         stem.isBeingEdited = True
 
-        # TODO simpify? why do we need stem and edge separately?
         self.stem = stem
-        # TODO why ref to node separately
-        #self.scene.node = stem.node
-        #self.scene.edge = edge
         # TODO Can we remove this dependency at this point (setPenCursor calls graph settings)
         self.scene.graph = self.stem.node.graph
 
@@ -435,6 +431,7 @@ class InputDialog(QtWidgets.QDialog):
         itemnumbers = collections.Counter()
         itemrect = QtCore.QRectF()
         #for k in self.scene.node.outN('e.kind = "In"'):
+        # print(self.stem.node['content'])
         for u,k in self.stem.node['content'].items():
             if k['kind'] == 'Stroke':
                 item = InkItem(uid=u, stem=stem, scene=self.scene)
@@ -514,7 +511,7 @@ class InputDialog(QtWidgets.QDialog):
 
            empty = True
            # print('content', self.scene.node['content'] )
-           for item in self.stem.node['content']:
+           for item in self.stem.node['content'].values():
                if item['kind'] != 'Text':
                    empty = False
                elif len(item['source'])>0:
@@ -1234,18 +1231,17 @@ class InputDialog(QtWidgets.QDialog):
         content = []
         imageshas = set()
         for item in selected:
-            if not hasattr(item, 'data'):
+            if not hasattr(item, 'stem'):
                 # Skip items that are not node content items
                 continue
+            # TODO this is kind of ugly. Expose content dict at item?
+            content.append(item.stem.node['content'][item.uid])
 
-            content.append(item.data)
-
-            if item.data['kind']=='Image':
-                imageshas.add(item.data['sha1'])
+            if item['kind']=='Image':
+                imageshas.add(item['sha1'])
 
         copydata = nexusgraph.CopyFormat()
         copydata.addAsContent(content)
-
         for sha in imageshas:
             node = self.stem.node.graph.findImageData(sha)
             data = graphydb.cleandata(node.data)
@@ -1309,7 +1305,7 @@ class InputDialog(QtWidgets.QDialog):
                         else:
                             g.Edge(self.stem.node, "With", img).save(setchange=True, batch=batch)
 
-                self.stem.node['content']['uid'] = item
+                self.stem.node['content'][uid] = item
                 pasteditems.append(uid)
                 contentchanged = True
 
@@ -1357,7 +1353,7 @@ class InputDialog(QtWidgets.QDialog):
         for item in pastedobjects:
             ## note QTs backward transforms
             item.setTransform(item.transform()*t)
-            item.data['frame'] = Transform(item.transform()).tolist()
+            item['frame'] = Transform(item.transform()).tolist()
             contentchanged = True
 
         if contentchanged:
@@ -3644,11 +3640,11 @@ class ContentItem:
     def __delitem__(self, key):
         if self.uid in self.stem.node['content']:
             del self.stem.node['content'][self.uid][key]
-            self.stem.node.keychanged('content')
+            self.stem.node.keyChanged('content')
     def deldata(self):
         if self.uid in self.stem.node['content']:
             del self.stem.node['content'][self.uid]
-            self.stem.node.keychanged('content')
+            self.stem.node.keyChanged('content')
 
     def get(self, key, default=None):
         if key in self.stem.node['content'][self.uid]:

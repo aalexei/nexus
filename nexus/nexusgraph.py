@@ -192,16 +192,22 @@ class NexusGraph(graphydb.Graph):
 
         def recursiveExtract(node, seen, imageshas):
             if node['uid'] in seen:
+                # if already visited this node, (e.g. parent and node selected) skip.
                 return None
             seen.add(node['uid'])
 
-            for c in node['content']:
+            content = list(node['content'].values())
+            # collect any links to images through their sha1s
+            for c in content:
                 if c['kind'] == 'Image':
                     imageshas.add(c['sha1'])
-
             # TODO deepcopy?
+            # Clean up data, remove keys starting with _ and don't need uid in copy
             data = graphydb.cleandata(node.data)
             del data['uid']
+            data['content'] = content
+
+            # recursively grab data for children
             children = []
             for child in node.outN('n.kind="Stem"'):
                 childdata = recursiveExtract(child, seen, imageshas)
@@ -578,7 +584,8 @@ class NexusGraph(graphydb.Graph):
         # self.Edge(copynode, 'Child', stem).save(setchange=False)
         # self.Edge(stem, 'In', item).save(setchange=False)
 
-        return [textnode], "OK"
+        return copydata, 'OK'
+        #return [textnode], "OK"
 
 
     def itemFromText(self, text):
@@ -650,4 +657,5 @@ class NexusGraph(graphydb.Graph):
         # self.Edge(copynode, 'Child', stem).save(setchange=False)
         # self.Edge(stem, 'In', item).save(setchange=False)
 
-        return [textnode], "OK"
+        return copydata, 'OK'
+        #return [textnode], "OK"
