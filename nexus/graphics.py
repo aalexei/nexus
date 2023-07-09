@@ -3660,9 +3660,9 @@ class ContentItem:
 class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
 ##----------------------------------------------------------------------
 
-    def __init__(self, uid, stem, scene=None):
+    def __init__(self, uid, stem, scene=None, parent=None):
         ## Rendered in one of two ways:
-        ## 1) in tree: scene = None
+        ## 1) in tree: scene = None and add to Leaf parent
         ## 2) in edit dialog: scene = edit scene
         ## Both have stem = StemItem (on NexusScene) which contains data in stem.node
 
@@ -3673,7 +3673,7 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
             super().__init__()
             scene.addItem(self)
         else:
-            super().__init__(parent=stem)
+            super().__init__(parent=parent)
 
         self.setAcceptHoverEvents(True)
         self.originalCursor = None
@@ -4036,9 +4036,9 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
     linkClicked = QtCore.pyqtSignal(str)
     positionChanged = QtCore.pyqtSignal(QtGui.QTextCursor)
 
-    def __init__(self, uid, stem, scene=None):
+    def __init__(self, uid, stem, scene=None, parent=None):
         ## Rendered in one of two ways:
-        ## 1) in tree: scene = None
+        ## 1) in tree: scene = None and add to Leaf parent
         ## 2) in edit dialog: scene = edit scene
         ## Both have stem = StemItem (on NexusScene) which contains data in stem.node
 
@@ -4049,7 +4049,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             super().__init__()
             scene.addItem(self)
         else:
-            super().__init__(parent=stem)
+            super().__init__(parent=parent)
 
         self.DefaultFont = QtGui.QFont(self.get("font_family", CONFIG['text_item_font_family']),
                                        self.get("font_size", CONFIG['text_item_font_size']))
@@ -4583,9 +4583,9 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
 
     # TODO lossless encoding? png/jpg .. preserve details
 
-    def __init__(self, uid, stem, scene=None):
+    def __init__(self, uid, stem, scene=None, parent=None):
         ## Rendered in one of two ways:
-        ## 1) in tree: scene = None
+        ## 1) in tree: scene = None and add to Leaf parent
         ## 2) in edit dialog: scene = edit scene
         ## Both have stem = StemItem (on NexusScene) which contains data in stem.node
 
@@ -4596,7 +4596,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
             super().__init__()
             scene.addItem(self)
         else:
-            super().__init__(parent=stem)
+            super().__init__(parent=parent)
 
         self.setAcceptHoverEvents(True)
         self.setZValue(self['z'])
@@ -4734,13 +4734,13 @@ class Leaf(QtWidgets.QGraphicsItem):
     tagitem = None
 
     def __init__(self, stem):
-        super().__init__(stem)
+        super().__init__(parent=stem)
         self.stem = stem
         iconified = stem.node.get('iconified', False)
         if iconified:
             ## just create an icon and store the information
             # TODO Can't identify the QGraphicsScene in the arguments of the QGraphicsItem
-            # TODO why have self.leaf in leaf??
+            # TODO why have self.leaf in leaf?? Oh leaf icon
             # TODO need to fix for high resolution displays
             self.leaf = QtWidgets.QGraphicsPixmapItem(QtGui.QPixmap(":/images/iconified.svg"), parent=self)
 
@@ -4748,13 +4748,13 @@ class Leaf(QtWidgets.QGraphicsItem):
             #for k in node.outN('e.kind = "In"'):
             for u,k in stem.node['content'].items():
                 if k['kind'] == 'Stroke':
-                    item = InkItem(uid=u, stem=self.stem)
+                    item = InkItem(uid=u, stem=self.stem, parent=self)
                 elif k['kind'] == 'Text':
-                    item = TextItem(uid=u, stem=self.stem)
+                    item = TextItem(uid=u, stem=self.stem, parent=self)
                     ## this is needed to make alignments work:
                     item.setTextWidth(item.boundingRect().width())
                 elif k['kind'] == 'Image':
-                    item = PixmapItem(uid=u, stem=self.stem)
+                    item = PixmapItem(uid=u, stem=self.stem, parent=self)
 
 
         # this is the size of the leaf before adding tags etc
