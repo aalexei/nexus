@@ -4640,11 +4640,13 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
 
     def deleteNodeItem(self, batch=None):
         '''
-        Delete this item's data in node of graph database
-        Remove from scene
-        Update main view
-        Also remove edge to data and data node if orphaned.
+        - Delete this item's data in node of graph database
+        - Remove from scene
+        - Update main view
+        - Also remove edge to data
+        - remove data node if orphaned.
         '''
+        sha1 = self['sha1']
         self.deldata()
         #del self.stem.node['content'][self.uid]
         #self.stem.node.keyChanged('content')
@@ -4653,16 +4655,23 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
         if batch is None:
             batch = graphydb.generateUUID()
 
-        # TODO should we check for multiple edges? or delegate to DB health function?
-        dataedge = self.stem.node.outE('e.kind="With"').one
-        datanode = dataedge.end
-
         self.stem.node.save(setchange=True, batch=batch)
-        dataedge.delete(batch=batch)
 
-        # also remove the data if no refenreces to it
-        if datanode.inE('e.kind="With"', COUNT=True)==0:
-            datanode.delete(batch=batch)
+        remove_edge = True
+        for n in self.stem.node['content'].values():
+            if n['kind'] == 'Image' and n['sha1'] == sha1:
+                remove_edge = False
+
+        # TODO should we check for multiple edges? or delegate to DB health function?
+        if remove_edge:
+            dataedge = self.stem.node.outE('e.kind="With"').one
+            datanode = dataedge.end
+
+            dataedge.delete(batch=batch)
+
+            # also remove the data if no refenreces to it
+            if datanode.inE('e.kind="With"', COUNT=True)==0:
+                datanode.delete(batch=batch)
 
         self.scene().removeItem(self)
 
