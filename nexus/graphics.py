@@ -396,22 +396,22 @@ class InputDialog(QtWidgets.QDialog):
         # TODO simpify? why do we need stem and edge separately?
         self.stem = stem
         # TODO why ref to node separately
-        self.scene.node = stem.node
+        #self.scene.node = stem.node
         #self.scene.edge = edge
         # TODO Can we remove this dependency at this point (setPenCursor calls graph settings)
-        self.scene.graph = self.scene.node.graph
+        self.scene.graph = self.stem.node.graph
 
-        if self.scene.node.get('iconified', False):
+        if self.stem.node.get('iconified', False):
             self.iconCheck.setChecked(True)
 
-        tags = self.scene.node.get('tags', set())
+        tags = self.stem.node.get('tags', set())
         self.tagsEdit.setText(' '.join(tags))
 
-        self.scalewidget.setValue(float(self.scene.node.get('scale', 1.0)))
+        self.scalewidget.setValue(float(self.stem.node.get('scale', 1.0)))
 
         pix = QtGui.QPixmap(50, 50)
-        if 'branchcolor' in self.scene.node:
-            branchcolor = self.scene.node['branchcolor']
+        if 'branchcolor' in self.stem.node:
+            branchcolor = self.stem.node['branchcolor']
             pix.fill(QtGui.QColor(branchcolor))
             self.branchcolorbutton.setDisabled(False)
             self.branchcolorinherit.setCheckState(QtCore.Qt.CheckState.Unchecked)
@@ -435,7 +435,7 @@ class InputDialog(QtWidgets.QDialog):
         itemnumbers = collections.Counter()
         itemrect = QtCore.QRectF()
         #for k in self.scene.node.outN('e.kind = "In"'):
-        for u,k in self.scene.node['content'].items():
+        for u,k in self.stem.node['content'].items():
             if k['kind'] == 'Stroke':
                 item = InkItem(uid=u, stem=stem, scene=self.scene)
                 itemnumbers['stroke']+=1
@@ -509,19 +509,19 @@ class InputDialog(QtWidgets.QDialog):
 
         # If there are no outgoing links (With, Child) and
         # there are no items (or just blank Text items) delete branch
-        if self.scene.node.outE('e.kind="With"', COUNT=True)==0 and \
-           self.scene.node.outE('e.kind="Child"', COUNT=True)==0:
+        if self.stem.node.outE('e.kind="With"', COUNT=True)==0 and \
+           self.stem.node.outE('e.kind="Child"', COUNT=True)==0:
 
            empty = True
            # print('content', self.scene.node['content'] )
-           for item in self.scene.node['content']:
+           for item in self.stem.node['content']:
                if item['kind'] != 'Text':
                    empty = False
                elif len(item['source'])>0:
                    empty = False
 
            if empty:
-               self.scene.node.delete(setchange=True, disconnect=True)
+               self.stem.node.delete(setchange=True, disconnect=True)
                # TODO This will fail if item has been saves even is blank because
                # QT will add a <p> tag with attributes etc.
                # solution: reimplement Text with clean source not QT's interpretation.
@@ -541,13 +541,13 @@ class InputDialog(QtWidgets.QDialog):
     def tagsChanged(self):
         # callback when tags field loses focus
         newtags = set(self.tagsEdit.text().split())
-        oldtags = self.scene.node.get('tags', set())
+        oldtags = self.stem.node.get('tags', set())
         if newtags != oldtags:
             if len(newtags)>0:
-                self.scene.node['tags'] = list(newtags)
+                self.stem.node['tags'] = list(newtags)
             else:
-                self.scene.node.discard('tags')
-            self.scene.node.save(setchange=True)
+                self.stem.node.discard('tags')
+            self.stem.node.save(setchange=True)
             self.stem.renew(reload=False, create=True, children=False, recurse=False, position=False)
 
 
@@ -556,17 +556,17 @@ class InputDialog(QtWidgets.QDialog):
         # state is the new state
         if state:
             # leaf of stem should be displayed as just an icon
-            self.scene.node['iconified'] = True
+            self.stem.node['iconified'] = True
         else:
-            self.scene.node.discard('iconified')
-        self.scene.node.save(setchange=True)
+            self.stem.node.discard('iconified')
+        self.stem.node.save(setchange=True)
         self.stem.renew(reload=False, create=True, children=False, recurse=True, position=False)
 
     def scaleWidgetChanged(self, scale):
         # callback for spinbox
-        if 'scale' not in self.scene.node or self.scene.node['scale'] != scale:
-            self.scene.node['scale'] = scale
-            self.scene.node.save(setchange=True)
+        if 'scale' not in self.stem.node or self.stem.node['scale'] != scale:
+            self.stem.node['scale'] = scale
+            self.stem.node.save(setchange=True)
             self.stem.renew(reload=False, children=False, recurse=False, position=False)
 
     def branchInheritColourChanged(self, state):
@@ -574,9 +574,9 @@ class InputDialog(QtWidgets.QDialog):
         # state is the new state of checkbox
         if state==True:
             self.branchcolorbutton.setDisabled(True)
-            if 'branchcolor' in self.scene.node:
-                del self.scene.node['branchcolor']
-                self.scene.node.save(setchange=True)
+            if 'branchcolor' in self.stem.node:
+                del self.stem.node['branchcolor']
+                self.stem.node.save(setchange=True)
                 self.stem.renew(reload=False, children=False, recurse=True, position=False)
         else:
             self.branchcolorbutton.setDisabled(False)
@@ -585,7 +585,7 @@ class InputDialog(QtWidgets.QDialog):
     def setBranchColour(self):
         # this is only triggered when inherit unchecked
         d = QtWidgets.QColorDialog()
-        color = QtGui.QColor(self.scene.node.get('branchcolor','gray'))
+        color = QtGui.QColor(self.stem.node.get('branchcolor','gray'))
         color = d.getColor(color, self,  self.tr("Choose a Color"))
 
         if color.isValid():
@@ -593,8 +593,8 @@ class InputDialog(QtWidgets.QDialog):
             pix.fill(color)
             self.branchcolorbutton.setIcon(QtGui.QIcon(pix))
             colorhex=color.name(QtGui.QColor.NameFormat.HexArgb)
-            self.scene.node['branchcolor'] = colorhex
-            self.scene.node.save(setchange=True)
+            self.stem.node['branchcolor'] = colorhex
+            self.stem.node.save(setchange=True)
             self.stem.renew(reload=False, children=False, recurse=True, position=False)
 
     def opacityWidgetChanged(self, opacity):
@@ -859,14 +859,14 @@ class InputDialog(QtWidgets.QDialog):
             # TODO v09
 
             item = {'kind':'Text', 'source':'', 'frame':Transform().tolist()}
-            self.scene.node['content'].append(item)
-            self.scene.node.save(setchange=True)
+            self.stem.node['content'].append(item)
+            self.stem.node.save(setchange=True)
             # batch = graphydb.generateUUID()
             # n = self.scene.graph.Node('Text', source='', z=1,
             #            frame=Transform().tolist()).save(setchange=True, batch=batch)
             # e = self.scene.graph.Edge(self.scene.node, 'In', n).save(setchange=True, batch=batch)
             raise Excemption("Fix text item creation for v09")
-            textitem = TextItem(item, self.scene.node, scene=self.scene)
+            textitem = TextItem(item, self.stem.node, scene=self.scene)
             textitem.positionChanged.connect(self.setTextControls)
             textitem.setMode(TextMode)
             textitem.setFocus()
@@ -1247,7 +1247,7 @@ class InputDialog(QtWidgets.QDialog):
         copydata.addAsContent(content)
 
         for sha in imageshas:
-            node = self.scene.node.graph.findImageData(sha)
+            node = self.stem.node.graph.findImageData(sha)
             data = graphydb.cleandata(node.data)
             copydata.images[sha] = data
 
@@ -1299,15 +1299,15 @@ class InputDialog(QtWidgets.QDialog):
                         imagedata = g.Node('ImageData')
                         imagedata.update(copydata.images[item['sha1']])
                         imagedata.save(batch=batch)
-                        g.Edge(self.scene.node, "With", imagedata).save(setchange=True, batch=batch)
+                        g.Edge(self.stem.node, "With", imagedata).save(setchange=True, batch=batch)
                     else:
                         # ImageData already in graph, just link
                         # Only link if edge not already there, so first scan them all
-                        for e in self.scene.node.outE('e.kind="With"'):
+                        for e in self.stem.node.outE('e.kind="With"'):
                             if e.end['sha1'] == item['sha1']:
                                 break
                         else:
-                            g.Edge(self.scene.node, "With", img).save(setchange=True, batch=batch)
+                            g.Edge(self.stem.node, "With", img).save(setchange=True, batch=batch)
 
                 self.stem.node['content']['uid'] = item
                 pasteditems.append(uid)
@@ -1361,8 +1361,8 @@ class InputDialog(QtWidgets.QDialog):
             contentchanged = True
 
         if contentchanged:
-            self.scene.node.keyChanged('content')
-            self.scene.node.save(setchange=True, batch=batch)
+            self.stem.node.keyChanged('content')
+            self.stem.node.save(setchange=True, batch=batch)
 
         # new_nodes.save(batch=batch, setchange=True)
         self.scene.refreshStem()
@@ -1632,10 +1632,10 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         batch = graphydb.generateUUID()
         for item in self.selected:
             if item._changed:
-                item.data['frame']=Transform(item.transform()).tolist()
+                item['frame']=Transform(item.transform()).tolist()
                 # Trigger a change
-                item.stemnode.keyChanged('content')
-                item.stemnode.save(setchange=True, batch=batch)
+                #item.stemnode.keyChanged('content')
+                item.stem.node.save(setchange=True, batch=batch)
                 item._changed = False
 
         ## NB if stem reloaded it will break node reference
@@ -2229,6 +2229,7 @@ class InkView(QtWidgets.QGraphicsView):
             'width': scene.pen.widthF(),
             'color': str(color.name()),
             'opacity': color.alphaF(),
+            'z': scene.maxZ,
         }
 
         XYZ = len(coords[0])>2
@@ -2249,11 +2250,13 @@ class InkView(QtWidgets.QGraphicsView):
         T.translate(p0[0], p0[1])
         data['frame'] = T.tolist()
 
-        stemnode = scene.node
-        stemnode['content'].append(data)
-        stemnode.keyChanged('content')
+        #stemnode = scene.stem.node
+        uid = graphydb.generateUUID()
+        scene.stem.node['content'][uid]=data
+        #stemnode['content'].append(data)
+        scene.stem.node.keyChanged('content')
         # print('content', stemnode['data']['content'])
-        stemnode.save(setchange=True)
+        scene.stem.node.save(setchange=True)
 
         scene.refreshStem()
 
@@ -3663,14 +3666,14 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
         ## 2) in edit dialog: scene = edit scene
         ## Both have stem = StemItem (on NexusScene) which contains data in stem.node
 
+        self.uid = uid
+        self.stem = stem
+
         if scene is not None:
             super().__init__()
             scene.addItem(self)
         else:
-            super().__init__(stem)
-
-        self.uid = uid
-        self.stem = stem
+            super().__init__(parent=stem)
 
         self.setAcceptHoverEvents(True)
         self.originalCursor = None
@@ -4039,14 +4042,14 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         ## 2) in edit dialog: scene = edit scene
         ## Both have stem = StemItem (on NexusScene) which contains data in stem.node
 
+        self.uid = uid
+        self.stem = stem
+
         if scene is not None:
             super().__init__()
             scene.addItem(self)
         else:
-            super().__init__(stem)
-
-        self.uid = uid
-        self.stem = stem
+            super().__init__(parent=stem)
 
         self.DefaultFont = QtGui.QFont(self.get("font_family", CONFIG['text_item_font_family']),
                                        self.get("font_size", CONFIG['text_item_font_size']))
@@ -4390,7 +4393,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             self['source'] = src
             # Need to mark node as changed
             # self.stemnode.keyChanged('content')
-            self.stemnode.save(setchange=True)
+            self.stem.node.save(setchange=True)
 
     def focusOutEvent(self,  event):
         QtWidgets.QGraphicsTextItem.focusOutEvent(self, event)
@@ -4586,14 +4589,14 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
         ## 2) in edit dialog: scene = edit scene
         ## Both have stem = StemItem (on NexusScene) which contains data in stem.node
 
+        self.uid = uid
+        self.stem = stem
+
         if scene is not None:
             super().__init__()
             scene.addItem(self)
         else:
-            super().__init__(stem)
-
-        self.uid = uid
-        self.stem = stem
+            super().__init__(parent=stem)
 
         self.setAcceptHoverEvents(True)
         self.setZValue(self['z'])
