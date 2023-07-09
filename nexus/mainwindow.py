@@ -390,25 +390,33 @@ def convert_to_partial_tree(g):
     stems = g.fetch('[n:Stem]')
 
     for s in stems:
+        # Get content items - all have edge "In"
         edges = s.bothE('e.kind = "In"')
-        content = []
+        content = {}
         for e in edges:
             end = e.end
-            content.append(end.data)
+            # May as well reuse the uids
             if end['kind'] == 'Image':
-                # Relink image data from stem itself
+                # Relink image data from stem itself and delete this edge
                 edata = end.outE('e.kind="With"').one
                 g.Edge(s,'With', edata.end).save(setchange=False)
                 edata.delete(setchange=False)
+            uid = end['uid']
+            # clean up the data, only using structure once so modify directly
+            data = end.data
+            for k in ['uid', 'mtime', 'ctime']:
+                if k in data:
+                    del data[k]
+            content[uid] = data
 
         # Clean up the content, sort by z-value
-        content.sort(key = lambda n:n['z'])
+        #content.sort(key = lambda n:n['z'])
 
         # Now remove some redundant fields
-        for c in content:
-            for k in ['uid', 'z', 'mtime', 'ctime']:
-                if k in c:
-                    del c[k]
+        # for c in content:
+        #     for k in ['uid', 'mtime', 'ctime']:
+        #         if k in c:
+        #             del c[k]
 
         # Save content
         s['content'] = content

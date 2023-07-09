@@ -395,6 +395,7 @@ class InputDialog(QtWidgets.QDialog):
 
         # TODO simpify? why do we need stem and edge separately?
         self.stem = stem
+        # TODO why ref to node separately
         self.scene.node = stem.node
         #self.scene.edge = edge
         # TODO Can we remove this dependency at this point (setPenCursor calls graph settings)
@@ -434,17 +435,17 @@ class InputDialog(QtWidgets.QDialog):
         itemnumbers = collections.Counter()
         itemrect = QtCore.QRectF()
         #for k in self.scene.node.outN('e.kind = "In"'):
-        for z,k in enumerate(self.scene.node['content']):
+        for u,k in self.scene.node['content'].items():
             if k['kind'] == 'Stroke':
-                item = InkItem(k, self.scene.node, z, scene=self.scene)
+                item = InkItem(uid=u, stem=stem, scene=self.scene)
                 itemnumbers['stroke']+=1
             elif k['kind'] == 'Text':
-                item = TextItem(k, self.scene.node, z, scene=self.scene)
+                item = TextItem(uid=u, stem=stem, scene=self.scene)
                 ## this is needed to make alignments work:
                 item.positionChanged.connect(self.setTextControls)
                 itemnumbers['text']+=1
             elif k['kind'] == 'Image':
-                item = PixmapItem(k, self.scene.node, z, scene=self.scene)
+                item = PixmapItem(uid=u, stem=stem, scene=self.scene)
                 itemnumbers['image']+=1
             else:
                 item = None
@@ -864,13 +865,13 @@ class InputDialog(QtWidgets.QDialog):
             # n = self.scene.graph.Node('Text', source='', z=1,
             #            frame=Transform().tolist()).save(setchange=True, batch=batch)
             # e = self.scene.graph.Edge(self.scene.node, 'In', n).save(setchange=True, batch=batch)
-
+            raise Excemption("Fix text item creation for v09")
             textitem = TextItem(item, self.scene.node, scene=self.scene)
             textitem.positionChanged.connect(self.setTextControls)
             textitem.setMode(TextMode)
             textitem.setFocus()
 
-        # XXX need method for adding text items to stem
+        # TODO need method for adding text items to stem
 
         for item in items:
             ## add default item if none; fulleditor access; non movable
@@ -1280,6 +1281,14 @@ class InputDialog(QtWidgets.QDialog):
         contentchanged = False
         for data in copydata.nodes:
             for item in data['content']:
+                # Generate a new uid for item
+                for ii in range(10):
+                    # try and generate a unique id, should almost certainly work
+                    uid = graphydb.generateUUID()
+                    if uid not in self.stem.node['content']:
+                        break
+                else:
+                    raise Exception('Could not generate unique uid for item')
                 if item['kind'] == 'Image':
                     img = g.findImageData(item['sha1'])
                     if img is None:
@@ -1300,8 +1309,8 @@ class InputDialog(QtWidgets.QDialog):
                         else:
                             g.Edge(self.scene.node, "With", img).save(setchange=True, batch=batch)
 
-                self.scene.node['content'].append(item)
-                pasteditems.append(item)
+                self.stem.node['content']['uid'] = item
+                pasteditems.append(uid)
                 contentchanged = True
 
         # TODO clear selection or replace it?
@@ -1315,19 +1324,22 @@ class InputDialog(QtWidgets.QDialog):
         # targetpos = self.scene.mapToScene(cp)
 
         pastedobjects = []
-        for n in pasteditems:
+        for uid in pasteditems:
             self.scene.maxZ += 1
-            z = self.scene.maxZ
-            # n['z'] = self.scene.maxZ
+            n = self.stem.node['content'][uid]
+            n['z'] = self.scene.maxZ
+            #z = self.scene.maxZ
+            #n['z'] = self.scene.maxZ
+
             if n['kind'] == 'Stroke':
-                item=InkItem(n, self.scene.node, z, scene=self.scene)
+                item=InkItem(uid=uid, stem=self.stem, scene=self.scene)
             elif n['kind'] == 'Text':
-                item=TextItem(n, self.scene.node, z, scene=self.scene)
+                item=TextItem(uid=uid, stem=self.stem, scene=self.scene)
                 ## this is needed to make alignments work:
                 item.positionChanged.connect(self.setTextControls)
             elif n['kind'] == 'Image':
                 # N.B. PixmapItem expects the data to be in a subnode in the graph
-                item=PixmapItem(n, self.scene.node, z, scene=self.scene)
+                item=PixmapItem(uid=uid, stem=self.stem, scene=self.scene)
             item.setMode(self.scene.mode)
             pastedobjects.append(item)
 
@@ -3619,24 +3631,46 @@ def hsv_to_rgb(h, s, v):
     if h_i==5: r, g, b = v, p, q
     return '#%X%X%X'%(round(r*255),round(g*255),round(b*255))
 
+class ContentItem:
+
+    def __getitem__(self, key):
+        return self.stem.node['content'][self.uid][key]
+    def __setitem__(self, key, value):
+        self.stem.node['content'][self.uid][key] = value
+        self.stem.node.keyChanged('content')
+    def __delitem__(self, key):
+        if self.uid in self.stem.node['content']:
+            del self.stem.node['content'][self.uid][key]
+            self.stem.node.keychanged('content')
+    def deldata(self):
+        if self.uid in self.stem.node['content']:
+            del self.stem.node['content'][self.uid]
+            self.stem.node.keychanged('content')
+
+    def get(self, key, default=None):
+        if key in self.stem.node['content'][self.uid]:
+            return self.stem.node['content'][self.uid][key]
+        else:
+            return default
+
 ##----------------------------------------------------------------------
-class InkItem(QtWidgets.QGraphicsPathItem):
+class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
 ##----------------------------------------------------------------------
 
-
-    def __init__(self, data, stemnode, z=0, scene=None, parent=None):
+    def __init__(self, uid, stem, scene=None):
         ## Rendered in one of two ways:
-        ## 1) in tree: parent = leaf container item, scene = None
-        ## 2) in edit dialog: parent = None and scene = edit scene
+        ## 1) in tree: scene = None
+        ## 2) in edit dialog: scene = edit scene
+        ## Both have stem = StemItem (on NexusScene) which contains data in stem.node
 
-        if parent is None:
+        if scene is not None:
             super().__init__()
             scene.addItem(self)
         else:
-            super().__init__(parent)
+            super().__init__(stem)
 
-        self.data = data
-        self.stemnode = stemnode
+        self.uid = uid
+        self.stem = stem
 
         self.setAcceptHoverEvents(True)
         self.originalCursor = None
@@ -3645,18 +3679,22 @@ class InkItem(QtWidgets.QGraphicsPathItem):
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
-        #self.setZValue(node['z'])
-        self.setZValue(z)
+        self.setZValue(self['z'])
+        #self.setZValue(stem.getcontent(self.uid,'z'))
+        #self.setZValue(z)
 
-        self.width = data['width']
-        self.color = QtGui.QColor(data.get('color','#000000'))
-        self.color.setAlphaF(data.get('opacity',1.0))
+        # self.width = stem.getcontent(self.uid,'width')
+        # self.width = self.data['width']
+        self.width = self['width']
+        self.color = QtGui.QColor(self.get('color','#000000'))
+        self.color.setAlphaF(self.get('opacity',1.0))
 
-        self.setinkpath(data['stroke'])
-        self.setTransform(Transform(*data['frame']))
+        self.setinkpath(self['stroke'])
+        self.setTransform(Transform(*self['frame']))
 
         # used to track moves, scales, etc
         self._changed = False
+
 
     # @classmethod
     # def new_old(cls, stemnode, scene, coords=[], transform=Transform(),
@@ -3785,9 +3823,10 @@ class InkItem(QtWidgets.QGraphicsPathItem):
         Update main view
         '''
 
-        self.stemnode['content'].remove(self.data)
-        self.stemnode.keyChanged('content')
-        self.stemnode.save(setchange=True, batch=batch)
+        self.deldata()
+        #del self.stem.delcontent(self.uid)
+        # self.stem.node.keyChanged('content')
+        self.stem.node.save(setchange=True, batch=batch)
         self.scene().removeItem(self)
 
     # def mouseMoveEvent(self, event):
@@ -3970,15 +4009,15 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
         # QtWidgets.QGraphicsPathItem.mouseReleaseEvent(self, event)
         self.setSelected(False)
         p = self.parentItem()
-        p.data['maxwidth'] = p.textWidth()
-        p.stemnode.keyChanged('content')
-        p.stemnode.save(setchange=True)
+        p['maxwidth'] = p.textWidth()
+        # p.stem.node.keyChanged('content')
+        p.stem.node.save(setchange=True)
 
 
 
 
 ##----------------------------------------------------------------------
-class TextItem(QtWidgets.QGraphicsTextItem):
+class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 ##------------------`----------------------------------------------------
 
     url = None
@@ -3994,35 +4033,36 @@ class TextItem(QtWidgets.QGraphicsTextItem):
     linkClicked = QtCore.pyqtSignal(str)
     positionChanged = QtCore.pyqtSignal(QtGui.QTextCursor)
 
-    def __init__(self, data, stemnode, z=0, parent=None, scene=None):
+    def __init__(self, uid, stem, scene=None):
         ## Rendered in one of two ways:
-        ## 1) in tree: parent = leaf container item, scene = None
-        ## 2) in edit dialog: parent = None and scene = edit scene
+        ## 1) in tree: scene = None
+        ## 2) in edit dialog: scene = edit scene
+        ## Both have stem = StemItem (on NexusScene) which contains data in stem.node
 
-        if parent is None:
+        if scene is not None:
             super().__init__()
             scene.addItem(self)
         else:
-            super().__init__(parent)
+            super().__init__(stem)
 
-        self.data = data
-        self.stemnode = stemnode
+        self.uid = uid
+        self.stem = stem
 
-        self.DefaultFont = QtGui.QFont(data.get("font_family", CONFIG['text_item_font_family']),
-                                       data.get("font_size", CONFIG['text_item_font_size']))
+        self.DefaultFont = QtGui.QFont(self.get("font_family", CONFIG['text_item_font_family']),
+                                       self.get("font_size", CONFIG['text_item_font_size']))
 
         self.setFont(self.DefaultFont)
-        self.setDefaultTextColor(QtGui.QColor(data.get("color", CONFIG['text_item_color'])))
+        self.setDefaultTextColor(QtGui.QColor(self.get("color", CONFIG['text_item_color'])))
 
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
-        #self.setZValue(node['z'])
-        self.setZValue(z)
+        self.setZValue(self['z'])
+        #self.setZValue(z)
 
         self.setTabChangesFocus(True)
 
-        self.maxTextWidth = data.get('maxwidth', CONFIG['text_item_width'])
+        self.maxTextWidth = self.get('maxwidth', CONFIG['text_item_width'])
         self.widthWidget = TextWidthWidget(self)
         self.widthWidget.hide()
 
@@ -4030,10 +4070,10 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         self.linkHovered.connect(self.linkHover)
 
         ## set the default mode
-        self.setHtml(data['source'])
+        self.setHtml(self['source'])
         self.setStaticMode()
 
-        self.setTransform(Transform(*data['frame']))
+        self.setTransform(Transform(*self['frame']))
 
         # used to track moves, scales, etc
         self._changed = False
@@ -4346,10 +4386,10 @@ class TextItem(QtWidgets.QGraphicsTextItem):
     def saveIfChanged(self):
         src = self.getSrc()
 
-        if src != self.data['source']:
-            self.data['source'] = src
+        if src != self['source']:
+            self['source'] = src
             # Need to mark node as changed
-            self.stemnode.keyChanged('content')
+            # self.stemnode.keyChanged('content')
             self.stemnode.save(setchange=True)
 
     def focusOutEvent(self,  event):
@@ -4481,10 +4521,10 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         Remove from scene
         Update main view
         '''
-
-        self.stemnode['content'].remove(self.data)
-        self.stemnode.keyChanged('content')
-        self.stemnode.save(setchange=True, batch=batch)
+        self.deldata()
+        #del self.stem.node['content'][self.uid]
+        #self.stem.node.keyChanged('content')
+        self.stem.node.save(setchange=True, batch=batch)
         self.scene().removeItem(self)
 
     def linkHover(self, url):
@@ -4535,32 +4575,33 @@ class TextItem(QtWidgets.QGraphicsTextItem):
         QtWidgets.QGraphicsTextItem.paint(self, painter, option, widget)
 
 #----------------------------------------------------------------------
-class PixmapItem(QtWidgets.QGraphicsPixmapItem):
+class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
 #----------------------------------------------------------------------
 
     # TODO lossless encoding? png/jpg .. preserve details
 
-    def __init__(self, data, stemnode, z=0, parent=None, scene=None):
+    def __init__(self, uid, stem, scene=None):
         ## Rendered in one of two ways:
-        ## 1) in tree: parent = leaf container item, scene = None
-        ## 2) in edit dialog: parent = None and scene = edit scene
+        ## 1) in tree: scene = None
+        ## 2) in edit dialog: scene = edit scene
+        ## Both have stem = StemItem (on NexusScene) which contains data in stem.node
 
-        if parent is None:
+        if scene is not None:
             super().__init__()
             scene.addItem(self)
         else:
-            super().__init__(parent)
+            super().__init__(stem)
 
-        self.data = data
-        self.stemnode = stemnode
+        self.uid = uid
+        self.stem = stem
 
         self.setAcceptHoverEvents(True)
-        #self.setZValue(node['z'])
-        self.setZValue(z)
-        self.setTransform(Transform(*data['frame']))
+        self.setZValue(self['z'])
+        #self.setZValue(z)
+        self.setTransform(Transform(*self['frame']))
 
         ## set pixmap from stored data
-        datanode = self.stemnode.outN('n.kind="ImageData"').one
+        datanode = self.stem.node.outN('n.kind="ImageData"').one
         imagedata = nexusgraph.DataToImage(datanode['data'])
         self.setPixmap(QtGui.QPixmap.fromImage(imagedata))
 
@@ -4605,19 +4646,19 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
         Update main view
         Also remove edge to data and data node if orphaned.
         '''
-
-        self.stemnode['content'].remove(self.data)
-        self.stemnode.keyChanged('content')
+        self.deldata()
+        #del self.stem.node['content'][self.uid]
+        #self.stem.node.keyChanged('content')
 
         # deleting an image is always a batch brocess due to the data
         if batch is None:
             batch = graphydb.generateUUID()
 
         # TODO should we check for multiple edges? or delegate to DB health function?
-        dataedge = self.stemnode.outE('e.kind="With"').one
+        dataedge = self.stem.node.outE('e.kind="With"').one
         datanode = dataedge.end
 
-        self.stemnode.save(setchange=True, batch=batch)
+        self.stem.node.save(setchange=True, batch=batch)
         dataedge.delete(batch=batch)
 
         # also remove the data if no refenreces to it
@@ -4637,6 +4678,8 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem):
                 p1i = item.mapFromScene(p1)
                 dpi = p1i-p0i
                 item.setTransform(QtGui.QTransform.fromTranslate(dpi.x(), dpi.y()), True)
+                # TODO huh? item.save with batch?
+                raise Excemption("Huh item save?")
                 item.save(batch=batch)
                 # if hasattr(item, '_changed'):
                 #     item._changed = True
@@ -4687,10 +4730,10 @@ class Leaf(QtWidgets.QGraphicsItem):
     pad = 3
     tagitem = None
 
-    def __init__(self, node, parent):
-        super().__init__(parent)
-
-        iconified = node.get('iconified', False)
+    def __init__(self, stem):
+        super().__init__(stem)
+        self.stem = stem
+        iconified = stem.node.get('iconified', False)
         if iconified:
             ## just create an icon and store the information
             # TODO Can't identify the QGraphicsScene in the arguments of the QGraphicsItem
@@ -4700,15 +4743,15 @@ class Leaf(QtWidgets.QGraphicsItem):
 
         else:
             #for k in node.outN('e.kind = "In"'):
-            for z,k in enumerate(node['content']):
+            for u,k in stem.node['content'].items():
                 if k['kind'] == 'Stroke':
-                    item = InkItem(k, node, z=z, parent=self)
+                    item = InkItem(uid=u, stem=self.stem)
                 elif k['kind'] == 'Text':
-                    item = TextItem(k, node, z=z, parent=self)
+                    item = TextItem(uid=u, stem=self.stem)
                     ## this is needed to make alignments work:
                     item.setTextWidth(item.boundingRect().width())
                 elif k['kind'] == 'Image':
-                    item = PixmapItem(k, node, z=z, parent=self)
+                    item = PixmapItem(uid=u, stem=self.stem)
 
 
         # this is the size of the leaf before adding tags etc
@@ -4716,7 +4759,7 @@ class Leaf(QtWidgets.QGraphicsItem):
 
         self.titlerect = self.childrenBoundingRect().adjusted(-pad,-pad,pad,pad)
 
-        self.tags = node.get('tags',set())
+        self.tags = stem.node.get('tags',set())
 
         self.setBoundingRect()
 
@@ -4928,6 +4971,26 @@ class StemItem(QtWidgets.QGraphicsItem):
         self._pressTimer.timeout.connect(self.pressTimerExpire)
         self._pressTimer.setInterval(CONFIG['long_press_time'])
 
+    # def getcontent(self, uid, default=None):
+    #     '''
+    #     Convenience method to get content item values
+    #     '''
+    #     return self.node['content'].get(uid, default)
+
+    # def setcontent(self, uid, value):
+    #     '''
+    #     Convenience method to set content item values
+    #     '''
+    #     self.node['content'][uid] = value
+    #     self.node.keyChanged('content')
+
+    # def delcontent(self, uid):
+    #     '''
+    #     Convenience method to delete content item
+    #     '''
+    #     if uid in self.node['content']:
+    #         del self.node['content'][uid]
+    #         self.node.keyChanged('content')
 
     def renew(self, reload=True, create=True, position=True, children=True, recurse=True):
         '''
@@ -5022,7 +5085,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         if self.leaf is not None:
             self.scene().removeItem(self.leaf)
 
-        self.leaf = Leaf(self.node, parent=self)
+        self.leaf = Leaf(stem=self)
         self.leaf.setZValue(10)
 
         # XXX removing this means central node in wrong place
