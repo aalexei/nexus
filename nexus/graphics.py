@@ -1174,7 +1174,7 @@ class InputDialog(QtWidgets.QDialog):
 
     def copyEvent(self):
 
-        # TODO create a copy As function
+        # TODO create a Copy-As function
 
         selected = self.scene.selectedItems()
         selected.sort(key=lambda x:x.zValue())
@@ -1225,7 +1225,7 @@ class InputDialog(QtWidgets.QDialog):
             item.setVisible(True)
 
         ##
-        ## Copy Nexus internal data pasting elsewhere in tree
+        ## Copy Nexus internal data for pasting elsewhere in a tree
         ##
         # TODO the following potentially changes the z-order
         content = []
@@ -1233,6 +1233,7 @@ class InputDialog(QtWidgets.QDialog):
         for item in selected:
             if not hasattr(item, 'stem'):
                 # Skip items that are not node content items
+                # all node content items will have stem and uid attributes
                 continue
             # TODO this is kind of ugly. Expose content dict at item?
             content.append(item.stem.node['content'][item.uid])
@@ -1277,6 +1278,7 @@ class InputDialog(QtWidgets.QDialog):
         contentchanged = False
         for data in copydata.nodes:
             for item in data['content']:
+                
                 # Generate a new uid for item
                 for ii in range(10):
                     # try and generate a unique id, should almost certainly work
@@ -1285,24 +1287,30 @@ class InputDialog(QtWidgets.QDialog):
                         break
                 else:
                     raise Exception('Could not generate unique uid for item')
+                
                 if item['kind'] == 'Image':
-                    img = g.findImageData(item['sha1'])
+                    sha = item['sha1']
+                    img = g.findImageData(sha)
                     if img is None:
                         # Add ImageData and edge
-                        if item['sha1'] not in copydata.images:
+                        if sha not in copydata.images:
                             logging.warn('Image data missing, not pasting!')
                             continue
+                        logging.debug("Adding new image to map")
                         imagedata = g.Node('ImageData')
-                        imagedata.update(copydata.images[item['sha1']])
+                        imagedata.update(copydata.images[sha])
                         imagedata.save(batch=batch)
                         g.Edge(self.stem.node, "With", imagedata).save(setchange=True, batch=batch)
                     else:
+                        logging.debug("Found image already in map")
                         # ImageData already in graph, just link
                         # Only link if edge not already there, so first scan them all
                         for e in self.stem.node.outE('e.kind="With"'):
-                            if e.end['sha1'] == item['sha1']:
+                            if e.end['sha1'] == sha:
+                                logging.debug("Found existing link from stem to image")
                                 break
                         else:
+                            logging.debug("Adding new link from stem to image")
                             g.Edge(self.stem.node, "With", img).save(setchange=True, batch=batch)
 
                 self.stem.node['content'][uid] = item
@@ -1324,8 +1332,7 @@ class InputDialog(QtWidgets.QDialog):
             self.scene.maxZ += 1
             n = self.stem.node['content'][uid]
             n['z'] = self.scene.maxZ
-            #z = self.scene.maxZ
-            #n['z'] = self.scene.maxZ
+            # contentchanged marked as true so z gets saved
 
             if n['kind'] == 'Stroke':
                 item=InkItem(uid=uid, stem=self.stem, scene=self.scene)
@@ -1361,7 +1368,7 @@ class InputDialog(QtWidgets.QDialog):
             self.stem.node.save(setchange=True, batch=batch)
 
         # new_nodes.save(batch=batch, setchange=True)
-        self.scene.refreshStem()
+        # self.scene.refreshStem()
         self.scene.transformationWidget.setSelectedItems(pastedobjects)
         self.scene.transformationWidget.show()
 
@@ -3631,7 +3638,9 @@ def hsv_to_rgb(h, s, v):
     return '#%X%X%X'%(round(r*255),round(g*255),round(b*255))
 
 class ContentItem:
-
+    """
+    Helper class 
+    """
     def __getitem__(self, key):
         return self.stem.node['content'][self.uid][key]
     def __setitem__(self, key, value):
@@ -3645,7 +3654,6 @@ class ContentItem:
         if self.uid in self.stem.node['content']:
             del self.stem.node['content'][self.uid]
             self.stem.node.keyChanged('content')
-
     def get(self, key, default=None):
         if key in self.stem.node['content'][self.uid]:
             return self.stem.node['content'][self.uid][key]
@@ -4599,8 +4607,13 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
         #self.setZValue(z)
         self.setTransform(Transform(*self['frame']))
 
-        ## set pixmap from stored data
-        datanode = self.stem.node.outN('n.kind="ImageData"').one
+        ## Set pixmap from stored data
+        ## Need to find correct image based on sha1
+        datanode = self.stem.node.outN('n.kind="ImageData" AND n.data.sha1=:sha1', sha1=self['sha1']).one
+        if datanode is None:
+            logging.debug("Could not find image data! Ignoring.")
+            return
+        
         imagedata = nexusgraph.DataToImage(datanode['data'])
         self.setPixmap(QtGui.QPixmap.fromImage(imagedata))
 
