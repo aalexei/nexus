@@ -659,3 +659,36 @@ class NexusGraph(graphydb.Graph):
 
         return copydata, 'OK'
         #return [textnode], "OK"
+
+    # def addImageNode(self, g, parentnode, item, itemdata, batch):
+    #     '''
+    #     Add an image node with data node or link to existing datanode if already in graph
+    #     '''
+
+    #     # TODO might have multiple images to link!
+    #     node = g.Node('Image')
+    #     #node.save(batch=batch)
+    #     edge = g.Edge(parentnode, "With", node)
+    #     #edge.save(batch=batch)
+
+    #     sha = item['sha1']
+    #     img = g.findImageData(sha)
+    #     if img is None:
+    #         # Add ImageData and edge
+    #         logging.debug("Adding new image to map")
+    #         imagedata = g.Node('ImageData')
+    #         imagedata.update(itemdata)
+    #         #imagedata.save(batch=batch)
+    #         e=g.Edge(self.stem.node, "With", imagedata)
+    #         #e.save(batch=batch)
+    #     else:
+    #         logging.debug("Found image already in map")
+    #         # ImageData already in graph, just link
+    #         # Only link if edge not already there, so first scan them all
+    #         for e in self.stem.node.outE('e.kind="With"'):
+    #             if e.end['sha1'] == sha:
+    #                 logging.debug("Found existing link from stem to image")
+    #                 break
+    #         else:
+    #             logging.debug("Adding new link from stem to image")
+    #             g.Edge(self.stem.node, "With", img).save(setchange=True, batch=batch)

@@ -431,7 +431,7 @@ class InputDialog(QtWidgets.QDialog):
         itemnumbers = collections.Counter()
         itemrect = QtCore.QRectF()
         #for k in self.scene.node.outN('e.kind = "In"'):
-        # print(self.stem.node['content'])
+        print(self.stem.node['content'])
         for u,k in self.stem.node['content'].items():
             if k['kind'] == 'Stroke':
                 item = InkItem(uid=u, stem=stem, scene=self.scene)
@@ -1277,6 +1277,9 @@ class InputDialog(QtWidgets.QDialog):
         imageshas = set()
         contentchanged = False
         for data in copydata.nodes:
+            # TODO Need to also recurse through children?
+            # Maybe a better approach is to copy selected and
+            # undo trees for branch paste?
             for item in data['content']:
                 
                 # Generate a new uid for item
@@ -2633,7 +2636,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         else:
             selected = {stem}
 
-        ## find selected base stems (selection may include children)
+        ## find selected base stems (the selection may include children)
         nodes = graphydb.NSet()
         for item in selected:
             if isinstance(item, StemItem) \
@@ -2668,17 +2671,70 @@ class NexusScene(QtWidgets.QGraphicsScene):
         mimedata = clipboard.mimeData()
 
         g = self.graph
-        copynode = g.mimedataToCopydata(mimedata)
-        if copynode is None:
-            QtWidgets.QMessageBox.information(None,"Warning", "No copy data")
+        # copynode = g.mimedataToCopydata(mimedata)
+        # if copynode is None:
+        #     QtWidgets.QMessageBox.information(None,"Warning", "No copy data")
+        #     return
+        copydata = g.mimedataToCopydata(mimedata)
+        if len(copydata.nodes)==0:
+            QtWidgets.QMessageBox.information(None,"Warning", "Nothing to paste")
             return
 
+        def recursivePaste(parentnode, nodedata, imageshas, batch):
+            node = g.Node('Stem')
+            node.update(nodedata)
+            # Copy format has children list
+            del node.data['children']
+            content = {}
+            for item in node['content']:
+                content[graphydb.generateUUID()] = item
+            node.data['content']=content
+            node.save(batch=batch)
+            edge = g.Edge(parentnode, "Child", node)
+            edge.save(setchange=True, batch=batch)
+
+            for item in node['content'].values():
+                if item['kind']=='Image':
+                    sha = item['sha1']
+                    img = g.findImageData(sha)
+                    if img is None:
+                        if sha not in imageshas:
+                            logging.warn('Image data missing, not pasting!')
+                            continue
+                        logging.debug("Adding new image to map")
+                        imagedata = g.Node('ImageData')
+                        imagedata.update(imageshas[sha])
+                        imagedata.save(batch=batch)
+                        e=g.Edge(node, "With", imagedata)
+                        e.save(batch=batch)
+                    else:
+                        logging.debug("Found image already in map")
+                        # Only link if edge not already there, so first scan them all
+                        for e in node.outE('e.kind="With"'):
+                            if e.end['sha1'] == sha:
+                                logging.debug("Found existing link from stem to image")
+                                break
+                        else:
+                            logging.debug("Adding new link from stem to image")
+                            g.Edge(node, "With", img).save(setchange=True, batch=batch)
+                        
+
+
+            
+            for childnode in nodedata['children']:
+                recursivePaste(node, childnode, imageshas, batch)
+            
         batch = graphydb.generateUUID()
-        nodes = copynode.outN('e.kind="Child"')
+        #nodes = copynode.outN('e.kind="Child"')
         for target in selected:
-            basenodes = g.copyTrees(nodes, batch=batch, setchange=True)
-            for b in basenodes:
-                g.Edge(target.node, 'Child', b).save(batch=batch, setchange=True)
+            # basenodes = g.copyTrees(nodes, batch=batch, setchange=True)
+            # for b in basenodes:
+            #     g.Edge(target.node, 'Child', b).save(batch=batch, setchange=True)
+            for data in copydata.nodes:
+                # recursively add nodes
+                # TODO finish
+                recursivePaste(target.node, data, copydata.images, batch)
+                pass
             target.renew(create=False)
 
     def allChildStems(self, includeroot=True, nottaggedhide=False):
