@@ -431,7 +431,6 @@ class InputDialog(QtWidgets.QDialog):
         itemnumbers = collections.Counter()
         itemrect = QtCore.QRectF()
         #for k in self.scene.node.outN('e.kind = "In"'):
-        print(self.stem.node['content'])
         for u,k in self.stem.node['content'].items():
             if k['kind'] == 'Stroke':
                 item = InkItem(uid=u, stem=stem, scene=self.scene)
@@ -856,14 +855,18 @@ class InputDialog(QtWidgets.QDialog):
             # TODO v09
 
             item = {'kind':'Text', 'source':'', 'frame':Transform().tolist()}
-            self.stem.node['content'].append(item)
+            uid = graphydb.generateUUID()
+            z = 0
+            for x in self.stem.node['content']:
+                z = max(z,x['z'])
+            item['z']=z+1
+            self.stem.node['content'][uid]=item
             self.stem.node.save(setchange=True)
             # batch = graphydb.generateUUID()
             # n = self.scene.graph.Node('Text', source='', z=1,
             #            frame=Transform().tolist()).save(setchange=True, batch=batch)
             # e = self.scene.graph.Edge(self.scene.node, 'In', n).save(setchange=True, batch=batch)
-            raise Excemption("Fix text item creation for v09")
-            textitem = TextItem(item, self.stem.node, scene=self.scene)
+            textitem = TextItem(uid, self.stem, scene=self.scene)
             textitem.positionChanged.connect(self.setTextControls)
             textitem.setMode(TextMode)
             textitem.setFocus()
@@ -5868,7 +5871,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         ## add new db items but don't save then yet in case user cancels
         G = self.node.graph
-        newnode = G.Node('Stem', content=[])
+        newnode = G.Node('Stem', content={})
         newedge = G.Edge(self.node, 'Child', newnode)
 
         settings = QtCore.QSettings("Ectropy", "Nexus")
