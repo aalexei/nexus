@@ -2681,14 +2681,20 @@ class NexusScene(QtWidgets.QGraphicsScene):
             return
 
         def recursivePaste(parentnode, nodedata, imageshas, batch):
+            # Create node and populate it with nodedata
             node = g.Node('Stem')
             node.update(nodedata)
-            # Copy format has children list
+            # Copy format has children list, remove it
             del node.data['children']
+            # content should be a dict with UID's
             content = {}
             for item in node['content']:
                 content[graphydb.generateUUID()] = item
             node.data['content']=content
+            if 'pos' not in node:
+                node['pos'] = [10,10]
+            if 'flip' not in node:
+                node['flip'] = 1 
             node.save(batch=batch)
             edge = g.Edge(parentnode, "Child", node)
             edge.save(setchange=True, batch=batch)
