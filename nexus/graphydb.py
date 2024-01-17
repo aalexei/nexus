@@ -5,7 +5,7 @@
 # A python graph database implemented on top of SQLite.
 #
 # Alexei Gilchrist
-# Copyright 2016-2019
+# Copyright 2016-2024
 # 
 # (Python 3 required)
 #  

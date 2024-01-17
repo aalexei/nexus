@@ -1,5 +1,5 @@
 ##
-## Copyright 2010-2023 Alexei Gilchrist
+## Copyright 2010-2024 Alexei Gilchrist
 ##
 ## This file is part of Nexus.
 ##
@@ -2717,7 +2717,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        #self.showFullScreen()
+        self.showFullScreen()
 
 
         #self.view.centerOn(center)
