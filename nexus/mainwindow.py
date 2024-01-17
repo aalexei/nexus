@@ -2127,6 +2127,9 @@ class MainWindow(QtWidgets.QMainWindow):
             if item.isVisible():
                 sourceRect = sourceRect.united(item.sceneBoundingRect())
 
+        ## Add a small marking so doesn't get clipped
+        margin = 10
+        sourceRect = QtCore.QRectF(sourceRect.x()-margin, sourceRect.y()-margin, sourceRect.width()+2*margin,sourceRect.height()+2*margin)
         ## this is how scene.render() works out the scaling ratio for KeepAspectRatio
         xratio = targetRect.width() / sourceRect.width()
         yratio = targetRect.height() / sourceRect.height()
