@@ -677,6 +677,7 @@ class NexusApplication(QtWidgets.QApplication):
         g = nexusgraph.NexusGraph(str(P))
         graphroot = g.Node('Root').save(setchange=False)
 
+        cuid = graphydb.generateUUID()
         ## Create basic Root node
         stem = g.Node(
             kind='Stem',
@@ -684,18 +685,16 @@ class NexusApplication(QtWidgets.QApplication):
             z = 10,
             flip = 1,
             pos = [0,0],
+            content = {
+                cuid:{
+                    'kind': 'Text',
+                    'source': P.stem.title(),
+                    'frame': [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+                    'z': 0,
+                }}
             ).save(setchange=False)
 
         g.Edge(graphroot, 'Child', stem).save(setchange=False)
-
-        text = g.Node(
-            kind='Text',
-            source=P.stem.title(),
-            frame=[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
-            z=0,
-            ).save(setchange=False)
-
-        g.Edge(stem, 'In', text).save(setchange=False)
 
         g.savesetting('version', graphics.VERSION)
 
