@@ -857,8 +857,8 @@ class InputDialog(QtWidgets.QDialog):
             item = {'kind':'Text', 'source':'', 'frame':Transform().tolist()}
             uid = graphydb.generateUUID()
             z = 0
-            for x in self.stem.node['content']:
-                z = max(z,x['z'])
+            for otheritem in self.stem.node['content'].values():
+                z = max(z, otheritem['z'])
             item['z']=z+1
             self.stem.node['content'][uid]=item
             self.stem.node.save(setchange=True)
@@ -4129,7 +4129,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
-        self.setZValue(self['z'])
+        self.setZValue(self.get('z',0))
         #self.setZValue(z)
 
         self.setTabChangesFocus(True)
@@ -4668,7 +4668,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
             super().__init__(parent=parent)
 
         self.setAcceptHoverEvents(True)
-        self.setZValue(self['z'])
+        self.setZValue(self.get('z',0))
         #self.setZValue(z)
         self.setTransform(Transform(*self['frame']))
 
@@ -4815,6 +4815,7 @@ class Leaf(QtWidgets.QGraphicsItem):
 
     pad = 3
     tagitem = None
+    boundingrect = QtCore.QRectF() 
 
     def __init__(self, stem):
         super().__init__(parent=stem)
