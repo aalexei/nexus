@@ -94,13 +94,6 @@ class NexusGraph(graphydb.Graph):
     Adding some convenience functions on top of Graph specialised to Nexus
     '''
 
-    # def findTag(self, tag):
-    #     '''
-    #     Tags should be unique by name
-    #     '''
-    #     tagnode = self.fetch('(n:Tag)','n.data.text=:tag', tag=tag).one
-    #     return tagnode
-
     def findImageData(self, sha1):
         '''
         ImageData nodes should have unique sha1
@@ -108,73 +101,6 @@ class NexusGraph(graphydb.Graph):
         idnode = self.fetch('(n:ImageData)','n.data.sha1=:sha1', sha1=sha1).one
         return idnode
 
-    # def copyTrees_old(self, basenodes, batch=None, setchange=False):
-    #     '''
-    #     Recursively copy nodes to graph following out-edges from basenodes.
-    #       basenodes: NSet of the base of trees to copy
-    #       find_resources: use existing ImageData nodes if present
-
-    #     Return: copied basenodes
-    #     '''
-
-    #     nodes = graphydb.NSet(basenodes)
-    #     basenodesuids = basenodes.get('uid')
-    #     edges = graphydb.ESet()
-    #     ns = nodes
-    #     # Grab all the edges and nodes downstream (out)
-    #     for ii in range(1000):
-    #         # exclude any edges we have already looked at
-    #         # (in case multiple selections includes children)
-    #         es = ns.outE() - edges
-    #         if len(es)==0:
-    #             break
-    #         ns = es.end
-    #         edges |= es
-    #         nodes |= ns
-    #     else:
-    #         logging.warn("Copy depth exceeded")
-
-    #     D = {}
-    #     nodes2 = graphydb.NSet()
-    #     basenodes2 = graphydb.NSet()
-    #     edges2 = graphydb.ESet()
-
-    #     # copy nodes and assign new uids
-    #     for n in nodes:
-    #         found = False
-    #         # if find_resources and n['kind'] == 'Tag':
-    #         #     nt = self.findTag(n['text'])
-    #         #     if nt is not None:
-    #         #         D[n['uid']] = nt['uid']
-    #         #         found = True
-
-    #         if n['kind'] in ['ImageData']:
-    #             nt = self.findImageData(n['sha1'])
-    #             if nt is not None:
-    #                 D[n['uid']] = nt['uid']
-    #                 found = True
-
-    #         if not found:
-    #             n2 = n.copy(newuid=True)
-    #             n2.setGraph(self)
-    #             nodes2.add(n2)
-    #             D[n['uid']] = n2['uid']
-    #             if n['uid'] in basenodesuids:
-    #                 basenodes2.add(n2)
-
-    #     # re-link everything with new uids
-    #     # potentially change graphs too
-    #     for e in edges:
-    #         e2 = e.copy(newuid=True)
-    #         e2.setGraph(self)
-    #         e2['startuid'] = D[e2['startuid']]
-    #         e2['enduid'] = D[e2['enduid']]
-    #         edges2.add(e2)
-
-    #     nodes2.save(setchange=setchange, batch=batch)
-    #     edges2.save(setchange=setchange, batch=batch)
-
-    #     return basenodes2
 
     def copyTrees(self, basenodes):
         '''
@@ -249,19 +175,6 @@ class NexusGraph(graphydb.Graph):
             n.delete(disconnect=True, batch=batch, setchange=setchange)
         self.deleteOutFromNodes(children, batch=batch, setchange=setchange)
 
-    # def getCopyNode(self, clear=False):
-
-    #     # TODO v09 delete
-    #     # Clear contents of CopyNode
-    #     copynode = self.fetch('(n:CopyNode)').one
-    #     if copynode is None:
-    #         copynode = self.Node('CopyNode')
-    #         copynode.save(setchange=False)
-
-    #     if clear:
-    #         self.deleteOutFromNodes(copynode.outN())
-
-    #     return copynode
 
     def getNodeLink(self, node=None):
 
@@ -619,10 +532,12 @@ class NexusGraph(graphydb.Graph):
         # handle ook links
         def processook(match):
             citekey = match.group(1)
-            url = f"https://localhost:8888/detail/{citekey}"
-            context = ssl._create_unverified_context()
+            # url = f"https://localhost:8888/detail/{citekey}"
+            url = f"http://localhost:8888/detail/{citekey}"
+            # context = ssl._create_unverified_context()
             try:
-                with urlopen(url, context=context) as response:
+                # with urlopen(url, context=context) as response:
+                with urlopen(url) as response:
                     raw = response.read()
                 data = json.loads(raw)
                 ref = f'<table bgcolor="#f0f0ff" cellpadding="5"><tr><td>' \

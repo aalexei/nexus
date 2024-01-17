@@ -4829,7 +4829,6 @@ class Leaf(QtWidgets.QGraphicsItem):
             self.leaf = QtWidgets.QGraphicsPixmapItem(QtGui.QPixmap(":/images/iconified.svg"), parent=self)
 
         else:
-            #for k in node.outN('e.kind = "In"'):
             for u,k in stem.node['content'].items():
                 if k['kind'] == 'Stroke':
                     item = InkItem(uid=u, stem=self.stem, parent=self)
@@ -5057,27 +5056,6 @@ class StemItem(QtWidgets.QGraphicsItem):
         self._pressTimer.setSingleShot(True)
         self._pressTimer.timeout.connect(self.pressTimerExpire)
         self._pressTimer.setInterval(CONFIG['long_press_time'])
-
-    # def getcontent(self, uid, default=None):
-    #     '''
-    #     Convenience method to get content item values
-    #     '''
-    #     return self.node['content'].get(uid, default)
-
-    # def setcontent(self, uid, value):
-    #     '''
-    #     Convenience method to set content item values
-    #     '''
-    #     self.node['content'][uid] = value
-    #     self.node.keyChanged('content')
-
-    # def delcontent(self, uid):
-    #     '''
-    #     Convenience method to delete content item
-    #     '''
-    #     if uid in self.node['content']:
-    #         del self.node['content'][uid]
-    #         self.node.keyChanged('content')
 
     def renew(self, reload=True, create=True, position=True, children=True, recurse=True):
         '''
