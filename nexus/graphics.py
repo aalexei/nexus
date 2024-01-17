@@ -522,7 +522,11 @@ class InputDialog(QtWidgets.QDialog):
                # QT will add a <p> tag with attributes etc.
                # solution: reimplement Text with clean source not QT's interpretation.
 
-        self.stem.parentStem().renew(reload=False, children=True)
+        parentstem = self.stem.parentStem()
+        if parentstem is not None:
+            parentstem.renew(reload=False, children=True)
+        else:
+            self.stem.renew(reload=False, children=True)
 
         self.inputgeometry = self.geometry()
 
