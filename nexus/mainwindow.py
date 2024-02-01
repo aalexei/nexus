@@ -553,13 +553,13 @@ class NexusApplication(QtWidgets.QApplication):
         menu = QtWidgets.QMenu(self.tr("&Window"))
         menu.aboutToShow.connect(self.updateWindowMenu)
 
-        act = QtGui.QAction(QtGui.QIcon(":/images/view-fullscreen.svg"), self.tr("Full Screen"), self)
-        act.setStatusTip(self.tr("Toggle full screen mode"))
-        act.triggered.connect(self.windowFullScreen)
-        act.setCheckable(True)
-        menu.addAction(act)
-        act.setCheckable(True)
-        self.actionFullScreen = act
+        # act = QtGui.QAction(QtGui.QIcon(":/images/view-fullscreen.svg"), self.tr("Full Screen"), self)
+        # act.setStatusTip(self.tr("Toggle full screen mode"))
+        # act.triggered.connect(self.windowFullScreen)
+        # act.setCheckable(True)
+        # menu.addAction(act)
+        # act.setCheckable(True)
+        # self.actionFullScreen = act
 
         QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-line-figures.ttf")
         QtGui.QFontDatabase.addApplicationFont(":/images/et-book-bold-line-figures.ttf")
@@ -578,12 +578,12 @@ class NexusApplication(QtWidgets.QApplication):
     def updateWindowMenu(self):
         ## first update indicators for active window
         activewindow = self.activeWindow()
-        if activewindow is None:
-            pass
-        elif activewindow.isFullScreen():
-            self.actionFullScreen.setChecked(True)
-        else:
-            self.actionFullScreen.setChecked(False)
+        # if activewindow is None:
+        #     pass
+        # elif activewindow.isFullScreen():
+        #     self.actionFullScreen.setChecked(True)
+        # else:
+        #     self.actionFullScreen.setChecked(False)
 
         ## clear the window list
         for action in self.windowMenu.actions():
@@ -1526,7 +1526,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # ----------------------------------------------------------------------------------
         self.exportSVGAct = QtGui.QAction(QtGui.QIcon(":/images/export.svg"), self.tr("Export as SVG..."), self)
-        self.exportSVGAct.setShortcut(self.tr("Ctrl+E"))
         self.exportSVGAct.setStatusTip(self.tr("Export the map to SVG"))
         self.exportSVGAct.triggered.connect(self.exportSVG)
 
@@ -1740,14 +1739,17 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.presentationModeAct.setChecked(False)
 
         self.editModeAct = QtGui.QAction(QtGui.QIcon(":/images/grab-mode.svg"), self.tr("Edit Mode"), self)
+        self.editModeAct.setShortcut(self.tr("Ctrl+E"))
         self.editModeAct.setCheckable(True)
         self.editModeAct.triggered.connect(self.setMode)
 
         self.presentationModeAct = QtGui.QAction(QtGui.QIcon(":/images/view-presentation.svg"), self.tr("Presentation Mode"), self)
+        self.presentationModeAct.setShortcut(self.tr("Ctrl+T"))
         self.presentationModeAct.setCheckable(True)
         self.presentationModeAct.triggered.connect(self.setMode)
 
         self.recordModeAct = QtGui.QAction(QtGui.QIcon(":/images/microphone.svg"), self.tr("Record Mode"), self)
+        self.recordModeAct.setShortcut(self.tr("Ctrl+R"))
         self.recordModeAct.setCheckable(True)
         self.recordModeAct.triggered.connect(self.setMode)
 
@@ -2687,7 +2689,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewsNextAct.setShortcut(QtGui.QKeySequence())
         self.viewsPreviousAct.setShortcut(QtGui.QKeySequence())
         self.viewsHomeAct.setShortcut(QtGui.QKeySequence())
-        self.presentationModeAct.setShortcut(QtGui.QKeySequence())
+        # self.presentationModeAct.setShortcut(QtGui.QKeySequence())
         self.viewsFirstAct.setShortcut(QtGui.QKeySequence())
         self.hidePointerAct.setShortcut(QtGui.QKeySequence())
 
@@ -2735,7 +2737,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
         self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
 
-        self.editModeAct.setShortcut("Esc")
+        # self.editModeAct.setShortcut("Esc")
 
     def setRecordingMode(self):
 
