@@ -2176,6 +2176,7 @@ class InkView(QtWidgets.QGraphicsView):
 
         ## this grouping is so we can delete the items easily
         scene.tmpgroup = QtWidgets.QGraphicsItemGroup()
+
         ## draw over everything
         scene.tmpgroup.setZValue(1000)
         scene.addItem(scene.tmpgroup)
@@ -2271,12 +2272,15 @@ class InkView(QtWidgets.QGraphicsView):
         # print('content', stemnode['data']['content'])
         scene.stem.node.save(setchange=True)
 
+        # Refresh the stem in the Nexus map
         scene.refreshStem()
 
-        # if hasattr(scene, "tmpgroup"):
-        #     for item in scene.tmpgroup.childItems():
-        #         scene.removeItem(item)
-        #     scene.removeItem(scene.tmpgroup)
+        if hasattr(scene, "tmpgroup"):
+            for item in scene.tmpgroup.childItems():
+                scene.removeItem(item)
+            scene.removeItem(scene.tmpgroup)
+
+        InkItem(uid, scene.stem, scene)
 
         self.viewChangeStream.emit(self)
 
