@@ -364,7 +364,7 @@ class NexusGraph(graphydb.Graph):
 
     def itemFromUrls(self, urls):
 
-        copynode = self.getCopyNode(clear=True)
+        # copynode = self.getCopyNode(clear=True)
         for url in urls:
             bits=urllib.parse.urlparse(url.toString())
 
@@ -474,7 +474,7 @@ class NexusGraph(graphydb.Graph):
     def itemFromHtml(self, html):
         ## sanitise the input
         html = bleach.clean(html, strip=True,
-                            protocols = bleach.ALLOWED_PROTOCOLS+['papers3', 'omnifocus', 'zotero']
+                            protocols = list(bleach.ALLOWED_PROTOCOLS)+['papers3', 'omnifocus', 'zotero']
                             )
 
         copydata = CopyFormat()
