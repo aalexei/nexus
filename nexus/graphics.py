@@ -4464,16 +4464,23 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         self.positionChanged.emit(self.textCursor())
 
     def saveIfChanged(self):
-        src = self.getSrc()
+        # If blank remove
+        src = self.toPlainText().strip()
+        if len(src) == 0:
+            self.deleteNodeItem()
+        else:
 
-        if src != self['source']:
-            self['source'] = src
-            # Need to mark node as changed
-            # self.stemnode.keyChanged('content')
-            self.stem.node.save(setchange=True)
+            src = self.getSrc()
+
+            if src != self['source']:
+                self['source'] = src
+                # Need to mark node as changed
+                # self.stemnode.keyChanged('content')
+                self.stem.node.save(setchange=True)
 
     def focusOutEvent(self,  event):
         QtWidgets.QGraphicsTextItem.focusOutEvent(self, event)
+
         self.saveIfChanged()
 
     def mouseDoubleClickEvent(self, event):
