@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2010-2023 Alexei Gilchrist
+# Copyright 2010-2024 Alexei Gilchrist
 #
 # This file is part of Nexus.
 #
@@ -34,7 +34,7 @@ import logging
 if __name__ == "__main__":
     app = NexusApplication()
 
-    app.processEvents()
+    # app.processEvents()
 
     validfiles = []
     for filename in sys.argv[1:]:
@@ -50,6 +50,7 @@ if __name__ == "__main__":
         d = NewOrOpenDialog()
         # d.exec_()
         d.show()
+        # d.activateWindow()
 
     #cProfile.run('app.exec_()','stats')
     app.exec()

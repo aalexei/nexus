@@ -573,8 +573,6 @@ class NexusApplication(QtWidgets.QApplication):
         self.streaming = False
         self.streaming_ready_time = 0
 
-        logging.debug('start')
-
     def updateWindowMenu(self):
         ## first update indicators for active window
         activewindow = self.activeWindow()
@@ -2718,14 +2716,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 child.hide()
                 self.presentationhiddenstems.append(child)
 
-        # this seems to throw off the view snaps:
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.showFullScreen()
 
-
-        #self.view.centerOn(center)
         self.hidePointerAct.setEnabled(True)
         self.hidePointerAct.setChecked(True)
         self.hidePointerAct.trigger()
@@ -2766,7 +2761,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.showMaximized()
 
-        #self.view.centerOn(center)
         self.hidePointerAct.setEnabled(True)
         self.hidePointerAct.setChecked(True) # force toggle on
         self.hidePointerAct.trigger()
@@ -2795,7 +2789,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         devices = QMediaDevices()
         inputs = devices.audioInputs()
-        self.audio_inputs = { a.description() for a in inputs}
+        self.audio_inputs = { a.description():a for a in inputs}
         default_input = devices.defaultAudioInput()
 
         # maximumChannelCount 16
@@ -2940,7 +2934,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # initialise stream
             self.event_stream = []
-
             audio_input = self.audio_inputs[self.recSourceCombo.currentText()]
             self.audiosession.setAudioInput(QAudioInput(audio_input))
 
