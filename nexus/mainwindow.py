@@ -2929,7 +2929,7 @@ class MainWindow(QtWidgets.QMainWindow):
             logging.info("Created temporary directory %s for movie", self.tmprecdir)
             url = QtCore.QUrl("{}/audio.wav".format(self.tmprecdir))
             self.recorder.setOutputLocation(url)
-            print(f'output location: {self.recorder.outputLocation()}')
+            print(f'Audio output location: {self.recorder.outputLocation()}')
             #self.recorder.setAudioInput(self.recSourceCombo.currentText())
 
             # initialise stream
