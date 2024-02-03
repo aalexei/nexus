@@ -532,12 +532,12 @@ class NexusGraph(graphydb.Graph):
         # handle ook links
         def processook(match):
             citekey = match.group(1)
-            # url = f"https://localhost:8888/detail/{citekey}"
-            url = f"http://localhost:8888/detail/{citekey}"
-            # context = ssl._create_unverified_context()
+            url = f"https://localhost:8888/detail/{citekey}"
+            # url = f"http://localhost:8888/detail/{citekey}"
+            context = ssl._create_unverified_context()
             try:
-                # with urlopen(url, context=context) as response:
-                with urlopen(url) as response:
+                with urlopen(url, context=context) as response:
+                # with urlopen(url) as response:
                     raw = response.read()
                 data = json.loads(raw)
                 ref = f'<table bgcolor="#f0f0ff" cellpadding="5"><tr><td>' \
