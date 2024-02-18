@@ -2875,8 +2875,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # create a temporary directory to store files for movie
             # TODO fix: having Path.cwd() leads to a segfault when app is constructed with pyinstaller
-            #self.tmprecdir = Path(tempfile.mkdtemp(prefix="movie_components_", dir=Path.cwd()))
-            self.tmprecdir = Path(tempfile.mkdtemp(prefix="movie_components_", dir=Path('/tmp/')))
+            self.tmprecdir = Path(tempfile.mkdtemp(prefix="movie_components_", dir=Path.cwd()))
+            # self.tmprecdir = Path(tempfile.mkdtemp(prefix="movie_components_", dir=Path('/tmp/')))
 
             logging.info("Created temporary directory %s for movie", self.tmprecdir)
             url = QtCore.QUrl.fromLocalFile("{}/audio.m4a".format(self.tmprecdir))
