@@ -602,15 +602,18 @@ class NexusApplication(QtWidgets.QApplication):
 
 
 
-    def windowFullScreen(self):
-        window = self.activeWindow()
-        if window.isFullScreen():
-            window.showNormal()
-            #window.showMaximized()
-        else:
-            window.showFullScreen()
+    # def windowFullScreen(self):
+    #     window = self.activeWindow()
+    #     if window.isFullScreen():
+    #         self.setWindowFlags(self._windowflags)
+    #         window.showNormal()
+    #         #window.showMaximized()
+    #     else:
+    #         # Save state of window flags
+    #         self._windowflags = self.windowFlags()
+    #         window.showFullScreen()
 
-        self.updateWindowMenu()
+    #     self.updateWindowMenu()
 
     def windowList(self):
         mainwindows = []
@@ -1045,8 +1048,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.updateRecentFilesMenu()
 
-        self.setMode()
+        # Store window flags for return from fullscreen
+        self._windowflags = self.windowFlags()
 
+        self.setMode()
 
 
     def setDefaultSettings(self):
@@ -2656,6 +2661,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # TODO Need to store geometry of window on first use
         # show Normal seems too abrupt after full screen
         # Seems to not store maximised state on a mac?
+        
+        self.setWindowFlags(self._windowflags)
         self.showNormal()
         #self.showMaximized()
 
@@ -2691,6 +2698,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewsFirstAct.setShortcut(QtGui.QKeySequence())
         self.hidePointerAct.setShortcut(QtGui.QKeySequence())
 
+        self.editModeAct.setShortcut(self.tr("Ctrl+E"))
+
     def setPresentationMode(self):
 
         self.scene.mode = "presentation"
@@ -2719,6 +2728,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
+        self._windowflags = self.windowFlags()
         self.showFullScreen()
 
         self.hidePointerAct.setEnabled(True)
@@ -2732,7 +2742,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
         self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
 
-        # self.editModeAct.setShortcut("Esc")
+        self.editModeAct.setShortcuts(["Ctrl+E","Esc"])
 
     def setRecordingMode(self):
 
