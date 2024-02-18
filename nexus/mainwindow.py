@@ -2728,6 +2728,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
+        # Remember curent window flags to restore later
         self._windowflags = self.windowFlags()
         self.showFullScreen()
 
@@ -2744,6 +2745,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.editModeAct.setShortcuts(["Ctrl+E","Esc"])
 
+    def keyPressEvent(self, event):
+        # print('key', event.key(), event.text(), QtCore.Qt.Key.Key_Escape)
+        if self.scene.mode=="presentation" and event.text().lower() in ["q"]:
+            print("Q key press")
+            self.editModeAct.trigger()
+            #self.showNormal()
+        
     def setRecordingMode(self):
 
         self.scene.mode = "record"
