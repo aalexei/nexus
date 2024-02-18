@@ -2747,6 +2747,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def keyPressEvent(self, event):
         # print('key', event.key(), event.text(), QtCore.Qt.Key.Key_Escape)
+        super().keyPressEvent(event)
         if self.scene.mode=="presentation" and event.text().lower() in ["q"]:
             print("Q key press")
             self.editModeAct.trigger()
