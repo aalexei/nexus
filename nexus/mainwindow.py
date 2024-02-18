@@ -1780,7 +1780,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # The Start/Pause/End don't form an action group as their state
         # is set by the audio class in response to actual state changes
-        
+
         # ----------------------------------------------------------------------------------
         self.viewsAct.setIcon(QtGui.QIcon(":/images/view-index.svg"))
         self.viewsAct.setShortcut("Ctrl+I")
@@ -2776,53 +2776,25 @@ class MainWindow(QtWidgets.QMainWindow):
         #
         # Recording setup
         #
-        #self.audio = pyaudio.PyAudio()
-        ## list of input devices
-        # info = self.audio.get_host_api_info_by_index(0)
-        # numdevices = info.get('deviceCount')
-        # devices = []
-        # for i in range(0, numdevices):
-        #     if (self.audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
-        #         devices.append(self.audio.get_device_info_by_host_api_device_index(0, i).get('name'))
-
-        self.audiosession = QMediaCaptureSession()
+        self.audiosession = QMediaCaptureSession(self)
 
         devices = QMediaDevices()
         inputs = devices.audioInputs()
         self.audio_inputs = { a.description():a for a in inputs}
         default_input = devices.defaultAudioInput()
-
-        # maximumChannelCount 16
-        # maximumSampleRate 96000
-        # minimumChannelCount 1
-        # minimumSampleRate 1
-        # print(f'DEFAULT default_input  MEMBERS {dir(default_input)}')
-        # for i in inputs:
-        #     for attr in ['channelConfiguration', 'description', 'id', 'isDefault',
-        #                  #'isFormatSupported',
-        #                  'isNull', 'maximumChannelCount', 'maximumSampleRate',
-        #                  'minimumChannelCount', 'minimumSampleRate', 'mode',
-        #                  'preferredFormat', 'supportedSampleFormats',
-        #                  #'swap'
-        #                  ]:
-        #         print(attr, getattr(i,attr)())
-        #     print()
-        #     # print(i.id(),i.description(),i.channelConfiguration(),i.isDefault(),i.isFormatSupported(),)
+        # Put the default input at position 0
         inputs.remove(default_input)
         inputs.insert(0, default_input)
-
 
         self.recSourceCombo.clear()
         self.recSourceCombo.addItems([i.description() for i in inputs])
         #self.recSourceCombo.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
 
-        #self.audiosession.setAudioInput(default_input)
-
-        self.recorder = QMediaRecorder()
+        self.recorder = QMediaRecorder(self)
         self.audiosession.setRecorder(self.recorder)
         self.recorder.setQuality(QMediaRecorder.Quality.HighQuality)
-        self.recorder.setAudioSampleRate(44100)
         self.recorder.setAudioChannelCount(2)
+        self.recorder.setAudioSampleRate(44100)
         # self.recorder.setMediaFormat(QMediaFormat.AudioCodec.Wave)
         # self.recorder.setOutputLocation(QtCore.QUrl.fromLocalFile("test.mp3"))
 
@@ -2833,34 +2805,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recorder.recorderStateChanged.connect(self.audioRecorderStateChange)
         self.audioRecorderStateChange()
 
-        # OLD
-        #self.audiorecorder = QAudioRecorder()
-
-        # #codecs = self.audiorecorder.supportedAudioCodecs()
-        # #containers = self.audiorecorder.supportedContainers()
-        # #sample_rates = self.audiorecorder.supportedAudioSampleRates()
-        # sources = self.audiorecorder.audioInputs()
-        # default_source = self.audiorecorder.defaultAudioInput()
-        # sources.remove(default_source)
-        # sources.insert(0, default_source)
-        # self.recSourceCombo.clear()
-        # self.recSourceCombo.addItems(sources)
-        # self.recSourceCombo.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
-
-        # settings = QAudioEncoderSettings()
-        # settings.setCodec('audio/pcm')
-        # settings.setSampleRate(44100)
-        # settings.setChannelCount(2)
-
-        # self.audiorecorder.setAudioSettings(settings)
-        # self.audiorecorder.setContainerFormat('audio/x-wav')
-
-        # self.recStartAct.setEnabled(True)
-        # self.recPauseAct.setEnabled(False)
-        # self.recEndAct.setEnabled(False)
-
-        # self.audiorecorder.stateChanged.connect(self.audioRecorderStateChange)
-        # self.audioRecorderStateChange()
 
     def storeRecordingEvent(self, event):
         self.event_stream.append(event)
@@ -2920,23 +2864,27 @@ class MainWindow(QtWidgets.QMainWindow):
         print(f'STATE {self.recorder.recorderState()}')
         if self.recorder.recorderState()==QMediaRecorder.RecorderState.StoppedState:
             # This is the initial state of the recorder
-           
+
+            audio_device = self.audio_inputs[self.recSourceCombo.currentText()]
+
+            audio_input = QAudioInput(self)
+            audio_input.setDevice(audio_device)
+            audio_input.setVolume(1.0)
+            self.audiosession.setAudioInput(audio_input)
+            logging.info("Recording audio from '%s'", str(self.audiosession.audioInput().device().description()))
+
             # create a temporary directory to store files for movie
             # TODO fix: having Path.cwd() leads to a segfault when app is constructed with pyinstaller
             #self.tmprecdir = Path(tempfile.mkdtemp(prefix="movie_components_", dir=Path.cwd()))
             self.tmprecdir = Path(tempfile.mkdtemp(prefix="movie_components_", dir=Path('/tmp/')))
 
             logging.info("Created temporary directory %s for movie", self.tmprecdir)
-            url = QtCore.QUrl("{}/audio.wav".format(self.tmprecdir))
+            url = QtCore.QUrl.fromLocalFile("{}/audio.m4a".format(self.tmprecdir))
+            # TODO seems to record to .m4a regardless
             self.recorder.setOutputLocation(url)
-            print(f'Audio output location: {self.recorder.outputLocation()}')
-            #self.recorder.setAudioInput(self.recSourceCombo.currentText())
 
             # initialise stream
             self.event_stream = []
-            audio_input = self.audio_inputs[self.recSourceCombo.currentText()]
-            self.audiosession.setAudioInput(QAudioInput(audio_input))
-
 
 
         self.startRecordTimer()
@@ -2951,7 +2899,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recorder.record()
         t = time.time()
         sides = self.view.getViewSides()
-                                
+
         self.event_stream.append({'t':t,'cmd':'start'})
         self.event_stream.append({'t':t,'cmd':'view', 'left':sides['left'], 'right':sides['right']})
 
@@ -3096,7 +3044,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.showMessage("Combining video and audio")
         subprocess.run(['ffmpeg', '-i', 'video.mp4',
                         #'-itsoffset', '0.5', # delay the audio slightly
-                        '-i', 'audio.wav',
+                        '-i', 'audio.m4a',
                         '-c:v', 'copy',
                         '-c:a', 'aac',
                         'complete.mp4' ], cwd=self.tmprecdir)
@@ -3183,7 +3131,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.pointertrailitem2.show()
         # self.view.setViewportUpdateMode(self.view.FullViewportUpdate)
         # self.view.resetCachedContent()
-        
+
 
         W = 1920
         H = 1080
@@ -3457,7 +3405,7 @@ class RecordDialog(QtWidgets.QDialog):
         # TODO generate video
 
         # TODO combine audio and video
-       
+
         print('accept()')
 
     def reject(self):
@@ -3483,7 +3431,7 @@ class ViewsModel(QtCore.QAbstractListModel):
     current = 0
     home = 0 # home is the first view by default
     athome = None  # the location of the previous view will be stored here on switch
-    
+
     def __init__(self):
         super().__init__()
         self.views = []
@@ -3516,7 +3464,7 @@ class ViewsModel(QtCore.QAbstractListModel):
 
     def itemFromIndex(self, index):
         return self.views[index.row()]
-       
+
     def _cleanlimits(self,  viewnumber):
         '''
         clamp limits for requested view number
@@ -3639,7 +3587,7 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
         ViewRectangleHandle("tNW", self)
 
         # ViewRectangleDirection(self)
-        
+
     def mousePressEvent(self, event):
 
         QtWidgets.QGraphicsItem.mousePressEvent(self, event)
@@ -4072,7 +4020,7 @@ class ViewsWidget(QtWidgets.QWidget):
             item.setSelected(True)
 
         return icon
-       
+
     def relinkViews(self):
         '''
         Ensure all the view nodes are daisy chained correctly
