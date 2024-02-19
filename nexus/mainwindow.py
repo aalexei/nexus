@@ -2706,7 +2706,7 @@ class MainWindow(QtWidgets.QMainWindow):
         logging.debug("Switching on presentation mode")
 
         self.statusBar().setVisible(False)
-        self.menuBar().setVisible(False)
+        # self.menuBar().setVisible(False)
         self.editToolBar.setVisible(False)
         self.fileToolBar.setVisible(False)
         self.filterToolBar.setVisible(False)
