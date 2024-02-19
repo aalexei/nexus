@@ -641,8 +641,8 @@ class NexusApplication(QtWidgets.QApplication):
             w = MainWindow(fileName=fileName)
 
         w.show()
-        w.raise_()
         w.activateWindow()
+        w.raise_()
 
         # try out transparancy
         # w.setWindowFlag(QtCore.Qt.WindowType.FramelessWindowHint)
@@ -2706,6 +2706,7 @@ class MainWindow(QtWidgets.QMainWindow):
         logging.debug("Switching on presentation mode")
 
         self.statusBar().setVisible(False)
+        # TODO on Windows if we hide the menubar we lose the keybindings
         # self.menuBar().setVisible(False)
         self.editToolBar.setVisible(False)
         self.fileToolBar.setVisible(False)
