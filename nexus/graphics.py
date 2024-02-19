@@ -3247,7 +3247,7 @@ class NexusView(QtWidgets.QGraphicsView):
             pass
         elif anchor == QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter:
             ## this is used in presentation mode
-            v1 = self.viewport().rect().center()
+            v1 = QtCore.QPointF(self.viewport().rect().center())
         else:
             pass
             #v1 = QtCore.QPointF(0,0)
