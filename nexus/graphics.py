@@ -3925,7 +3925,7 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
 
     def setinkpath(self, S):
 
-        path=QtGui.QPainterPath()
+        path=QtGui.QPainterPath(QtCore.QPointF(S[0][0],S[0][1]))
 
         b1 = None
         for ii in range(1,len(S)):
@@ -3933,9 +3933,11 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
             b1 = QtCore.QPointF(S[ii][0],S[ii][1])
 
             if len(S[ii])>2:
+                # Last number is a width
                 width0 = self.width*S[ii-1][2]
                 width1 = self.width*S[ii][2]
             else:
+                # Fixed width
                 width0 = self.width
                 width1 = self.width
 
@@ -3957,6 +3959,7 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
             path.arcTo(b0.x()-width0/2.0,b0.y()-width0/2.0,width0,width0,theta-90,-180)
 
             path.closeSubpath()
+
 
         path.setFillRule(QtCore.Qt.FillRule.WindingFill)
         self.setPath(path)
