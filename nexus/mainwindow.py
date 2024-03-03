@@ -439,7 +439,7 @@ def createViewImage(view, width, height, removebackground=False):
         view.scene().setBackgroundBrush(brush)
 
     painter = QtGui.QPainter(image)
-    view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+    painter.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
     view.render(painter, QtCore.QRectF(image.rect()), rect)
     painter.end()
 
@@ -697,6 +697,13 @@ class NexusApplication(QtWidgets.QApplication):
 
             self.streaming_thread.started.connect(self.streaming_daemon.run)
             self.streaming_thread.start()
+
+            dialog = QtWidgets.QMessageBox()
+            dialog.setText("Streaming")
+            dialog.setDetailedText(f"Nexus now streaming on\nhttp://{HOST}:{PORT}")
+            dialog.exec()
+
+            
         else:
             logging.info('Stopping streaming server...')
             # this will stop any current streaming
@@ -714,6 +721,7 @@ class NexusApplication(QtWidgets.QApplication):
     def createViewImage(self, view):
 
         if not self.streaming:
+            # Ignore if not streaming
             return
 
         # Get the size of your graphicsview
@@ -721,11 +729,9 @@ class NexusApplication(QtWidgets.QApplication):
 
         # tic = time.time()
 
-        # ---- method 1 ----
-        # Create a Image the same size as your graphicsview
         # make larger based on retina?
-        #image = QtGui.QImage(rect.width(),rect.height(), QtGui.QImage.Format.Format_ARGB32)
-        image = QtGui.QImage(1920,1080, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
+        # HD 1080p is 1920x1080
+        image = QtGui.QImage(1920, 1080, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(QtCore.Qt.GlobalColor.transparent)
         painter = QtGui.QPainter(image)
 
@@ -734,13 +740,13 @@ class NexusApplication(QtWidgets.QApplication):
         view.scene().setBackgroundBrush(brush)
 
         # Render the graphicsview onto the image and save it out.
-        view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+        # view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+        painter.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         view.render(painter, QtCore.QRectF(image.rect()), rect)
 
-        # return previous background
+        # Return previous background
         view.scene().setBackgroundBrush(oldbrush)
 
-        #image.save('/tmp/screen.png')
         painter.end()
 
         self.view_image = image
@@ -775,7 +781,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             # self.send_header('Connection', 'close')
             self.send_header("Content-type", "multipart/x-mixed-replace; boundary=frame")
             self.end_headers()
-            interval = 0.1
+            interval = 0.05
             self.served_image_timestamp = time.time() + interval
             while self.server.app.streaming:
                 if self.served_image_timestamp + interval < time.time() \
@@ -800,13 +806,12 @@ class RequestHandler(BaseHTTPRequestHandler):
     def getImageBytes(self):
 
         tic = time.time()
-        # convert QImage to bytes
+        # Convert QImage to bytes
         buffer = QtCore.QBuffer()
         buffer.open(QtCore.QIODevice.OpenModeFlag.WriteOnly)
         ok = self.server.app.view_image.save(buffer, "PNG")
         view_bytes = buffer.data().data()
         toc = time.time()
-        #logging.debug(f"gen bytes: {toc-tic:.2f}s")
 
         return view_bytes
 
@@ -822,65 +827,6 @@ class StreamingDaemon(QtCore.QObject):
         self._server.app = self.app
         self._server.serve_forever()
 
-
-
-# class StreamHandler(tornado.web.RequestHandler):
-
-#     def initialize(self, app):
-#         self.app = app
-
-#     async def get(self):
-#         #ioloop = tornado.ioloop.IOLoop.current()
-
-#         self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, pre-check=0, post-check=0, max-age=0')
-#         self.set_header('Pragma', 'no-cache')
-#         self.set_header('Content-Type', 'multipart/x-mixed-replace;boundary=frame')
-#         self.set_header('Connection', 'close')
-
-#         self.served_image_timestamp = 0
-#         interval = 0.1
-#         while self.app.streaming:
-#             # N.B. this is running in separate thread so give us a small buffer in comaring times
-#             # to be sure to get the latest image
-#             if self.served_image_timestamp < self.app.streaming_ready_time:
-#                 self.write("--frame")
-#                 self.write("Content-type: image/png\r\n")
-#                 self.write("Content-length: %s\r\n\r\n"%len(self.app.view_bytes))
-#                 self.write(self.app.view_bytes)
-#                 self.served_image_timestamp = time.time()
-#                 logging.debug(f"Served image at {self.served_image_timestamp}")
-#                 #self.flush()
-#                 #await asyncio.create_task(self.image_ready())
-#                 await asyncio.Task(self.flush)
-#             else:
-#                 pass
-#                 #time.sleep(interval)
-#                 # await tornado.gen.Task(ioloop.add_timeout, ioloop.time() + interval)
-
-#     async def image_ready(self):
-#         while self.served_image_timestamp+1 > self.app.streaming_ready_time:
-#             pass
-
-# class StreamingDaemon(QtCore.QObject):
-#     def __init__(self, app):
-#         super().__init__()
-#         self.app = app
-
-#     def run(self):
-#         app = web.Application()
-#         app.add_routes([
-#             web.get('/', basepage)
-#         ])
-#         loop = asyncio.new_event_loop()
-#         runner = web.AppRunner(app)
-#         loop.run_until_complete(runner.setup())
-
-#         #web.run_app(app)
-
-    # def stop(self):
-    #     ioloop = tornado.ioloop.IOLoop.instance()
-    #     ioloop.add_callback(ioloop.stop)
-    #     ioloop.close()
 
 #----------------------------------------------------------------------
 class MainWindow(QtWidgets.QMainWindow):
@@ -3103,7 +3049,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.view.setViewportUpdateMode(self.view.FullViewportUpdate)
         # self.view.resetCachedContent()
 
-
+        # HD 1080p is 1902x1080
         W = 1920
         H = 1080
 

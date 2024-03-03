@@ -2608,6 +2608,9 @@ class NexusScene(QtWidgets.QGraphicsScene):
             parent.renew()
 
     def cut(self, *param,stem=None):
+        '''
+        Cut selected items
+        '''
         self.copy(stem=stem)
         self.delete(stem=stem)
 
@@ -2640,8 +2643,6 @@ class NexusScene(QtWidgets.QGraphicsScene):
         # TODO create a Copy As function (plugins)
         # TODO skip hidden nodes (setting?)
 
-        #copynode = g.getCopyNode(clear=True)
-
         if stem is None:
             selected = set(self.selectedItems())
         else:
@@ -2656,16 +2657,9 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
         # Make copies of sub-trees from selected
         data = self.graph.copyTrees(nodes)
-        # link them to the copynode
-        # for node in basenodes:
-        #     g.Edge(copynode, 'Child', node).save(setchange=True)
-
-        # store nexus link in copy register
-        # link = g.getNodeLink(copynode)
         clipboard = QtWidgets.QApplication.clipboard()
         mimedata = QtCore.QMimeData()
         data.setMimedata(mimedata)
-        # mimedata.setData("application/x-nexus", bytes(json.dumps(data), 'utf-8'))
         clipboard.setMimeData(mimedata)
 
 
