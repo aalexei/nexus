@@ -2564,8 +2564,8 @@ class NexusScene(QtWidgets.QGraphicsScene):
         cp = view.mapFromGlobal(QtGui.QCursor.pos())
         targetpos = QtCore.QPointF(view.mapToScene(cp))
 
-        ## find position relative to closest stem
-        ## take a guess as a starting value
+        ## Find position relative to closest stem
+        ## Take a guess as a starting value
         closest = self.childStems()[0]
         pclosest = closest.mapFromScene(targetpos)-closest.tip()
         for target in self.allChildStems():
@@ -2575,11 +2575,11 @@ class NexusScene(QtWidgets.QGraphicsScene):
                 closest = target
 
         batch = graphydb.generateUUID()
-        # nodes = copynode.outN('e.kind="Child"')
-        # basenodes = self.graph.copyTrees(nodes, batch=batch, setchange=True)
-        # for b in basenodes:
-        #     self.graph.Edge(closest.node, 'Child', b).save(batch=batch, setchange=True)
-        # closest.renew(create=False)
+        for data in copydata.nodes:
+            self.recursivePaste(closest.node, data, copydata.images, batch)
+
+        closest.renew(create=False)
+
 
     def delete(self, *param, stem=None):
         '''
@@ -2668,6 +2668,56 @@ class NexusScene(QtWidgets.QGraphicsScene):
         # mimedata.setData("application/x-nexus", bytes(json.dumps(data), 'utf-8'))
         clipboard.setMimeData(mimedata)
 
+
+    def recursivePaste(self, parentnode, nodedata, imageshas, batch):
+        # Create node and populate it with nodedata
+        # Used by paste and drag and drop
+        g = parentnode.graph
+        node = g.Node('Stem')
+        node.update(nodedata)
+        # Copy format has children list, remove it
+        del node.data['children']
+        # content should be a dict with UID's
+        content = {}
+        for item in node['content']:
+            content[graphydb.generateUUID()] = item
+        node.data['content']=content
+        if 'pos' not in node:
+            node['pos'] = [10,10]
+        if 'flip' not in node:
+            node['flip'] = 1
+        node.save(batch=batch)
+        edge = g.Edge(parentnode, "Child", node)
+        edge.save(setchange=True, batch=batch)
+
+        for item in node['content'].values():
+            if item['kind']=='Image':
+                sha = item['sha1']
+                img = g.findImageData(sha)
+                if img is None:
+                    if sha not in imageshas:
+                        logging.warn('Image data missing, not pasting!')
+                        continue
+                    logging.debug("Adding new image to map")
+                    imagedata = g.Node('ImageData')
+                    imagedata.update(imageshas[sha])
+                    imagedata.save(batch=batch)
+                    e=g.Edge(node, "With", imagedata)
+                    e.save(batch=batch)
+                else:
+                    logging.debug("Found image already in map")
+                    # Only link if edge not already there, so first scan them all
+                    for e in node.outE('e.kind="With"'):
+                        if e.end['sha1'] == sha:
+                            logging.debug("Found existing link from stem to image")
+                            break
+                    else:
+                        logging.debug("Adding new link from stem to image")
+                        g.Edge(node, "With", img).save(setchange=True, batch=batch)
+
+        for childnode in nodedata['children']:
+            self.recursivePaste(node, childnode, imageshas, batch)
+
     def paste(self, *param, stem=None):
         if stem is None:
             selected = set(self.selectedItems())
@@ -2682,76 +2732,18 @@ class NexusScene(QtWidgets.QGraphicsScene):
         mimedata = clipboard.mimeData()
 
         g = self.graph
-        # copynode = g.mimedataToCopydata(mimedata)
-        # if copynode is None:
-        #     QtWidgets.QMessageBox.information(None,"Warning", "No copy data")
-        #     return
         copydata = g.mimedataToCopydata(mimedata)
         if len(copydata.nodes)==0:
             QtWidgets.QMessageBox.information(None,"Warning", "Nothing to paste")
             return
 
-        def recursivePaste(parentnode, nodedata, imageshas, batch):
-            # Create node and populate it with nodedata
-            node = g.Node('Stem')
-            node.update(nodedata)
-            # Copy format has children list, remove it
-            del node.data['children']
-            # content should be a dict with UID's
-            content = {}
-            for item in node['content']:
-                content[graphydb.generateUUID()] = item
-            node.data['content']=content
-            if 'pos' not in node:
-                node['pos'] = [10,10]
-            if 'flip' not in node:
-                node['flip'] = 1 
-            node.save(batch=batch)
-            edge = g.Edge(parentnode, "Child", node)
-            edge.save(setchange=True, batch=batch)
 
-            for item in node['content'].values():
-                if item['kind']=='Image':
-                    sha = item['sha1']
-                    img = g.findImageData(sha)
-                    if img is None:
-                        if sha not in imageshas:
-                            logging.warn('Image data missing, not pasting!')
-                            continue
-                        logging.debug("Adding new image to map")
-                        imagedata = g.Node('ImageData')
-                        imagedata.update(imageshas[sha])
-                        imagedata.save(batch=batch)
-                        e=g.Edge(node, "With", imagedata)
-                        e.save(batch=batch)
-                    else:
-                        logging.debug("Found image already in map")
-                        # Only link if edge not already there, so first scan them all
-                        for e in node.outE('e.kind="With"'):
-                            if e.end['sha1'] == sha:
-                                logging.debug("Found existing link from stem to image")
-                                break
-                        else:
-                            logging.debug("Adding new link from stem to image")
-                            g.Edge(node, "With", img).save(setchange=True, batch=batch)
-                        
-
-
-            
-            for childnode in nodedata['children']:
-                recursivePaste(node, childnode, imageshas, batch)
-            
         batch = graphydb.generateUUID()
-        #nodes = copynode.outN('e.kind="Child"')
         for target in selected:
-            # basenodes = g.copyTrees(nodes, batch=batch, setchange=True)
-            # for b in basenodes:
-            #     g.Edge(target.node, 'Child', b).save(batch=batch, setchange=True)
             for data in copydata.nodes:
                 # recursively add nodes
-                # TODO finish
-                recursivePaste(target.node, data, copydata.images, batch)
-                pass
+                self.recursivePaste(target.node, data, copydata.images, batch)
+
             target.renew(create=False)
 
     def allChildStems(self, includeroot=True, nottaggedhide=False):

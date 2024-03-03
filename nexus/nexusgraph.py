@@ -201,11 +201,12 @@ class NexusGraph(graphydb.Graph):
         if mimedata.hasHtml():
             logging.debug(f"mimedata html: {mimedata.html()}")
         if mimedata.hasText():
-            logging.debug(f"mimedata html: {mimedata.text()}")
+            logging.debug(f"mimedata text: {mimedata.text()}")
 
         # not sure abour copy and paste from link
         # superceded now?
         if mimedata.hasFormat('application/x-nexus'):
+            logging.debug(f"mimedata is application/x-nexus")
             # Already in right format
             # data = mimedata.data('application/x-nexus')
             # copydata = json.loads(bytes(data).decode('utf-8'))
@@ -214,23 +215,28 @@ class NexusGraph(graphydb.Graph):
             # copydata, msg = self.getNodeFromLink(nexuslink)
 
         elif mimedata.hasFormat('application/json'):
+            logging.debug(f"mimedata is application/json")
             rawdata = mimedata.data('application/json')
             data = json.loads(bytes(rawdata))
             copydata, msg = self.itemFromJSON(data)
 
         elif mimedata.hasImage():
+            logging.debug(f"mimedata is image")
             imagedata = mimedata.imageData()
             copydata, msg = self.itemFromImage(imagedata)
 
         elif mimedata.hasHtml():
+            logging.debug(f"mimedata is html")
             html = mimedata.html()
             copydata, msg = self.itemFromHtml(html)
 
         elif mimedata.hasUrls():
+            logging.debug(f"mimedata is urls")
             urls = mimedata.urls()
             copydata, msg = self.itemFromUrls(urls)
 
         elif mimedata.hasText():
+            logging.debug(f"mimedata is text")
             text = mimedata.text()
             copydata, msg = self.itemFromText(text)
 
@@ -373,7 +379,7 @@ class NexusGraph(graphydb.Graph):
 
                 ## check to see if the url points to an image
                 reader = QtGui.QImageReader(path)
-                if reader.canRead():
+                if reader.canRead() and reader.format() != 'pdf':
                     image = reader.read()
                     return self.itemFromImage(image)
 
