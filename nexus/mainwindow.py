@@ -37,9 +37,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 
 CONFIG = config.get_config()
 
-# used to preserve links in svg generation
-# choose narrow symbols
-#alphabet = '0123456789abcdefghijklmnopqrtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+# Used to preserve links in svg generation
+# Choose narrow symbols
 alphabet = '1ijltI|.,[](){};:!%^`'
 
 ## minified script for navigation
@@ -85,20 +84,20 @@ def convert_xml_to_graph(filename):
         raise ValueError("nexus map version < 0.221 ")
 
     if version < 0.32:
-        # before version 0.32 the stroke width was abritrarily set to 1 even though the
+        # Before version 0.32 the stroke width was abritrarily set to 1 even though the
         # value used was 1.3, this is now set and saved so correct here
         for elem in root.iter('text'):
             elem.set('width','1.3')
 
     if version in [0.47,0.48]:
-        # this version stored text with unicode-escape (and tended to have a cariage return at the begining)
+        # This version stored text with unicode-escape (and tended to have a cariage return at the begining)
         for elem in root.getiterator():
             if elem.tag == 'text':
                 elem.text = bytes(elem.text, "utf-8").decode('unicode-escape').strip()
 
     viewsxml = root.find('views')
     if version < 0.52:
-        # these where the inverse-view with the non-inverse-view x and y in position 2 and 7!!!
+        # These where the inverse-view with the non-inverse-view x and y in position 2 and 7!!!
         # Who knows! Must have been asleep when I coded that.
         # Fix up here so it's in standard QT form and all for the non-inverse-view
         for view in viewsxml.findall('view'):
@@ -109,7 +108,7 @@ def convert_xml_to_graph(filename):
             view.set('transform','[%f,%f,%f,%f,%f,%f,%f,%f,1]'%(T3.m11(),T3.m12(),T3.m13(),T3.m21(),T3.m22(),T3.m33(),T.m13(),T.m32()))
 
     ##
-    ## create graphydb in memory first
+    ## Create graphydb in memory first
     ##
     g=nexusgraph.NexusGraph()
 
@@ -122,7 +121,6 @@ def convert_xml_to_graph(filename):
         transform = graphics.Transform.fromxml(stemxml.get('transform')).tolist()
         scale = transform[0]
         pos = [transform[6], transform[7]]
-        ## angle not used before set to zero here
         stem['scale'] = scale
         stem['z'] = z
 
@@ -137,9 +135,6 @@ def convert_xml_to_graph(filename):
 
         e = g.Edge(parent, 'Child', stem)
         e.save(setchange=False)
-
-        ## Optional tags:
-        ## opacity (E)
 
         itemz = 1
         stemz = 1
@@ -214,7 +209,7 @@ def convert_xml_to_graph(filename):
                 v['stroke'] = eval(itemxml.text)
                 v['frame'] = graphics.Transform.fromxml(itemxml.get('transform')).tolist()
                 v['z'] = itemz
-                ## use uid to be able to track changes
+                ## Use uid to be able to track changes
                 stem['item'+graphydb.generateUUID()] = v
 
                 itemz += 1
@@ -231,7 +226,7 @@ def convert_xml_to_graph(filename):
 
         stem.save(setchange=False)
 
-    # set abtritrary version <0.8 so format gets converted to latest in another conversion round
+    # Set abtritrary version <0.8 so format gets converted to latest in another conversion round
     g.savesetting('version', 0.7)
     graphroot = g.Node('Root').save(setchange=False)
 
@@ -323,18 +318,13 @@ def convert_to_full_tree(g):
 
     tagnodes.delete(disconnect=True, setchange=False)
 
-    # # reverse direction of Tagged edges to make copy easier (follow down)
-    # for e in g2.fetch('-[e:Tagged]>'):
-    #     e['startuid'], e['enduid'] = e['enduid'], e['startuid']
-    #     e.save(setchange=False)
-
-    # now expand out the items into separate nodes
+    # Now expand out the items into separate nodes
     stems = g2.fetch('[n:Stem]')
     for s in stems:
         # Add content items
         for k in list(s.keys()):
             if k == 'tip':
-                # take opportunity to remove tip
+                # Take opportunity to remove tip
                 del s[k]
                 continue
             elif not k.startswith('item'):
@@ -409,15 +399,6 @@ def convert_to_partial_tree(g):
                     del data[k]
             content[uid] = data
 
-        # Clean up the content, sort by z-value
-        #content.sort(key = lambda n:n['z'])
-
-        # Now remove some redundant fields
-        # for c in content:
-        #     for k in ['uid', 'mtime', 'ctime']:
-        #         if k in c:
-        #             del c[k]
-
         # Save content
         s['content'] = content
         s.save(setchange=False)
@@ -443,7 +424,7 @@ def createViewImage(view, width, height, removebackground=False):
 
     # Get the size of your graphicsview
     rect = view.viewport().rect()
-    # adjust height so same proportions as target
+    # Adjust height so same proportions as target
     dh = rect.height()-rect.width()*height/width
     rect.setTop(int(rect.top()+dh/2))
     rect.setBottom(int(rect.bottom()-dh/2))
@@ -452,7 +433,7 @@ def createViewImage(view, width, height, removebackground=False):
     image.fill(QtCore.Qt.GlobalColor.transparent)
 
     if removebackground:
-        # make the scene background transparent
+        # Make the scene background transparent
         oldbrush =  view.scene().backgroundBrush()
         brush = QtGui.QBrush(QtCore.Qt.GlobalColor.transparent)
         view.scene().setBackgroundBrush(brush)
@@ -463,7 +444,7 @@ def createViewImage(view, width, height, removebackground=False):
     painter.end()
 
     if removebackground:
-        # return previous background
+        # Return previous background
         view.scene().setBackgroundBrush(oldbrush)
 
     return image
@@ -488,7 +469,7 @@ class NewOrOpenDialog(QtWidgets.QDialog):
 
         listWidget.itemClicked.connect(self.recentFileOpen)
 
-        ## update the recent files
+        ## Update the recent files
         settings = QtCore.QSettings("Ectropy", "Nexus")
         files = settings.value('recentFileList', [])
 
@@ -553,14 +534,6 @@ class NexusApplication(QtWidgets.QApplication):
         menu = QtWidgets.QMenu(self.tr("&Window"))
         menu.aboutToShow.connect(self.updateWindowMenu)
 
-        # act = QtGui.QAction(QtGui.QIcon(":/images/view-fullscreen.svg"), self.tr("Full Screen"), self)
-        # act.setStatusTip(self.tr("Toggle full screen mode"))
-        # act.triggered.connect(self.windowFullScreen)
-        # act.setCheckable(True)
-        # menu.addAction(act)
-        # act.setCheckable(True)
-        # self.actionFullScreen = act
-
         QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-line-figures.ttf")
         QtGui.QFontDatabase.addApplicationFont(":/images/et-book-bold-line-figures.ttf")
         QtGui.QFontDatabase.addApplicationFont(":/images/et-book-display-italic-old-style-figures.ttf")
@@ -568,28 +541,21 @@ class NexusApplication(QtWidgets.QApplication):
         QtGui.QFontDatabase.addApplicationFont(":/images/et-book-roman-old-style-figures.ttf")
 
         self.windowMenu = menu
-        #self.toggleStreaminServer(True)
 
         self.streaming = False
         self.streaming_ready_time = 0
 
     def updateWindowMenu(self):
-        ## first update indicators for active window
+        ## First update indicators for active window
         activewindow = self.activeWindow()
-        # if activewindow is None:
-        #     pass
-        # elif activewindow.isFullScreen():
-        #     self.actionFullScreen.setChecked(True)
-        # else:
-        #     self.actionFullScreen.setChecked(False)
 
-        ## clear the window list
+        ## Clear the window list
         for action in self.windowMenu.actions():
             if hasattr(action, "windowAction"):
                 self.windowMenu.removeAction(action)
 
         ## N.B. we need to keep a copy of the window list otherwise
-        ## python's garbage collector with throw away our MainWindows!
+        ## python's garbage collector will throw away our MainWindows!
         self.windows = self.windowList()
         for window in self.windows:
             act = QtGui.QAction(QtGui.QIcon(":/images/nexusicon.svg"), window.windowTitle(), self)
@@ -600,20 +566,6 @@ class NexusApplication(QtWidgets.QApplication):
             act.triggered.connect(window.activateWindowViaMenu)
             self.windowMenu.addAction(act)
 
-
-
-    # def windowFullScreen(self):
-    #     window = self.activeWindow()
-    #     if window.isFullScreen():
-    #         self.setWindowFlags(self._windowflags)
-    #         window.showNormal()
-    #         #window.showMaximized()
-    #     else:
-    #         # Save state of window flags
-    #         self._windowflags = self.windowFlags()
-    #         window.showFullScreen()
-
-    #     self.updateWindowMenu()
 
     def windowList(self):
         mainwindows = []
@@ -627,7 +579,6 @@ class NexusApplication(QtWidgets.QApplication):
         '''
         Either raise the window or open a new file
         '''
-
         logging.debug("raise or open: '%s'", fileName)
         if len(fileName)==0:
             return None
@@ -3049,7 +3000,7 @@ class MainWindow(QtWidgets.QMainWindow):
         progress.setLabelText("Generating video")
         progress.setValue(100)
 
-        # Generate video
+        # Generate video from frames
         self.showMessage("Generating video from frames")
         subprocess.run(['ffmpeg', '-f', 'concat',
                         '-i', 'timing.txt',
@@ -3106,7 +3057,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pointertrailitem.setGraphicsEffect(TrailBlur)
         self.scene.addItem(self.pointertrailitem)
 
-        # inner collor
+        # inner color
         self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
         #self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
         pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
