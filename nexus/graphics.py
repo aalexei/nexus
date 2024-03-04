@@ -67,7 +67,7 @@ class Transform(QtGui.QTransform):
     @classmethod
     def fromxml(c,s):
         '''
-        expects a string like "[8.94, 0.0, 1.605, 0.0, 8.94, 0.0, -28.35, -5.78, 1.0]"
+        Expects a string like "[8.94, 0.0, 1.605, 0.0, 8.94, 0.0, -28.35, -5.78, 1.0]"
         '''
         numbers = re.findall('(-?\d+\.?(?:\d+)?(?:e[+-]\d+)?)',s)
         if len(numbers)!=9:
@@ -166,8 +166,8 @@ class InputDialog(QtWidgets.QDialog):
     # TODO item grouping
     # TODO apply colour changes to selected items
 
-    WIDTHmin = 1000
-    HEIGHTmin = 200
+    # WIDTHmin = 1000
+    # HEIGHTmin = 200
 
     def __init__(self):
         super().__init__(None)
@@ -252,14 +252,13 @@ class InputDialog(QtWidgets.QDialog):
         self.toolbar.addAction(self.zoomInAct)
         self.toolbar.addAction(self.zoomOutAct)
 
-
-        ## extra tools for select mode
+        ## Extra tools for select mode
         self.toolbar.addAction(self.lowerBottomAct)
         self.toolbar.addAction(self.lowerAct)
         self.toolbar.addAction(self.raiseAct)
         self.toolbar.addAction(self.raiseTopAct)
 
-        ## extra tools for text mode
+        ## Extra tools for text mode
         self.toolbar.addAction(self.sourceAct)
 
         self.toolbar.addAction(self.boldAct)
@@ -361,7 +360,7 @@ class InputDialog(QtWidgets.QDialog):
         self.opacitywidget.setValue(1.0)
         self.opacitywidget.valueChanged.connect(self.opacityWidgetChanged)
 
-        # default mode on creation
+        # Default mode on creation
         self.selectmode.setChecked(True)
 
         # Full screen
@@ -378,13 +377,13 @@ class InputDialog(QtWidgets.QDialog):
     def setDialog(self, stem):
 
         if hasattr(self, 'scene'):
-            # when dialog is first set up it won't have a scene
+            # When dialog is first set up it won't have a scene
             self.scene.clear()
 
         if hasattr(self, 'stem'):
-            # in case we jump straight to editing another item
+            # In case we jump straight to editing another item
             self.stem.isBeingEdited = False
-            # redraw stem to remove editing mark
+            # Redraw stem to remove editing mark
             self.stem.update()
 
         self.scene = InkScene(stem=stem, parent=self)
@@ -563,15 +562,15 @@ class InputDialog(QtWidgets.QDialog):
         self.stem.renew(reload=False, create=True, children=False, recurse=True, position=False)
 
     def scaleWidgetChanged(self, scale):
-        # callback for spinbox
+        # Callback for spinbox
         if 'scale' not in self.stem.node or self.stem.node['scale'] != scale:
             self.stem.node['scale'] = scale
             self.stem.node.save(setchange=True)
             self.stem.renew(reload=False, children=False, recurse=False, position=False)
 
     def branchInheritColourChanged(self, state):
-        # callback for checkbox
-        # state is the new state of checkbox
+        # Callback for checkbox
+        # State is the new state of checkbox
         if state==True:
             self.branchcolorbutton.setDisabled(True)
             if 'branchcolor' in self.stem.node:
@@ -583,7 +582,7 @@ class InputDialog(QtWidgets.QDialog):
             self.setBranchColour()
 
     def setBranchColour(self):
-        # this is only triggered when inherit unchecked
+        # This is only triggered when inherit unchecked
         d = QtWidgets.QColorDialog()
         color = QtGui.QColor(self.stem.node.get('branchcolor','gray'))
         color = d.getColor(color, self,  self.tr("Choose a Color"))
@@ -700,6 +699,7 @@ class InputDialog(QtWidgets.QDialog):
         self.sourceAct.setVisible(False)
         self.sourceAct.triggered.connect(self.showTextSourceEvent)
 
+        ## ----------------------------------------------------------------------------------
         self.boldAct = QtGui.QAction(QtGui.QIcon(":/images/text-bold.svg"), self.tr("Bold"), self)
         self.boldAct.setStatusTip(self.tr("Bold Selection"))
         self.boldAct.setVisible(False)
@@ -709,6 +709,7 @@ class InputDialog(QtWidgets.QDialog):
         self.boldAct.setFont(bold)
         self.boldAct.triggered.connect(self.textBoldEvent)
 
+        ## ----------------------------------------------------------------------------------
         self.italicAct = QtGui.QAction(QtGui.QIcon(":/images/text-italic.svg"), self.tr("Italic"), self)
         self.italicAct.setStatusTip(self.tr("Italic Selection"))
         self.italicAct.setVisible(False)
@@ -718,6 +719,7 @@ class InputDialog(QtWidgets.QDialog):
         self.italicAct.setFont(italic)
         self.italicAct.triggered.connect(self.textItalicEvent)
 
+        ## ----------------------------------------------------------------------------------
         self.underlineAct = QtGui.QAction(QtGui.QIcon(":/images/text-underline.svg"), self.tr("Underline"), self)
         self.underlineAct.setStatusTip(self.tr("Underline Selection"))
         self.underlineAct.setVisible(False)
@@ -727,6 +729,7 @@ class InputDialog(QtWidgets.QDialog):
         self.underlineAct.setFont(under)
         self.underlineAct.triggered.connect(self.textUnderlineEvent)
 
+        ## ----------------------------------------------------------------------------------
         pix = QtGui.QPixmap(16,16)
         pix.fill(QtCore.Qt.GlobalColor.black)
         self.textColorAct = QtGui.QAction(QtGui.QIcon(pix), self.tr("Color"), self)
@@ -734,6 +737,7 @@ class InputDialog(QtWidgets.QDialog):
         self.textColorAct.setVisible(False)
         self.textColorAct.triggered.connect(self.textColorEvent)
 
+        ## ----------------------------------------------------------------------------------
         pix = QtGui.QPixmap(16,16)
         pix.fill(QtCore.Qt.GlobalColor.yellow)
         self.textBackColorAct = QtGui.QAction(QtGui.QIcon(pix), self.tr("Background Color"), self)
@@ -741,11 +745,13 @@ class InputDialog(QtWidgets.QDialog):
         self.textBackColorAct.setVisible(False)
         self.textBackColorAct.triggered [ bool ].connect(self.textBackColorEvent)
 
+        ## ----------------------------------------------------------------------------------
         self.fontAct = QtGui.QAction(QtGui.QIcon(":/images/text-font.svg"), self.tr("Font"), self)
         self.fontAct.setStatusTip(self.tr("Font Selection"))
         self.fontAct.setVisible(True)
         self.fontAct.triggered.connect(self.textFontEvent)
 
+        ## ----------------------------------------------------------------------------------
         self.clearFormatAct = QtGui.QAction(QtGui.QIcon(":/images/text-clear.svg"), self.tr("Clear"), self)
         self.clearFormatAct.setStatusTip(self.tr("Clear Format"))
         self.clearFormatAct.setVisible(False)
@@ -793,7 +799,7 @@ class InputDialog(QtWidgets.QDialog):
             self.penmode.setIcon(self.PenIcon(":/images/pencil.svg", color))
 
         else:
-            ## highlighter selected
+            ## Highlighter selected
             color = QtGui.QColor(self.scene.graph.getsetting('hicolor', '#60FFFFA0'))
             size = self.scene.graph.getsetting('hisize', 5)
 
@@ -878,10 +884,10 @@ class InputDialog(QtWidgets.QDialog):
         # TODO need method for adding text items to stem
 
         for item in items:
-            ## add default item if none; fulleditor access; non movable
+            ## Add default item if none; fulleditor access; non movable
             item.setMode(TextMode)
 
-        ## focus one of the items if possible
+        ## Focus one of the items if possible
         for item in items:
             if isinstance(item, TextItem):
                 item.setFocus()
@@ -890,7 +896,7 @@ class InputDialog(QtWidgets.QDialog):
     def setHighlightModeClicked(self):
 
         if self.scene.mode == PenMode and self.ishighlighter:
-            ## clicked while selected
+            ## Clicked while selected
             d = tools.PenDialog(self.scene.pen, "highlighter", self)
             d.exec()
             color = self.scene.pen.color().name(QtGui.QColor.NameFormat.HexArgb)
@@ -906,7 +912,7 @@ class InputDialog(QtWidgets.QDialog):
 
     def setPenModeClicked(self):
         if self.scene.mode == PenMode and not self.ishighlighter:
-            ## clicked while selected
+            ## Clicked while selected
             d = tools.PenDialog(self.scene.pen, "pen", self)
             d.exec()
             color = self.scene.pen.color().name(QtGui.QColor.NameFormat.HexArgb)
@@ -997,7 +1003,7 @@ class InputDialog(QtWidgets.QDialog):
 
         settings = QtCore.QSettings("Ectropy", "Nexus")
 
-        ## temporarily (for this session) record the input geometry
+        ## Temporarily (for this session) record the input geometry
         g = self.geometry()
         self.inputgeometry = [g.left(), g.top(), g.width(), g.height()]
 
@@ -1014,7 +1020,7 @@ class InputDialog(QtWidgets.QDialog):
         icon = QtGui.QIcon(pix)
         self.textColorAct.setIcon(icon)
 
-        ## how to set background to zero
+        ## How to set background to zero
         pix = QtGui.QPixmap(16, 16)
         col = fmt.background().color()
         if not fmt.background().isOpaque():
@@ -1194,26 +1200,26 @@ class InputDialog(QtWidgets.QDialog):
         ##
         rect = QtCore.QRectF()
 
-        ## unselect items so selection marks dont show up
+        ## Unselect items so selection marks dont show up
         for item in selected:
             rect=rect.united(item.sceneBoundingRect())
             item.setSelected(False)
 
-        ## grab all items that will show up in the region
+        ## Grab all items that will show up in the region
         # TODO isn't this the same as above?,
         allregionitems = self.scene.items(rect)
 
-        ## build a pixmap at 2x the size for better resolution
+        ## Build a pixmap at 2x the size for better resolution
         pixmap = QtGui.QPixmap(rect.size().toSize()*2)
 
-        ## make background transparent
+        ## Make background transparent
         pixmap.fill( QtGui.QColor(0,0,0,0))
         painter = QtGui.QPainter(pixmap)
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         painter.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
         painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
 
-        ## hide unselected visible items that are in the rect
+        ## Hide unselected visible items that are in the rect
         hiddenitems = []
         for item in allregionitems:
             if item not in selected and item.isVisible():
@@ -1224,10 +1230,10 @@ class InputDialog(QtWidgets.QDialog):
         painter.end()
         mimedata.setImageData(pixmap)
 
-        ## return selection
+        ## Return selection
         for item in selected:
             item.setSelected(True)
-        ## return hidden items
+        ## Return hidden items
         for item in hiddenitems:
             item.setVisible(True)
 
@@ -1278,7 +1284,7 @@ class InputDialog(QtWidgets.QDialog):
             QtWidgets.QMessageBox.information(None,"Warning", "Nothing to paste")
             return
 
-        # create batch_id in case we need to add images
+        # Create batch_id in case we need to add images
         batch = graphydb.generateUUID()
         pasteditems = []
         imageshas = set()
