@@ -5017,6 +5017,9 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         self.isBeingEdited = False
 
+        # Sometimes this is not set in pointer press event, set it here as a backup.
+        self._m_press_pos = QtCore.QPointF()
+
         ##
         ## widget to show stem as selected
         ##
