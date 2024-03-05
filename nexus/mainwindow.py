@@ -2418,11 +2418,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         else:
             ## pass URL to OS to open ..
-            # TODO webbrowser broken in Sierra 10.12.5 use QT instead
-            # see http://www.andrewjaffe.net/blog/2017/05/python-bug-hunt.html
             self.showMessage("Opening %s"%str(url))
             QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
-            #webbrowser.open(url)
 
 
     def jumpToView(self,  viewitem):

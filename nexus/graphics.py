@@ -544,7 +544,7 @@ class InputDialog(QtWidgets.QDialog):
         self.saveClose()
 
     def tagsChanged(self):
-        # callback when tags field loses focus
+        # Callback when tags field loses focus
         newtags = set(self.tagsEdit.text().split())
         oldtags = self.stem.node.get('tags', set())
         if newtags != oldtags:
@@ -557,10 +557,10 @@ class InputDialog(QtWidgets.QDialog):
 
 
     def iconifiedChanged(self, state):
-        # callback for checkbox
-        # state is the new state
+        # Callback for checkbox
+        # State is the new state
         if state:
-            # leaf of stem should be displayed as just an icon
+            # Leaf of stem should be displayed as just an icon
             self.stem.node['iconified'] = True
         else:
             self.stem.node.discard('iconified')
@@ -855,7 +855,6 @@ class InputDialog(QtWidgets.QDialog):
         #self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
         # self.scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor("White")))
 
-
         self.view.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
 
         items = self.scene.getItems()
@@ -868,8 +867,6 @@ class InputDialog(QtWidgets.QDialog):
 
         if not textitempresent:
             ## Add a blank TextItem
-            # TODO v09
-
             item = {'kind':'Text', 'source':'', 'frame':Transform().tolist()}
             uid = graphydb.generateUUID()
             z = 0
