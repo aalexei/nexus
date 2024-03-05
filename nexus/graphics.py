@@ -363,10 +363,12 @@ class InputDialog(QtWidgets.QDialog):
         # Default mode on creation
         self.selectmode.setChecked(True)
 
-        # Full screen
-        self.fullscreenwidget = QtWidgets.QCheckBox()
-        self.fullscreenwidget.setCheckState(QtCore.Qt.CheckState.Unchecked)
-        dlayout.addRow("Maximize dialog", self.fullscreenwidget)
+        # Maximise/Full screen dialog?
+        self.fullscreenwidget = QtWidgets.QComboBox()
+        self.fullscreenwidget.addItem("Normal")
+        self.fullscreenwidget.addItem("Maximise")
+        self.fullscreenwidget.addItem("Fullscreen")
+        dlayout.addRow("Dialog appearance", self.fullscreenwidget)
 
         # Allow rotation of canvas
         self.view.allowrotationwidget = QtWidgets.QCheckBox()
@@ -486,10 +488,11 @@ class InputDialog(QtWidgets.QDialog):
             self.setTextMode()
 
         if  self.stem.scene().mode == "presentation":
-            #self.showFullScreen()
+            self.showFullScreen()
+        elif self.fullscreenwidget.currentText() == "Maximise":
             self.showMaximized()
-        elif self.fullscreenwidget.isChecked():
-            self.showMaximized()
+        elif self.fullscreenwidget.currentText() == "Fullscreen":
+            self.showFullScreen()
         elif hasattr(self, 'inputgeometry') and not self.isVisible():
             # If the dialog is already visible don't move it
             self.setGeometry(self.inputgeometry)
