@@ -475,6 +475,9 @@ class InputDialog(QtWidgets.QDialog):
         #         ## otherwise text mode or that recorded in state
         #         self.textmode.trigger()
 
+        if self.propmode.isChecked():
+            self.propmode.trigger()
+
         if self.selectmode.isChecked():
             self.setSelectMode()
         elif self.penmode.isChecked():
