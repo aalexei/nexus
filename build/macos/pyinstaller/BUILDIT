@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# to build icons:
+# sketch file in nexus/images/nexus-logo.sketch
+# Use Plugins->Generate ICNS->From Artboards
+# will generate Icon.icns in images dir
+# mv to pyinstaller/nexus-icon.icns
+# nexusicon.png (for About) and nexussplash.png generated from same sketch file
+# in nexus/ recreate resources.py with
+# pyrcc4 nexus.qrc > resources.py
+
+# this should be the venv pyinstaller:
+pyinstaller --clean --noconfirm mac_nexus.spec
+
+# may need to edit version number first
+# cp Info.plist dist/Nexus.app/Contents/
