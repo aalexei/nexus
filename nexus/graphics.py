@@ -175,7 +175,7 @@ class InputDialog(QtWidgets.QDialog):
         self.setSizeGripEnabled(True)
         self.setWindowFlag(QtCore.Qt.WindowType.Window, True)
 
-        ## create main layout
+        ## Create main layout
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -514,7 +514,6 @@ class InputDialog(QtWidgets.QDialog):
            self.stem.node.outE('e.kind="Child"', COUNT=True)==0:
 
            empty = True
-           # print('content', self.scene.node['content'] )
            for item in self.stem.node['content'].values():
                if item['kind'] != 'Text':
                    empty = False
@@ -540,7 +539,7 @@ class InputDialog(QtWidgets.QDialog):
         self.hide()
 
     def done(self, r):
-        # finalise closing dialog even if WM button clicked or ESC pressed
+        # Finalise closing dialog even if WM button clicked or ESC pressed
         self.saveClose()
 
     def tagsChanged(self):
@@ -820,7 +819,6 @@ class InputDialog(QtWidgets.QDialog):
 
             self.highlightmode.setIcon(self.PenIcon(":/images/highlighter.svg", color))
 
-
         self.scene.pen = QtGui.QPen(QtGui.QColor(color))
         self.scene.pen.setWidthF(size)
 
@@ -998,11 +996,6 @@ class InputDialog(QtWidgets.QDialog):
             item.setMode(SelectMode)
 
     def saveSettings(self):
-
-        # dx,dy,r,s = Transform(self.view.transform()).getTRS()
-
-        # self.state['rotation'] = r
-        # self.state['scale'] = s
 
         settings = QtCore.QSettings("Ectropy", "Nexus")
 
@@ -2306,7 +2299,6 @@ class InkView(QtWidgets.QGraphicsView):
 
         ## only erase pen strokes, this makes is easy to annotate images
         if item is not None and isinstance(item, InkItem):
-            #scene.removeItem(item)
             item.deleteNodeItem()
             self.scene().refreshStem(reload=False)
 
@@ -2334,26 +2326,21 @@ class InkView(QtWidgets.QGraphicsView):
             return QtWidgets.QGraphicsView.event(self, event)
 
     def touchBegin(self, event):
-        #logging.debug('TouchBegin')
         return True
 
     def touchUpdate(self, event):
-        #logging.debug('TouchUpdate points=%d', len(event.touchPoints()))
         return True
 
     def touchEnd(self, event):
-        #logging.debug('TouchEnd')
         return True
 
     def touchCancel(self, event):
-        #logging.debug('TouchCancel')
         return True
 
     def gestureEvent(self, event):
         pinch = event.gesture(QtCore.Qt.GestureType.PinchGesture)
 
         if pinch is not None:
-            #logging.debug('I PinchGesture [%d]',pinch.state())
             return self.pinchTriggered(pinch)
         else:
             return False
@@ -2366,7 +2353,6 @@ class InkView(QtWidgets.QGraphicsView):
             #v1 = self.mapFromGlobal(QtGui.QCursor.pos())
             v1 = pinch.centerPoint().toPoint()
         else:
-            # TODO convert to PointF only when needed
             v1 = self.mapFromGlobal(pinch.centerPoint()).toPoint()
 
         anchor = self.transformationAnchor()
@@ -2378,9 +2364,7 @@ class InkView(QtWidgets.QGraphicsView):
                 self._eventstate = Gesture
             elif self._eventstate == Mouse:
                 self._eventstate = Gesture
-                #logging.debug("    (switching to pinch from mouse)")
             else:
-                #logging.debug("    (ignoring pinch press)")
                 return False
 
             self._g_transform = self.transform()
@@ -2390,9 +2374,7 @@ class InkView(QtWidgets.QGraphicsView):
             return  True
 
         elif pinch.state() == QtCore.Qt.GestureState.GestureFinished:
-            #QT6 above was hard-coded at 3
             if self._eventstate != Gesture:
-                #logging.debug("    (ignoring pinch release)")
                 return False
             else:
                 self._eventstate = Free
@@ -2401,7 +2383,6 @@ class InkView(QtWidgets.QGraphicsView):
                 return True
 
         if self._eventstate != Gesture:
-            #logging.debug("    (ignoring pinch update)")
             return False
 
         Rtot = pinch.rotationAngle()
@@ -3225,7 +3206,6 @@ class NexusView(QtWidgets.QGraphicsView):
             # On a mac the centre of the pinch gesture is not useful as the trackpad is relative
             # Need to use the cursor position as the centre:
             #v1 = self.mapFromGlobal(QtGui.QCursor.pos())
-            #QT6 v1 = pinch.centerPoint().toPoint()
             v1 = pinch.centerPoint()
         else:
             v1 = self.mapFromGlobal(pinch.centerPoint())
@@ -3770,115 +3750,6 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
         # used to track moves, scales, etc
         self._changed = False
 
-
-    # @classmethod
-    # def new_old(cls, stemnode, scene, coords=[], transform=Transform(),
-    #         z=1, width=1.0, color=QtGui.QColor("Black"),
-    #         batch=None, setchange=True):
-    #     '''
-    #     Convenience method to create a new DB node from QT objects
-    #     '''
-
-    #     # TODO v09 only this one used .. remove?
-    #     newnode = stemnode.graph.Node('Stroke')
-    #     newedge = stemnode.graph.Edge(stemnode, 'In', newnode)
-
-    #     newnode['z'] = z
-    #     newnode['width'] = width
-
-    #     newnode['color'] = str(color.name())
-    #     newnode['opacity'] = color.alphaF()
-
-    #     XYZ = len(coords[0])>2
-    #     if XYZ:
-    #         newnode['type'] = "XYZ"
-    #     else:
-    #         newnode['type'] = "XY"
-
-    #     # coords are relative to first point for compression
-    #     # position carried in frame
-    #     p0 = coords[0]
-    #     out = []
-    #     for p in coords:
-    #         if XYZ:
-    #             out.append([p[0]-p0[0], p[1]-p0[1],p[2]])
-    #         else:
-    #             out.append([p[0]-p0[0], p[1]-p0[1]])
-    #     newnode['stroke'] = out
-
-    #     # make copy of transform otherwise default one instantiated on definition
-    #     # accumulates translations
-    #     T=Transform(transform)
-    #     T.translate(p0[0], p0[1])
-    #     newnode['frame'] = T.tolist()
-
-    #     if batch is None and setchange:
-    #         # store node and edge in same change
-    #         batch = graphydb.generateUUID()
-    #     newnode.save(batch=batch, setchange=setchange)
-    #     newedge.save(batch=batch, setchange=setchange)
-
-    #     return cls(newnode, scene)
-
-    # @classmethod
-    # def new(cls, stemnode, scene, coords=[], transform=Transform(),
-    #         z=1, width=1.0, color=QtGui.QColor("Black"),
-    #         batch=None, setchange=True):
-    #     '''
-    #     Convenience method to create a new DB node from QT objects
-    #     '''
-
-    #     # TODO v09 only this one used .. remove?
-    #     data = {
-    #         'kind': 'Stroke',
-    #         'z': z,
-    #         'width': width,
-    #         'color': str(color.name()),
-    #         'opacity': color.alphaF(),
-    #         'type': 'XYZ' if len(coords[0])>2 else 'XY'
-    #     }
-    #     # data['z'] = z
-    #     # data['width'] = width
-    #     # data['color'] = str(color.name())
-    #     # data['opacity'] = color.alphaF()
-
-    #     # XYZ = len(coords[0])>2
-    #     # if XYZ:
-    #     #     data['type'] = "XYZ"
-    #     # else:
-    #     #     data['type'] = "XY"
-
-    #     # coords are relative to first point for compression
-    #     # position carried in frame
-    #     p0 = coords[0]
-    #     out = []
-    #     for p in coords:
-    #         if XYZ:
-    #             out.append([p[0]-p0[0], p[1]-p0[1],p[2]])
-    #         else:
-    #             out.append([p[0]-p0[0], p[1]-p0[1]])
-    #     data['stroke'] = out
-
-    #     # make copy of transform otherwise default one instantiated on definition
-    #     # accumulates translations
-    #     T=Transform(transform)
-    #     T.translate(p0[0], p0[1])
-    #     data['frame'] = T.tolist()
-
-    #     stemnode['content'].append(data)
-    #     stemnode.keyChanged('content')
-    #     # stemnode['content'] = self.stemnode['content']
-
-    #     stemnode.save(setchange=True)
-    #     # if batch is None and setchange:
-    #     #     # store node and edge in same change
-    #     #     batch = graphydb.generateUUID()
-    #     # newnode.save(batch=batch, setchange=setchange)
-    #     # newedge.save(batch=batch, setchange=setchange)
-
-    #     return cls(newnode, scene)
-
-
     def keyPressEvent(self, event):
 
         for item in self.scene().selectedItems():
@@ -4011,7 +3882,6 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
         QtWidgets.QGraphicsPathItem.hoverMoveEvent(self, event)
 
     def hoverLeaveEvent(self, event):
-
         if self.originalCursor is not None:
             self.setCursor(self.originalCursor)
             self.originalCursor = None
@@ -4036,9 +3906,7 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
         self.setShape()
 
     def contentsChanged(self):
-
         self.setShape()
-
 
     def setShape(self, setwidth=False):
 
@@ -4064,16 +3932,12 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
         QtWidgets.QGraphicsPathItem.hoverLeaveEvent(self, event)
 
     def pointerPressEvent(self, event):
-
-        # QtWidgets.QGraphicsPathItem.mousePressEvent(self, event)
         self.parentItem().setSelected(True)
         self.parentItem().setFocus()
         self.setSelected(False)
 
 
     def pointerMoveEvent(self, event):
-        # QtWidgets.QGraphicsPathItem.mouseMoveEvent(self, event)
-        # import pudb; pudb.set_trace()
         p = self.parentItem()
         x0 = p.transform().m31()
         x = max(0, event.scenePos[0])-x0
@@ -4084,7 +3948,6 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
         self.setSelected(False)
 
     def pointerReleaseEvent(self, event):
-        # QtWidgets.QGraphicsPathItem.mouseReleaseEvent(self, event)
         self.setSelected(False)
         p = self.parentItem()
         p['maxwidth'] = p.textWidth()
@@ -4156,75 +4019,6 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         # used to track moves, scales, etc
         self._changed = False
 
-    # @classmethod
-    # def new(cls, stemnode, scene, transform=Transform(),
-    #         z=1, maxwidth=None, color=None, source="",
-    #         batch=None, setchange=True):
-    #     '''
-    #     Convenience method to create a new DB node from QT objects
-    #     '''
-
-    #     # make copy of transform otherwise default one instantiated on
-    #     # definition accumulates translations
-    #     T=Transform(transform)
-
-    #     newnode = stemnode.graph.Node('Text')
-    #     newedge = stemnode.graph.Edge(stemnode, 'In', newnode)
-
-    #     newnode['z'] = z
-    #     if maxwidth is not None:
-    #         newnode['maxwidth'] = maxwidth
-
-    #     # TODO Add font changing
-    #     if color is not None:
-    #         newnode['color'] = str(color.name())
-    #         newnode['opacity'] = color.alphaF()
-
-    #     newnode['source'] = source
-    #     newnode['frame'] = T.tolist()
-    #     newnode['z'] = z
-
-    #     if batch is None and setchange:
-    #         # store node and edge in same change
-    #         batch = graphydb.generateUUID()
-    #     newnode.save(batch=batch, setchange=setchange)
-    #     newedge.save(batch=batch, setchange=setchange)
-
-    #     return cls(newnode, scene)
-
-    # def save(self, batch=None, setchange=True):
-    #     if self.mode == self.EditSourceMode:
-    #         ## reset mode so we do have the source and it's been processed by QT
-    #         self.setMode(self.StaticMode)
-
-    #     self.node['source'] = self.getSrc()
-    #     self.node['frame'] = Transform(self.transform()).tolist()
-    #     self.node['z'] = self.zValue()
-    #     self.node['maxwidth'] = self.maxTextWidth
-
-    #     self.node.save(batch=batch, setchange=setchange)
-
-    # def changed(self):
-    #     return self._changed or \
-    #            self.node['source'] != self.getSrc() or \
-    #            self.node['maxwidth'] != self.maxTextWidth
-
-
-    # def getdata(self):
-
-    #     itemdata = self.node
-
-    #     if self.mode == self.EditSourceMode:
-    #         ## reset mode so we do have the source and it's been processed by QT
-    #         self.setMode(self.StaticMode)
-
-    #     itemdata['source'] = self.getSrc()
-    #     itemdata['frame'] = Transform(self.transform()).tolist()
-    #     itemdata['z'] = self.zValue()
-
-    #     itemdata['maxwidth'] = self.maxTextWidth
-
-    #     return itemdata
 
     def getSrc(self):
 
@@ -4698,36 +4492,6 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
         # used to track moves, scales, etc
         self._changed = False
 
-    # @classmethod
-    # def new(cls, stemnode, scene, transform=Transform(),
-    #         z=1, maxwidth=None, color=None, pixmap=None,
-    #         batch=None, setchange=True):
-    #     '''
-    #     Convenience method to create a new DB node from QT objects
-    #     '''
-    #     newnode = stemnode.graph.Node('Image')
-    #     newedge = stemnode.graph.Edge(stemnode, 'In', newnode)
-
-    #     # make copy of transform otherwise default one instantiated on
-    #     # definition accumulates translations
-    #     T=Transform(transform)
-    #     newnode['frame'] = T.tolist()
-    #     newnode['z'] = z
-
-    #     # XXX should check to see it it exists already
-    #     batch = graphydb.generateUUID()
-    #     datnode = newnode.graph.Node("ImageData")
-    #     datnode['data'] = nexusgraph.ImageToData(pixmap.toImage())
-    #     datnode['sha1'] = hashlib.sha1(datnode['data'].encode('utf-8')).hexdigest()
-    #     datnode.save(setchange=True, batch=batch)
-
-    #     newnode['sha1'] = datnode['sha1']
-    #     newnode.save(setchange=True, batch=batch)
-
-    #     edge = newnode.graph.Edge(newnode, "With", datnode)
-    #     edge.save(setchange=True, batch=batch)
-
-    #     return cls(newnode, scene)
 
     def deleteNodeItem(self, batch=None):
         '''
@@ -5621,7 +5385,6 @@ class StemItem(QtWidgets.QGraphicsItem):
 
 
     def mouseDoubleClickEvent(self, event):
-        # logging.debug('[{}] Double Click ->[4]'.format(self._m_state))
         self._m_state = MDOUBLE
         # double click action handled in mouseReleaseEvent
         event.accept()
@@ -5659,8 +5422,6 @@ class StemItem(QtWidgets.QGraphicsItem):
         for stem in allselected:
             if stem not in children:
                 selected.append(stem)
-
-        #X# scenedp = event.scenePos()-self._scenepointerdown
 
         ## move the selected stems
         for stem in selected:
@@ -5758,10 +5519,6 @@ class StemItem(QtWidgets.QGraphicsItem):
         '''
         return attached tags
         '''
-        # tags = []
-        # for n in self.node.outN('e.kind = "Tagged"'):
-        #     tags.append(n['text'])
-
         return self.node.get('tags', set())
 
     def titles(self):
@@ -5776,8 +5533,6 @@ class StemItem(QtWidgets.QGraphicsItem):
         return out
 
     def suggestChildPosition(self):
-
-
         # XXX to be used in long press and paste ...  not working
 
         tip = self.tip()
@@ -5787,14 +5542,11 @@ class StemItem(QtWidgets.QGraphicsItem):
         ys = [c.mapToParent(c.parentStem().tip()).y() for c in self.childStems2]
 
         if len(ys)>0:
-
             Y = max(ys)+20
         else:
             Y = -20
 
-
         return X,Y
-
 
     # def addChildStem(self, data, batch=None):
 

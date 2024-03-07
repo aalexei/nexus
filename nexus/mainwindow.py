@@ -21,7 +21,6 @@ import xml.etree.ElementTree as et
 import sys,  zipfile,  io,  os, time, random, hashlib, json, shutil
 from pathlib import Path
 from PyQt6 import QtCore, QtGui, QtOpenGL, QtSvg, QtWidgets, QtPrintSupport
-#QT6 from PyQt6.QtMultimedia import QAudioRecorder, QAudioEncoderSettings, QMultimedia
 from PyQt6.QtMultimedia import QMediaCaptureSession, QAudioInput, QMediaRecorder, QMediaDevices, QAudioInput
 import gzip
 from functools import reduce
@@ -289,31 +288,27 @@ def convert_to_full_tree(g):
     for im in images:
         # Change the kind as we'll have kind Image from the items
         if im['sha1'] in imageshas:
-            # remove accidental duplicates
+            # Remove accidental duplicates
             im.delete(disconnect=True, setchange=False)
             continue
 
         imageshas[im['sha1']] = im
-        # change kind so it doesn't conflict with image item
+        # Change kind so it doesn't conflict with image item
         im['kind'] = "ImageData"
         im.save(setchange=False)
-        # break edges as we'll relink on the items based on sha1
+        # Break edges as we'll relink on the items based on sha1
         for e in im.bothE():
             e.delete(setchange=False)
 
     # Change tags into attribute instead of node
     tagnodes = g2.fetch('[n:Tag]')
-    #print('tagnodes: ',tagnodes)
     for tn in tagnodes:
-        #print('edges ', tn.bothE())
         tagged = tn.outN('e.kind="Tagged"')
-        #print(tagged)
         for n in tagged:
             tags = n.get('tags', [])
             if tn['text'] not in tags:
                 tags.append(tn['text'])
             n['tags'] = tags
-            #print(n['tags'])
             n.save(setchange=False)
 
     tagnodes.delete(disconnect=True, setchange=False)
@@ -392,7 +387,7 @@ def convert_to_partial_tree(g):
                 g.Edge(s,'With', edata.end).save(setchange=False)
                 edata.delete(setchange=False)
             uid = end['uid']
-            # clean up the data, only using structure once so modify directly
+            # Clean up the data, only using structure once so modify directly
             data = end.data
             for k in ['uid', 'mtime', 'ctime']:
                 if k in data:
@@ -521,7 +516,6 @@ class NewOrOpenDialog(QtWidgets.QDialog):
             self.reject()
 
 
-
 #----------------------------------------------------------------------
 class NexusApplication(QtWidgets.QApplication):
 #----------------------------------------------------------------------
@@ -555,7 +549,7 @@ class NexusApplication(QtWidgets.QApplication):
                 self.windowMenu.removeAction(action)
 
         ## N.B. we need to keep a copy of the window list otherwise
-        ## python's garbage collector will throw away our MainWindows!
+        ## Python's garbage collector will throw away our MainWindows!
         self.windows = self.windowList()
         for window in self.windows:
             act = QtGui.QAction(QtGui.QIcon(":/images/nexusicon.svg"), window.windowTitle(), self)
@@ -653,23 +647,6 @@ class NexusApplication(QtWidgets.QApplication):
         return self.raiseOrOpen(str(P))
 
 
-    #X def event(self, event):
-    #X     if event.type() == QtCore.QEvent.Type.FileOpen:
-    #X         f =  event.file()
-    #X
-    #X         logging.debug("Received FileOpen event for %s", f)
-    #X
-    #X         ext = os.path.splitext(f)[1]
-    #X         if ext == '.nex':
-    #X             canonicalFilePath = QtCore.QFileInfo(f).canonicalFilePath()
-    #X             self.raiseOrOpen(canonicalFilePath)
-    #X             return True
-    #X         else:
-    #X             return QtWidgets.QApplication.event(self, event)
-    #X
-    #X     else:
-    #X         return QtWidgets.QApplication.event(self, event)
-
     def event(self, event):
         if event.type() == QtCore.QEvent.Type.FileOpen:
             f =  event.file()
@@ -706,7 +683,7 @@ class NexusApplication(QtWidgets.QApplication):
             
         else:
             logging.info('Stopping streaming server...')
-            # this will stop any current streaming
+            # This will stop any current streaming
             self.streaming = False
             time.sleep(1)
 
@@ -965,7 +942,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         setifunset(settings, "style/branchcolor", "#715D80")
         setifunset(settings, "style/branchthickness", 5)
-        #setifunset(settings, "new/stemscale", 0.6)
         # force the scale
         settings.setValue("new/stemscale", 0.6)
 
@@ -1175,17 +1151,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.showMessage("Exporting SVG to %s"%path)
         logging.info("Exporting SVG to %s"%path)
 
-        # remove background so it doesn't appear in svg
+        # Remove background so it doesn't appear in svg
         backgroundbrush = scene.backgroundBrush()
         scene.setBackgroundBrush(QtGui.QBrush())
 
-        ## clean up scene ready for export
+        ## Clean up scene ready for export
         frames = False
         if self.viewsFramesAct.isChecked():
             frames = True
             self.viewsFramesAct.trigger()
 
-        ## deselect everything
+        ## Deselect everything
         scene.clearSelection()
 
         hiddenstems = []
@@ -1198,7 +1174,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 R=R.united(child.boundingRect())
 
 
-        ## links are broken in SVGgenerator ... work around this
+        ## Links are broken in SVGgenerator ... work around this
         links = {}
         textitems = []
         linknumber=0
@@ -1414,12 +1390,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.openAct.triggered.connect(app.dialogOpen)
 
         # ----------------------------------------------------------------------------------
-        # self.saveAct = QtGui.QAction(QtGui.QIcon(":/images/save.svg"),self.tr("&Save"), self)
-        # self.saveAct.setShortcut(QtGui.QKeySequence.StandardKey.Save)
-        # self.saveAct.setStatusTip(self.tr("Save the document to disk"))
-        # self.saveAct.triggered.connect(self.save)
-
-        # ----------------------------------------------------------------------------------
         self.saveAsAct = QtGui.QAction(QtGui.QIcon(":/images/save-as.svg"), self.tr("Save &As..."), self)
         self.saveAsAct.setStatusTip(self.tr("Save the document under a new name"))
         self.saveAsAct.triggered.connect(self.saveAs)
@@ -1460,36 +1430,15 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.exitAct.triggered.connect(QtWidgets.qApp.closeAllWindows)
         self.exitAct.triggered.connect(QtWidgets.QApplication.instance().closeAllWindows)
 
-
         # ----------------------------------------------------------------------------------
-        #self.grabModeAct = QtGui.QAction(QtGui.QIcon(":/images/grab-mode.svg"), self.tr("Grab Mode"), self)
-        #self.grabModeAct.setCheckable(True)
-
-        # ----------------------------------------------------------------------------------
-        #self.addModeAct = QtGui.QAction(QtGui.QIcon(":/images/add-mode.svg"), self.tr("Add Mode"), self)
-        #self.addModeAct.setCheckable(True)
-
-        # ----------------------------------------------------------------------------------
-        #self.moveModeAct = QtGui.QAction(QtGui.QIcon(":/images/move-mode.svg"), self.tr("Move Mode"), self)
-        #self.moveModeAct.setCheckable(True)
-
-        #modegroup = QtGui.QActionGroup(self)
-        #modegroup.addAction(self.grabModeAct)
-        #modegroup.addAction(self.addModeAct)
-        #modegroup.addAction(self.moveModeAct)
-        #self.grabModeAct.setChecked(True)
-
-        # ----------------------------------------------------------------------------------
-        self.cutAct = QtGui.QAction(QtGui.QIcon(":/images/edit-cut.svg"),self.tr("Cu&t"),
-                                    self)
+        self.cutAct = QtGui.QAction(QtGui.QIcon(":/images/edit-cut.svg"),self.tr("Cu&t"), self)
         self.cutAct.setShortcut(QtGui.QKeySequence.StandardKey.Cut)
         self.cutAct.setStatusTip(self.tr("Cut the current selection's "
                                          "contents to the clipboard"))
         self.cutAct.triggered.connect(self.scene.cut)
 
         # ----------------------------------------------------------------------------------
-        self.copyAct = QtGui.QAction(QtGui.QIcon(":/images/edit-copy.svg"),self.tr("&Copy"),
-                                     self)
+        self.copyAct = QtGui.QAction(QtGui.QIcon(":/images/edit-copy.svg"),self.tr("&Copy"), self)
         self.copyAct.setShortcut(QtGui.QKeySequence.StandardKey.Copy)
         self.copyAct.setStatusTip(self.tr("Copy the current selection's "
                                           "contents to the clipboard"))
@@ -1632,12 +1581,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # ----------------------------------------------------------------------------------
         # Modes
         #
-        # self.presentationModeAct = QtGui.QAction(QtGui.QIcon(":/images/view-presentation.svg"), self.tr("Presentation"), self)
-        # self.presentationModeAct.setStatusTip(self.tr("Set Toggle Presentation Mode"))
-        # self.presentationModeAct.triggered.connect(self.setPresentationMode)
-        # self.presentationModeAct.setCheckable(True)
-        # self.presentationModeAct.setChecked(False)
-
         self.editModeAct = QtGui.QAction(QtGui.QIcon(":/images/grab-mode.svg"), self.tr("Edit Mode"), self)
         self.editModeAct.setShortcut(self.tr("Ctrl+E"))
         self.editModeAct.setCheckable(True)
@@ -1777,10 +1720,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editMenu.addSeparator()
         self.editMenu.addAction(self.deleteAct)
         self.editMenu.addSeparator()
-        # self.editMenu.addAction(self.grabModeAct)
-        # self.editMenu.addAction(self.addModeAct)
-        # self.editMenu.addAction(self.moveModeAct)
-        # self.editMenu.addSeparator()
         self.editMenu.addAction(self.selectAllAct)
         self.editMenu.addAction(self.selectChildrenAct)
         self.editMenu.addAction(self.selectSiblingsAct)
@@ -2169,15 +2108,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.printer.setOutputFormat(QtPrintSupport.QPrinter.OutputFormat.NativeFormat)
 
-        # XXX PyInstaller BUG
-        # XXX normal print dialog noshow with a "QPrintDialog: Cannot be used on non-native printers" error
-        #dialog = QtPrintSupport.QPrintPreviewDialog(self.printer, self)
         dialog = QtPrintSupport.QPrintDialog(self.printer, self)
 
         dialog.setWindowTitle(self.tr("Print ")+filename)
 
         #
-        # hide frames
+        # Hide frames
         #
         frames = False
         if self.viewsFramesAct.isChecked():
@@ -2185,7 +2121,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.viewsFramesAct.trigger()
 
         #
-        # hide stems tagged with 'hide'
+        # Hide stems tagged with 'hide'
         #
         hiddenstems = []
         for child in self.scene.allChildStems(includeroot=False):
@@ -2206,7 +2142,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if dialog.exec():
                 self.printMap(self.printer)
 
-        ## restore frames visibility
+        ## Restore frames visibility
         if frames:
             self.viewsFramesAct.trigger()
         for child in hiddenstems:
@@ -2332,15 +2268,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def sceneClearUndoHistory(self):
         self.scene.graph.clearchanges()
         logging.info("Undo changes cleared")
-
-    #def sceneSelectedClearStyle(self):
-    #    #Z XXX this looks old style,  need to update
-    #    selected = self.scene.selectedItems()
-    #    for item in selected:
-    #        item._style.clear()
-    #        item.updateStem()
-    #        for child in item.allChildStems():
-    #            child.updateStem()
 
     def sceneSelectAll(self):
         '''
