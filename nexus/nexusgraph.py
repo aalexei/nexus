@@ -26,7 +26,8 @@ from urllib.request import urlopen
 import ssl
 
 
-from PyQt6 import QtCore, QtGui
+#from PyQt6 import QtCore, QtGui
+from PySide6 import QtCore, QtGui
 
 CONFIG = config.get_config()
 

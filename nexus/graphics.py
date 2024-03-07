@@ -16,8 +16,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Nexus.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtCore import pyqtSlot
+#from PyQt6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
+#from PyQt6.QtCore import pyqtSlot
+#from PySide6.QtCore import Slot
 
 from math import sqrt, atan2, cos, sin, pi, asin, degrees, pow, exp, fmod
 import logging
@@ -1877,7 +1879,8 @@ Free, Mouse, Tablet, Gesture = 0,1,2,3
 ##----------------------------------------------------------------------
 class InkView(QtWidgets.QGraphicsView):
 ##----------------------------------------------------------------------
-    viewChangeStream = QtCore.pyqtSignal(QtWidgets.QGraphicsView)
+    #viewChangeStream = QtCore.pyqtSignal(QtWidgets.QGraphicsView)
+    viewChangeStream = QtCore.Signal(QtWidgets.QGraphicsView)
 
     def __init__(self, scene, parent = None):
 
@@ -2512,10 +2515,14 @@ class InkView(QtWidgets.QGraphicsView):
 class NexusScene(QtWidgets.QGraphicsScene):
 ##----------------------------------------------------------------------
 
-    statusMessage = QtCore.pyqtSignal(str)
-    linkClicked = QtCore.pyqtSignal(str)
-    mapModified = QtCore.pyqtSignal()
-    showEditDialog = QtCore.pyqtSignal(object)
+    #statusMessage = QtCore.pyqtSignal(str)
+    #linkClicked = QtCore.pyqtSignal(str)
+    #mapModified = QtCore.pyqtSignal()
+    #showEditDialog = QtCore.pyqtSignal(object)
+    statusMessage = QtCore.Signal(str)
+    linkClicked = QtCore.Signal(str)
+    mapModified = QtCore.Signal()
+    showEditDialog = QtCore.Signal(object)
 
     ## in presentation mode (changes how items react):
     #presentation = False
@@ -2807,12 +2814,15 @@ class NexusView(QtWidgets.QGraphicsView):
 
     # on iw3 no key presses are received by action when in full screen
     # Do alternative pathway here
-    presentationEscape = QtCore.pyqtSignal()
+    #presentationEscape = QtCore.pyqtSignal()
+    presentationEscape = QtCore.Signal()
 
     # send position and pen events for recording
-    recordStateEvent = QtCore.pyqtSignal(dict)
+    #recordStateEvent = QtCore.pyqtSignal(dict)
+    recordStateEvent = QtCore.Signal(dict)
 
-    viewChangeStream = QtCore.pyqtSignal(QtWidgets.QGraphicsView)
+    #viewChangeStream = QtCore.pyqtSignal(QtWidgets.QGraphicsView)
+    viewChangeStream = QtCore.Signal(QtWidgets.QGraphicsView)
 
     def __init__(self, scene, parent = None):
 
@@ -3745,7 +3755,8 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
             super().__init__()
             scene.addItem(self)
         else:
-            super().__init__(parent=parent)
+            # pyqt super().__init__(parent=parent)
+            super().__init__()
 
         self.setAcceptHoverEvents(True)
         self.originalCursor = None
@@ -4107,9 +4118,12 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
     mode = StaticMode
 
-    statusMessage = QtCore.pyqtSignal(str)
-    linkClicked = QtCore.pyqtSignal(str)
-    positionChanged = QtCore.pyqtSignal(QtGui.QTextCursor)
+    statusMessage = QtCore.Signal(str)
+    linkClicked = QtCore.Signal(str)
+    positionChanged = QtCore.Signal(QtGui.QTextCursor)
+    #statusMessage = QtCore.pyqtSignal(str)
+    #linkClicked = QtCore.pyqtSignal(str)
+    #positionChanged = QtCore.pyqtSignal(QtGui.QTextCursor)
 
     def __init__(self, uid, stem, scene=None, parent=None):
         ## Rendered in one of two ways:
@@ -4124,7 +4138,8 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             super().__init__()
             scene.addItem(self)
         else:
-            super().__init__(parent=parent)
+            #pyqt super().__init__(parent=parent)
+            super().__init__()
 
         self.DefaultFont = QtGui.QFont(self.get("font_family", CONFIG['text_item_font_family']),
                                        self.get("font_size", CONFIG['text_item_font_size']))
@@ -4678,7 +4693,8 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
             super().__init__()
             scene.addItem(self)
         else:
-            super().__init__(parent=parent)
+            #pyqt super().__init__(parent=parent)
+            super().__init__()
 
         self.setAcceptHoverEvents(True)
         self.setZValue(self.get('z',0))

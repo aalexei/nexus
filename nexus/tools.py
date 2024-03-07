@@ -17,7 +17,8 @@
 ## along with Nexus.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
-from PyQt6 import QtCore, QtGui, QtWidgets
+#from PyQt6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from . import resources
 import logging
@@ -44,8 +45,10 @@ DEFAULThisizes = [5,10,15,20,25]
 class ColorSwatch(QtWidgets.QLabel):
 ##----------------------------------------------------------------------
 
-    clicked = QtCore.pyqtSignal(QtGui.QColor)
-    colorChanged = QtCore.pyqtSignal(int, int, QtGui.QColor)
+    #clicked = QtCore.pyqtSignal(QtGui.QColor)
+    clicked = QtCore.Signal(QtGui.QColor)
+    #colorChanged = QtCore.pyqtSignal(int, int, QtGui.QColor)
+    colorChanged = QtCore.Signal(int, int, QtGui.QColor)
 
     def __init__(self, idx, color, selected=False, parent=None):
         super().__init__(parent)
@@ -111,8 +114,10 @@ class ColorSwatch(QtWidgets.QLabel):
 class SizeSwatch(QtWidgets.QLabel):
 ##----------------------------------------------------------------------
 
-    clicked = QtCore.pyqtSignal(float)
-    sizeChanged = QtCore.pyqtSignal(int, float)
+    #clicked = QtCore.pyqtSignal(float)
+    clicked = QtCore.Signal(float)
+    #sizeChanged = QtCore.pyqtSignal(int, float)
+    sizeChanged = QtCore.Signal(int, float)
 
     def __init__(self, idx, size, selected=False, kind="pen", parent=None):
         super().__init__(parent)

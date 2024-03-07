@@ -20,9 +20,11 @@
 import xml.etree.ElementTree as et
 import sys,  zipfile,  io,  os, time, random, hashlib, json, shutil
 from pathlib import Path
-from PyQt6 import QtCore, QtGui, QtOpenGL, QtSvg, QtWidgets, QtPrintSupport
+#from PyQt6 import QtCore, QtGui, QtOpenGL, QtSvg, QtWidgets, QtPrintSupport
+from PySide6 import QtCore, QtGui, QtOpenGL, QtSvg, QtWidgets, QtPrintSupport
 #QT6 from PyQt6.QtMultimedia import QAudioRecorder, QAudioEncoderSettings, QMultimedia
-from PyQt6.QtMultimedia import QMediaCaptureSession, QAudioInput, QMediaRecorder, QMediaDevices, QAudioInput
+#from PyQt6.QtMultimedia import QMediaCaptureSession, QAudioInput, QMediaRecorder, QMediaDevices, QAudioInput
+from PySide6.QtMultimedia import QMediaCaptureSession, QAudioInput, QMediaRecorder, QMediaDevices, QAudioInput
 import gzip
 from functools import reduce
 import webbrowser, tempfile
@@ -717,7 +719,8 @@ class NexusApplication(QtWidgets.QApplication):
             self.streaming_thread = None
             self.streaming_daemon = None
 
-    @QtCore.pyqtSlot(QtWidgets.QGraphicsView)
+    #@QtCore.pyqtSlot(QtWidgets.QGraphicsView)
+    @QtCore.Slot(QtWidgets.QGraphicsView)
     def createViewImage(self, view):
 
         if not self.streaming:
@@ -3178,7 +3181,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
 class FilterEdit(QtWidgets.QLineEdit):
 
-    runfilter = QtCore.pyqtSignal(str)
+    #runfilter = QtCore.pyqtSignal(str)
+    runfilter = QtCore.Signal(str)
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -3435,7 +3439,8 @@ class RectangleChanged(QtCore.QObject):
 
     # QGraphics items can;t signal as they don't inherit from QObject
     # Create a signal class that can
-    signal = QtCore.pyqtSignal(dict)
+    #signal = QtCore.pyqtSignal(dict)
+    signal = QtCore.Signal(dict)
 
     def emit(self, d):
         self.signal.emit(d)
@@ -3448,7 +3453,8 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
     '''
 
     # fired off when view rect is changed
-    viewRectangleChanged = QtCore.pyqtSignal(str,int,int,int,int)
+    #viewRectangleChanged = QtCore.pyqtSignal(str,int,int,int,int)
+    viewRectangleChanged = QtCore.Signal(str,int,int,int,int)
 
     # Nominal Full HD width
     WIDTH = 1920
@@ -3625,7 +3631,8 @@ class ViewsListView(QtWidgets.QListView):
     Vertical = 1
     orientation = Vertical
 
-    selectionChange = QtCore.pyqtSignal()
+    #selectionChange = QtCore.pyqtSignal()
+    selectionChange = QtCore.Signal()
 
     def __init__(self):
         super().__init__()

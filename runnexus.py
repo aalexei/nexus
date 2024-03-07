@@ -18,7 +18,8 @@
 # along with Nexus.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys,  time
-from PyQt6 import QtCore, QtGui, QtWidgets
+#from PyQt6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from nexus.mainwindow import MainWindow, NexusApplication, NewOrOpenDialog
 from pathlib import Path
