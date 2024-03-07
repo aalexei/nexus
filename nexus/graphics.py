@@ -2433,7 +2433,8 @@ class InkView(QtWidgets.QGraphicsView):
                                 self.verticalScrollBar().value())
             Tc = Transform.fromTranslate(sp.x(),sp.y())
 
-            D = QtCore.QPointF(v1)*Tc*Minv-self._s0
+            #pyqt D = QtCore.QPointF(v1)*Tc*Minv-self._s0
+            D = (Tc*Minv).map(QtCore.QPointF(v1))-self._s0
 
             M.translate(D.x(),D.y())
             self.setTransform(M, False)
@@ -3307,7 +3308,10 @@ class NexusView(QtWidgets.QGraphicsView):
                                 self.verticalScrollBar().value())
             Tc = Transform.fromTranslate(sp.x(),sp.y())
 
-            D = QtCore.QPointF(v1)*Tc*Minv-self._s0
+            #pyqt breakpoint()
+            #pyqt  D = QtCore.QPointF(v1)*Tc*Minv-self._s0
+            D = (Tc*Minv).map(v1)-self._s0
+
 
             # XXX Limit total scale?
 
@@ -3739,7 +3743,7 @@ class ContentItem:
             return default
 
 ##----------------------------------------------------------------------
-class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
+class InkItem(ContentItem, QtWidgets.QGraphicsPathItem):
 ##----------------------------------------------------------------------
 
     def __init__(self, uid, stem, scene=None, parent=None):
@@ -3755,8 +3759,7 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
             super().__init__()
             scene.addItem(self)
         else:
-            # pyqt super().__init__(parent=parent)
-            super().__init__()
+            super().__init__(parent=parent)
 
         self.setAcceptHoverEvents(True)
         self.originalCursor = None
@@ -4106,7 +4109,7 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
 
 
 ##----------------------------------------------------------------------
-class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
+class TextItem(ContentItem, QtWidgets.QGraphicsTextItem):
 ##------------------`----------------------------------------------------
 
     url = None
@@ -4138,8 +4141,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             super().__init__()
             scene.addItem(self)
         else:
-            #pyqt super().__init__(parent=parent)
-            super().__init__()
+            super().__init__(parent=parent)
 
         self.DefaultFont = QtGui.QFont(self.get("font_family", CONFIG['text_item_font_family']),
                                        self.get("font_size", CONFIG['text_item_font_size']))
@@ -4675,7 +4677,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         QtWidgets.QGraphicsTextItem.paint(self, painter, option, widget)
 
 #----------------------------------------------------------------------
-class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
+class PixmapItem(ContentItem, QtWidgets.QGraphicsPixmapItem):
 #----------------------------------------------------------------------
 
     # TODO lossless encoding? png/jpg .. preserve details
@@ -4693,8 +4695,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
             super().__init__()
             scene.addItem(self)
         else:
-            #pyqt super().__init__(parent=parent)
-            super().__init__()
+            super().__init__(parent=parent)
 
         self.setAcceptHoverEvents(True)
         self.setZValue(self.get('z',0))
