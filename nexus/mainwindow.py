@@ -2370,7 +2370,6 @@ class MainWindow(QtWidgets.QMainWindow):
         width0 = sqrt((lp0.x()-rp0.x())**2+(lp0.y()-rp0.y())**2)
         rot0 = atan2(-(rp0-lp0).y(), (rp0-lp0).x())
 
-
         ## final point
         lp1 = QtCore.QPointF(*viewitem['left'])
         rp1 = QtCore.QPointF(*viewitem['right'])
@@ -2424,7 +2423,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             drot = 0
 
-        ## do all the calculations initially and cache the results
+        ## Do all the calculations initially and cache the results
         self.viewsteps = []
         for ii in range(1,totalsteps):
             s = ii/float(totalsteps)*S
@@ -2568,7 +2567,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editModeAct.setShortcuts(["Ctrl+E","Esc"])
 
     def keyPressEvent(self, event):
-        # print('key', event.key(), event.text(), QtCore.Qt.Key.Key_Escape)
         super().keyPressEvent(event)
         if self.scene.mode=="presentation" and event.text().lower() in ["q"]:
             print("Q key press")
@@ -2617,7 +2615,6 @@ class MainWindow(QtWidgets.QMainWindow):
         #
         # Recording setup
         #
-        self.audiosession = QMediaCaptureSession(self)
 
         devices = QMediaDevices()
         inputs = devices.audioInputs()
@@ -2632,19 +2629,20 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.recSourceCombo.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
 
         self.recorder = QMediaRecorder(self)
-        self.audiosession.setRecorder(self.recorder)
         self.recorder.setQuality(QMediaRecorder.Quality.HighQuality)
         self.recorder.setAudioChannelCount(2)
         self.recorder.setAudioSampleRate(44100)
         # self.recorder.setMediaFormat(QMediaFormat.AudioCodec.Wave)
         # self.recorder.setOutputLocation(QtCore.QUrl.fromLocalFile("test.mp3"))
+        self.recorder.recorderStateChanged.connect(self.audioRecorderStateChange)
+        # self.audiosession = QMediaCaptureSession(self)
+        # self.audiosession.setRecorder(self.recorder)
+        # self.audioRecorderStateChange()
 
         self.recStartAct.setEnabled(True)
         self.recPauseAct.setEnabled(False)
         self.recEndAct.setEnabled(False)
 
-        self.recorder.recorderStateChanged.connect(self.audioRecorderStateChange)
-        self.audioRecorderStateChange()
 
 
     def storeRecordingEvent(self, event):
@@ -2705,6 +2703,9 @@ class MainWindow(QtWidgets.QMainWindow):
         print(f'STATE {self.recorder.recorderState()}')
         if self.recorder.recorderState()==QMediaRecorder.RecorderState.StoppedState:
             # This is the initial state of the recorder
+
+            self.audiosession = QMediaCaptureSession(self)
+            self.audiosession.setRecorder(self.recorder)
 
             audio_device = self.audio_inputs[self.recSourceCombo.currentText()]
 
@@ -2792,34 +2793,8 @@ class MainWindow(QtWidgets.QMainWindow):
         currentview = {}
         currentpen = [[]]
         N = len(self.event_stream)
-        # extra time accumulated on skipping frames:
+        # Extra time accumulated on skipping frames:
         skipped = 0
-
-        # this is a mirror of code in graphics
-        # I know, I know, don't duplicate, abstract
-        # outer colour
-        # TODO update with new graphics code
-        # problem is the new code depends on the scale of the view so
-        # need to create the pointer item when the trail starts
-        
-        # self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-        # self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
-        # pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
-        # pen.setWidthF(CONFIG['trail_outer_width'])
-        # pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
-        # self.pointertrailitem.setPen(pen)
-        # self.pointertrailitem.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
-        # self.scene.addItem(self.pointertrailitem)
-
-        # inner colour
-        # self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-        # self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
-        # pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
-        # pen.setWidthF(CONFIG['trail_inner_width'])
-        # pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
-        # self.pointertrailitem2.setPen(pen)
-        # self.pointertrailitem2.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
-        # self.scene.addItem(self.pointertrailitem2)
 
         progress = QtWidgets.QProgressDialog("Making frames","Cancel",0,120, self)
         progress.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
@@ -2832,7 +2807,7 @@ class MainWindow(QtWidgets.QMainWindow):
             cmd = e['cmd']
             if cmd in ['start','end']:
                 continue
-            # the following will throw exeption if end frame so skip those above
+            # The following will throw exeption if end frame so skip those above
             dt = self.event_stream[i+1]['t']-e['t']
 
             if cmd == 'view':
@@ -2844,13 +2819,13 @@ class MainWindow(QtWidgets.QMainWindow):
             elif cmd=='pen-point':
                 currentpen[-1].append(QtCore.QPointF(e['x'],e['y']))
                 if dt+skipped < 0.0167 and self.event_stream[i+1]['cmd']!='pen-up':
-                    #frame faster than 1/60 fps so skip making this one
+                    # Frame faster than 1/60 fps so skip making this one
                     skipped+=dt
                     continue
             elif cmd=='pause':
                 currentpen = [[]]
 
-            # draw frame
+            # Draw frame
             if cmd in ['view','pen-clear', 'pen-up', 'pen-point']:
                 framename = 'frame_{:04d}.png'.format(F)
                 fp.write('file {}\nduration {}\n'.format(framename,dt+skipped))
@@ -2861,12 +2836,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 F+=1
                 skipped = 0
 
-        # last frame must be written again or ffmped ignores the duration
+        # Last frame must be written again or ffmped ignores the duration
         fp.write('file {}\n'.format(framename))
         fp.close()
-
-        # self.scene.removeItem(self.pointertrailitem )
-        # self.scene.removeItem(self.pointertrailitem2 )
 
         progress.setLabelText("Generating video")
         progress.setValue(100)
@@ -2901,9 +2873,11 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             return
 
+        # Remove all the temporary files
+        shutil.rmtree(self.tmprecdir)
+        
         # TODO cleanup temporary directory unless user indicates not to
         # TODO needs better feedback
-        # TODO ability to cancel a recording
         # TODO probably should be moved to separate thread (except need to generate views)
         # TODO crashes on generating video if app made with pyinstaller (subprocess?)
         # TODO audio delay when used as an app (pyinstaller) as oppesed to cli
@@ -2924,6 +2898,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.scene.removeItem(self.view.pointertrailitem2 )
             self.view.pointertrailitem2 = None
 
+        # This is a mirror of code in graphics but with different scaling
+        # I know, I know, don't duplicate, abstract
+        
         # Outer color
         pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
         pen.setWidthF(CONFIG['trail_outer_width']/s)
@@ -3071,142 +3048,142 @@ class FilterEdit(QtWidgets.QLineEdit):
 
 
 
-class RecordDialog(QtWidgets.QDialog):
+# class RecordDialog(QtWidgets.QDialog):
 
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
 
-        self.setWindowTitle("Record")
-        #self.setWindowFlags(QtCore.Qt.WindowType.WindowStaysOnTopHint)
+#         self.setWindowTitle("Record")
+#         #self.setWindowFlags(QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
-        self.audiorecorder = QAudioRecorder()
+#         self.audiorecorder = QAudioRecorder()
 
-        codecs = self.audiorecorder.supportedAudioCodecs()
-        containers = self.audiorecorder.supportedContainers()
-        sample_rates = self.audiorecorder.supportedAudioSampleRates()
+#         codecs = self.audiorecorder.supportedAudioCodecs()
+#         containers = self.audiorecorder.supportedContainers()
+#         sample_rates = self.audiorecorder.supportedAudioSampleRates()
 
 
-        #self.setWindowOpacity(0.6)
+#         #self.setWindowOpacity(0.6)
 
-        QBtn = QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel
+#         QBtn = QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel
 
-        self.buttonBox = QtWidgets.QDialogButtonBox(QBtn)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
+#         self.buttonBox = QtWidgets.QDialogButtonBox(QBtn)
+#         self.buttonBox.accepted.connect(self.accept)
+#         self.buttonBox.rejected.connect(self.reject)
 
-        #self.audio = pyaudio.PyAudio()
+#         #self.audio = pyaudio.PyAudio()
 
-        #
-        # list of input devices
-        #
-        # info = self.audio.get_host_api_info_by_index(0)
-        # numdevices = info.get('deviceCount')
-        # devices = []
-        # for i in range(0, numdevices):
-        #     if (self.audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
-        #         devices.append(self.audio.get_device_info_by_host_api_device_index(0, i).get('name'))
+#         #
+#         # list of input devices
+#         #
+#         # info = self.audio.get_host_api_info_by_index(0)
+#         # numdevices = info.get('deviceCount')
+#         # devices = []
+#         # for i in range(0, numdevices):
+#         #     if (self.audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
+#         #         devices.append(self.audio.get_device_info_by_host_api_device_index(0, i).get('name'))
 
-        sources = self.audiorecorder.audioInputs()
-        print(sources)
-        default_source = self.audiorecorder.defaultAudioInput()
-        sources.remove(default_source)
-        sources.insert(0, default_source)
-        self.sources = QtWidgets.QComboBox()
-        self.sources.addItems(sources)
-        self.sources.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
-        self.sources.setMinimumContentsLength(6)
+#         sources = self.audiorecorder.audioInputs()
+#         print(sources)
+#         default_source = self.audiorecorder.defaultAudioInput()
+#         sources.remove(default_source)
+#         sources.insert(0, default_source)
+#         self.sources = QtWidgets.QComboBox()
+#         self.sources.addItems(sources)
+#         self.sources.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
+#         self.sources.setMinimumContentsLength(6)
 
-        #
-        # Levels
-        #
-        self.levels = QtWidgets.QLabel("? ?")
+#         #
+#         # Levels
+#         #
+#         self.levels = QtWidgets.QLabel("? ?")
 
-        #
-        # output file name
-        #
-        self.outputfilename = QtWidgets.QLineEdit("output.wav")
+#         #
+#         # output file name
+#         #
+#         self.outputfilename = QtWidgets.QLineEdit("output.wav")
 
-        #
-        # Record button
-        #
-        self.recordbutton = QtWidgets.QPushButton("Record")
-        # self.recordbutton.setCheckable(True)
-        self.recordbutton.setMinimumSize(100,100)
-        self.recordbutton.clicked.connect(self.recordPushed)
+#         #
+#         # Record button
+#         #
+#         self.recordbutton = QtWidgets.QPushButton("Record")
+#         # self.recordbutton.setCheckable(True)
+#         self.recordbutton.setMinimumSize(100,100)
+#         self.recordbutton.clicked.connect(self.recordPushed)
 
-        form = QtWidgets.QFormLayout()
-        form.addRow("Source:", self.sources)
-        form.addRow("Levels:", self.levels)
-        form.addRow("Output:", self.outputfilename )
+#         form = QtWidgets.QFormLayout()
+#         form.addRow("Source:", self.sources)
+#         form.addRow("Levels:", self.levels)
+#         form.addRow("Output:", self.outputfilename )
 
-        self.layout = QtWidgets.QVBoxLayout()
-        self.layout.addLayout(form)
-        self.layout.addWidget(self.recordbutton)
-        self.layout.addWidget(self.buttonBox)
-        self.setLayout(self.layout)
+#         self.layout = QtWidgets.QVBoxLayout()
+#         self.layout.addLayout(form)
+#         self.layout.addWidget(self.recordbutton)
+#         self.layout.addWidget(self.buttonBox)
+#         self.setLayout(self.layout)
 
-        self.audiorecorder.stateChanged.connect(self.onStateChange)
-        self.onStateChange()
+#         self.audiorecorder.stateChanged.connect(self.onStateChange)
+#         self.onStateChange()
 
-    def onStateChange(self):
+#     def onStateChange(self):
 
-        if self.audiorecorder.state()==QAudioRecorder.StoppedState:
-            self.recordbutton.setStyleSheet("background-color: #400000;")
-            self.recordbutton.setText('Off')
-        elif self.audiorecorder.state()==QAudioRecorder.RecordingState:
-            self.recordbutton.setStyleSheet("background-color: #A00000;")
-            self.recordbutton.setText('Recording')
-        else:
-            self.recordbutton.setStyleSheet("background-color: #900000;")
-            self.recordbutton.setText('Paused')
+#         if self.audiorecorder.state()==QAudioRecorder.StoppedState:
+#             self.recordbutton.setStyleSheet("background-color: #400000;")
+#             self.recordbutton.setText('Off')
+#         elif self.audiorecorder.state()==QAudioRecorder.RecordingState:
+#             self.recordbutton.setStyleSheet("background-color: #A00000;")
+#             self.recordbutton.setText('Recording')
+#         else:
+#             self.recordbutton.setStyleSheet("background-color: #900000;")
+#             self.recordbutton.setText('Paused')
 
-    def recordPushed(self):
+#     def recordPushed(self):
 
-        # TODO on record pass keypresses to main window
-        # TODO or implement as toolbar
-        if self.audiorecorder.state()==QAudioRecorder.StoppedState:
-            self.setSettings()
+#         # TODO on record pass keypresses to main window
+#         # TODO or implement as toolbar
+#         if self.audiorecorder.state()==QAudioRecorder.StoppedState:
+#             self.setSettings()
 
-            self.audiorecorder.record()
-        elif self.audiorecorder.state()==QAudioRecorder.RecordingState:
-            pass
-            self.audiorecorder.pause()
-        else:
-            pass
-            self.audiorecorder.record()
+#             self.audiorecorder.record()
+#         elif self.audiorecorder.state()==QAudioRecorder.RecordingState:
+#             pass
+#             self.audiorecorder.pause()
+#         else:
+#             pass
+#             self.audiorecorder.record()
 
-    def setSettings(self):
-        settings = QAudioEncoderSettings()
-        settings.setCodec('audio/pcm')
-        settings.setSampleRate(44100)
-        settings.setChannelCount(2)
-        self.audiorecorder.setAudioSettings(settings)
-        self.audiorecorder.setContainerFormat('audio/x-wav')
-        self.audiorecorder.setOutputLocation(QtCore.QUrl('output.wav'))
-        self.audiorecorder.setAudioInput(self.sources.currentText())
+#     def setSettings(self):
+#         settings = QAudioEncoderSettings()
+#         settings.setCodec('audio/pcm')
+#         settings.setSampleRate(44100)
+#         settings.setChannelCount(2)
+#         self.audiorecorder.setAudioSettings(settings)
+#         self.audiorecorder.setContainerFormat('audio/x-wav')
+#         self.audiorecorder.setOutputLocation(QtCore.QUrl('output.wav'))
+#         self.audiorecorder.setAudioInput(self.sources.currentText())
 
-    def accept(self):
+#     def accept(self):
 
-        # save audio
-        self.audiorecorder.stop()
+#         # save audio
+#         self.audiorecorder.stop()
 
-        # TODO generate frames
+#         # TODO generate frames
 
-        # TODO generate video
+#         # TODO generate video
 
-        # TODO combine audio and video
+#         # TODO combine audio and video
 
-        print('accept()')
+#         print('accept()')
 
-    def reject(self):
-        # Cancel / close window / escape
-        print('reject()')
-        self.audiorecorder.stop()
+#     def reject(self):
+#         # Cancel / close window / escape
+#         print('reject()')
+#         self.audiorecorder.stop()
 
-        # TODO escape from recording mode on main window
+#         # TODO escape from recording mode on main window
 
-        super().reject()
+#         super().reject()
 
 class PreferencesDialog(QtWidgets.QDialog):
     '''
