@@ -3120,6 +3120,8 @@ class NexusView(QtWidgets.QGraphicsView):
         if not self.scene().mode in ["presentation", "record"]:
             self.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseReleaseEvent(self, event)
+
+        if self.scene().mode == "record":
             self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-up'})
 
         self.viewChangeStream.emit(self)

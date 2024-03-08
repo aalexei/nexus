@@ -2801,24 +2801,25 @@ class MainWindow(QtWidgets.QMainWindow):
         # TODO update with new graphics code
         # problem is the new code depends on the scale of the view so
         # need to create the pointer item when the trail starts
-        self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-        self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
-        pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
-        pen.setWidthF(CONFIG['trail_outer_width'])
-        pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
-        self.pointertrailitem.setPen(pen)
-        self.pointertrailitem.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
-        self.scene.addItem(self.pointertrailitem)
+        
+        # self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
+        # self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+        # pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
+        # pen.setWidthF(CONFIG['trail_outer_width'])
+        # pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
+        # self.pointertrailitem.setPen(pen)
+        # self.pointertrailitem.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
+        # self.scene.addItem(self.pointertrailitem)
 
         # inner colour
-        self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-        self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
-        pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
-        pen.setWidthF(CONFIG['trail_inner_width'])
-        pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
-        self.pointertrailitem2.setPen(pen)
-        self.pointertrailitem2.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
-        self.scene.addItem(self.pointertrailitem2)
+        # self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
+        # self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+        # pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
+        # pen.setWidthF(CONFIG['trail_inner_width'])
+        # pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
+        # self.pointertrailitem2.setPen(pen)
+        # self.pointertrailitem2.setGraphicsEffect(QtWidgets.QGraphicsBlurEffect())
+        # self.scene.addItem(self.pointertrailitem2)
 
         progress = QtWidgets.QProgressDialog("Making frames","Cancel",0,120, self)
         progress.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
@@ -2864,8 +2865,8 @@ class MainWindow(QtWidgets.QMainWindow):
         fp.write('file {}\n'.format(framename))
         fp.close()
 
-        self.scene.removeItem(self.pointertrailitem )
-        self.scene.removeItem(self.pointertrailitem2 )
+        # self.scene.removeItem(self.pointertrailitem )
+        # self.scene.removeItem(self.pointertrailitem2 )
 
         progress.setLabelText("Generating video")
         progress.setValue(100)
@@ -2915,63 +2916,45 @@ class MainWindow(QtWidgets.QMainWindow):
 
         s = self.view.transform().m11()
 
+        # Remove pointer trail if present (e.g. stop button pressed quickly)
+        if self.view.pointertrailitem is not None:
+            self.scene.removeItem(self.view.pointertrailitem )
+            self.view.pointertrailitem = None
+        if self.view.pointertrailitem2 is not None:
+            self.scene.removeItem(self.view.pointertrailitem2 )
+            self.view.pointertrailitem2 = None
 
-        self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-        #self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+        # Outer color
         pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
         pen.setWidthF(CONFIG['trail_outer_width']/s)
         pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
-        self.pointertrailitem.setPen(pen)
         TrailBlur = QtWidgets.QGraphicsBlurEffect()
         TrailBlur.setBlurRadius(5.0/s)
-        self.pointertrailitem.setGraphicsEffect(TrailBlur)
-        self.scene.addItem(self.pointertrailitem)
+        # Inner color
+        pen2 = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
+        pen2.setWidthF(CONFIG['trail_inner_width']/s)
+        pen2.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
+        TrailBlur2 = QtWidgets.QGraphicsBlurEffect()
+        TrailBlur2.setBlurRadius(4.0/s)
 
-        # inner color
-        self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-        #self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
-        pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
-        pen.setWidthF(CONFIG['trail_inner_width']/s)
-        pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
-        self.pointertrailitem2.setPen(pen)
-        TrailBlur = QtWidgets.QGraphicsBlurEffect()
-        TrailBlur.setBlurRadius(4.0/s)
-        self.pointertrailitem2.setGraphicsEffect(TrailBlur)
-        self.scene.addItem(self.pointertrailitem2)
+        pointertrailitem = QtWidgets.QGraphicsPathItem()
+        pointertrailitem.setPen(pen)
+        pointertrailitem.setGraphicsEffect(TrailBlur)
+
+        pointertrailitem2 = QtWidgets.QGraphicsPathItem()
+        pointertrailitem2.setPen(pen2)
+        pointertrailitem2.setGraphicsEffect(TrailBlur2)
 
         path = QtGui.QPainterPath()
-        path2 = QtGui.QPainterPath()
-        for stroke in reversed(penpoints):
+        for stroke in penpoints:
             if len(stroke)==0:
                 continue
-            path.moveTo(stroke[-1])
-            path2.moveTo(stroke[-1])
-            for p in reversed(stroke[:-1]):
-                path.lineTo(p)
-                path2.lineTo(p)
-        self.pointertrailitem.setPath(path)
-        self.pointertrailitem2.setPath(path)
-        # path = QtGui.QPainterPath()
-        # for stroke in penpoints:
-        #     if len(stroke)==0:
-        #         continue
-        #     subpath = QtGui.QPainterPath()
-        #     p = stroke[0]
-        #     subpath.moveTo(p)
-        #     for p in stroke:
-        #         subpath.lineTo(p)
-        #     # subpath.closeSubpath()
-        #     path.addPath(subpath)
-        # self.pointertrailitem.setPath(path)
-        # self.pointertrailitem2.setPath(path)
-        # self.pointertrailitem.update(path.boundingRect())
-        # self.pointertrailitem2.update(path.boundingRect())
+            path.addPolygon(QtGui.QPolygonF(stroke))
 
-        # self.view.update()
-        # self.pointertrailitem.show()
-        # self.pointertrailitem2.show()
-        # self.view.setViewportUpdateMode(self.view.FullViewportUpdate)
-        # self.view.resetCachedContent()
+        pointertrailitem.setPath(path)
+        pointertrailitem2.setPath(path)
+        self.scene.addItem(pointertrailitem)
+        self.scene.addItem(pointertrailitem2)
 
         # HD 1080p is 1902x1080
         W = 1920
@@ -2979,43 +2962,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         image = createViewImage(self.view, W, H)
 
-        self.scene.removeItem(self.pointertrailitem )
-        self.pointertrailitem = None
-        self.scene.removeItem(self.pointertrailitem2 )
-        self.pointertrailitem2 = None
-        # viewrect = self.view.viewport().rect()
-        # dx = (viewrect.width()-W)/2
-        # dy = (viewrect.height()-H)/2
-
-        # XXX need to add the pen strokes
-        # image = QtGui.QImage(W,H, QtGui.QImage.Format.Format_ARGB32)
-        # image.fill(QtCore.Qt.GlobalColor.transparent)
-        # painter = QtGui.QPainter(image)
-        # painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
-        # painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform, True)
-        # self.view.render(painter, QtCore.QRectF(), QtCore.QRect(dx,dy,W,H), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
-
-        ## Ideally the pen would be draw here but the transformations are a mess
-        ## Needs a complete overhaul to accomodate different res screens anyway
-        # vc = viewrect.center()
-        # s = W/(4*viewrect.width())
-        # c = QtCore.QPointF(W/2,H/2)
-        # tc = QtCore.QPointF(x,y)
-        # for stroke in penpoints:
-        #     if len(stroke)==0:
-        #         continue
-
-        #     #stroke2=[s*(self.view.mapFromScene(QtCore.QPointF(sx,sy))-vp) for sx,sy in stroke]
-        #     #stroke2=[s*(self.view.mapFromScene(sp)-vc)+c-2*tc for sp in stroke]
-        #     #stroke2=[self.view.mapFromScene(sp) for sp in stroke]
-        #     #print(dx,dy, tc, vc)
-        #     #print(stroke2[:3])
-        #     #print(vp,s)
-        #     painter.drawPolyline(QtGui.QPolygonF(stroke2))
-
-        # painter.end()
-
-
+        self.scene.removeItem(pointertrailitem )
+        pointertrailitem = None
+        self.scene.removeItem(pointertrailitem2 )
+        pointertrailitem2 = None
 
         return image
 
