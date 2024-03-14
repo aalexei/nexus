@@ -564,7 +564,18 @@ class Graph:
                 out = [(cid, json.loads(change)) for cid, change in rows]
                 
         return out
-    
+
+    def deleteoldchanges(self, keep=100):
+        '''
+        Delete all changes except last keep number
+        '''
+        cursor=self.cursor()
+        cursor.execute('''DELETE FROM changes WHERE id not in (
+                SELECT id FROM changes
+                ORDER BY id DESC LIMIT ?);
+        VACUUM;''', [keep])
+
+
     def deletechange(self, id):
         cursor=self.cursor()
         cursor.execute('DELETE FROM changes WHERE id = ?', [id])
@@ -601,6 +612,7 @@ class Graph:
             
         cursor=self.cursor()
         row=cursor.execute('''INSERT INTO changes (change) VALUES (?)''', [change])
+        self.deleteoldchanges()
 
     def undo(self):
         '''
