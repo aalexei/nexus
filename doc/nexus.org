@@ -1,48 +1,45 @@
 #+TITLE: Nexus
 
-/Nexus/ is a mindmapping app that supports text, images and stylus input. It will
-run on Mac, Windows, and Linux. It's been mainly tested on mac and linux.
+/Nexus/ is a mindmapping app that supports text, images and stylus input. It will run on Mac, Windows, and Linux. It's been mainly tested on mac and linux.
 
 * Installation
 
 - python3
-- pyqt5
+- pyqt6
 - bs4
 - bleach
-
-- apsw (install from https://rogerbinns.github.io/apsw/)
+- apsw (https://rogerbinns.github.io/apsw/)
 
 
 * Main map
 ** Interaction
 
-There are multiple overlapping ways to move and add items. 
+Since it will run on a variety of touch-screens and tablets, there are multiple ways to do most operations.
 
 *** Moving branches
 
-Click and drag
+- Click and drag
 
 *** Adding sub-branches
 
-Ctlr-click and drag
-2nd mouse button and drag
-Long press and drag
+- Ctlr-click and drag
+- 2nd mouse button and drag
+- Long press and drag
 
 *** Zoom
 
-Ctrl and drag on background
-Ctrl and mouse wheel
-Pinch gesture
+- Ctrl and drag on background
+- Ctrl and mouse wheel
+- Pinch gesture
 
 *** Edit current branch
 
-Double click
-Longpress then select edit
+- Double click
+- Longpress then select edit from pop-up menu
 
 * File format
 
-The file format for /Nexus/ is an sqlite database structured as a graph database
-using ~graphydb~.
+The file format for /Nexus/ is an sqlite database structured as a graph database using ~graphydb~.
 
 ** Graph structure
 
