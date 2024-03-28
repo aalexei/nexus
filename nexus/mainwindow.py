@@ -965,6 +965,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, event):
 
         self.writeSettings()
+        self.scene.graph.close()
         event.accept()
 
     def activateWindowViaMenu(self):
