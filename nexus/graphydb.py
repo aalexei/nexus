@@ -496,6 +496,7 @@ class Graph:
             filedb = Graph(path)
         '''
         self.path = path
+        self.changed = False
         if os.path.exists(path):
             ## connect to existing database
             self.connection = apsw.Connection(self.path)
@@ -573,7 +574,7 @@ class Graph:
         cursor.execute('''DELETE FROM changes WHERE id not in (
                 SELECT id FROM changes
                 ORDER BY id DESC LIMIT ?);
-        VACUUM;''', [keep])
+        ''', [keep])
 
 
     def deletechange(self, id):
@@ -646,6 +647,18 @@ class Graph:
             changes.append((action, change['uid']))
             self.deletechange(i)
         return changes
+
+    def close(self):
+        '''
+        Clean up database, reclaim space if changed.
+        '''
+        cursor=self.cursor()
+        if self.changed:
+            # Only reclaim space if DB changed (otherwise just looking changes it)
+            # Only do this on close as it's expensive
+            logging.info('Vacuuming DB')
+            cursor.execute('VACUUM')
+
 
     def resetfts(self, nodefields=None, edgefields=None):
                 
@@ -1340,6 +1353,7 @@ class Node(GraphyDBItem):
             self.graph.addchange(old=originalitem, new=self, batch=batch)                        
         
         self.setChanged(False)
+        self.graph.changed = True
         return self
         
         
@@ -1517,6 +1531,7 @@ class Edge(GraphyDBItem):
             self.graph.addchange(old=originalitem, new=self, batch=batch)                        
         
         self.setChanged(False)
+        self.graph.changed = True
         return self
 
             
