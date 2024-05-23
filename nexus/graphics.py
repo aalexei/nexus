@@ -869,7 +869,7 @@ class InputDialog(QtWidgets.QDialog):
             uid = graphydb.generateUUID()
             z = 0
             for otheritem in self.stem.node['content'].values():
-                z = max(z, otheritem['z'])
+                z = max(z, otheritem.get('z',0))
             item['z']=z+1
             self.stem.node['content'][uid]=item
             self.stem.node.save(setchange=True)
