@@ -7,11 +7,11 @@ stdenv.mkDerivation rec {
   # The packages in the `buildInputs` list will be added to the PATH in our shell
   buildInputs = [
     figlet
-    python37
-    python37Packages.apsw
-    python37Packages.bleach
-    python37Packages.beautifulsoup4
-    python37Packages.pyqt5
+    python3
+    python3Packages.apsw
+    python3Packages.bleach
+    python3Packages.beautifulsoup4
+    python3Packages.pyqt6
   ];
 
   shellHook = ''
