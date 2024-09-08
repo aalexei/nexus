@@ -927,6 +927,36 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setMode()
 
+        # Initialize file system watcher
+        # Not working - see notes in onFileChanged()
+        # self.file_watcher = QtCore.QFileSystemWatcher()
+        # self.file_watcher.addPath(fileName)
+        # logging.info(f"Watching file {fileName} for external changes.")
+        # self.file_watcher.fileChanged.connect(self.onFileChanged)
+
+    def onFileChanged(self):
+        '''
+        Update the current map if the file has changed externally (e.g. on a shared folder)
+        '''
+        logging.warn("File Changed externally!")
+
+        # Problems
+        # - DB seems to get locked into read-only state
+        # - Trying to renew connection as read-write can wipe the data!
+        # - This will also detect changes from this instance and saves are initiated from everywhere in the code
+        # Would have to write a pre- abd post- save hook to switch off watcher
+        # TODO how to elegantly recover?
+        # TODO switch off for own saves
+        # TODO What happens with open dialog?
+        # TODO Should this be on the application instance and we just add and remove files?
+
+        # graph = self.scene.root().node.graph
+        # import time
+        # time.sleep(5)
+        # graph.connection.close()
+        # #print("establishing new connection to ", graph.path)
+        # graph.connection = apsw.Connection(graph.path)
+        # self.scene.root().renew()
 
     def setDefaultSettings(self):
         '''
