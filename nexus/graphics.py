@@ -2804,7 +2804,7 @@ class NexusView(QtWidgets.QGraphicsView):
         self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         self.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
         self.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
-        self.setCacheMode(self.CacheModeFlag.CacheNone)
+        self.setCacheMode(self.CacheModeFlag.CacheBackground)
 
         # implement the drag pan ourselves to avoid tablet event bug
         self.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
