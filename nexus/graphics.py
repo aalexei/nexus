@@ -4749,6 +4749,95 @@ class OpenCloseWidget(QtWidgets.QGraphicsPathItem):
 
         event.accept()
 
+class ActionWidget(QtWidgets.QGraphicsPathItem):
+
+    def __init__(self, stem):
+        super().__init__(QtGui.QPainterPath(), stem)
+        self.stem = stem
+        self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+
+        self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1 , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
+        self.setBrush(QtGui.QBrush(QtGui.QColor(230,230,230)))
+
+        W = 16
+        brush = self.brush()
+        pen = self.pen()
+        if self.stem.depth > 0:
+            col = QtGui.QColor(self.stem.style('branchcolor'))
+            col.setAlpha(100)
+            brush.setColor(col.lighter())
+            self.setBrush(brush)
+            pen.setColor(col.darker())
+            self.setPen(pen)
+
+        path = QtGui.QPainterPath()
+        path.addRect(-W/2, -W/2, W, W)
+        path.moveTo(QtCore.QPointF(-W/3, W/6))
+        path.lineTo(QtCore.QPointF(W/3, W/6))
+        path.moveTo(QtCore.QPointF(-W/3, -W/6))
+        path.lineTo(QtCore.QPointF(W/3, -W/6))
+
+        self.setPath(path)
+
+    def mousePressEvent(self, event):
+        self.stem.contextMenu(event.screenPos())
+
+        event.accept()
+
+class ChildWidget(QtWidgets.QGraphicsPathItem):
+
+    def __init__(self, stem):
+        super().__init__(QtGui.QPainterPath(), stem)
+        self.stem = stem
+        self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+
+        self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1 , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
+        self.setBrush(QtGui.QBrush(QtGui.QColor(230,230,230)))
+
+        D = 8
+        d = 4
+        brush = self.brush()
+        pen = self.pen()
+        if self.stem.depth > 0:
+            col = QtGui.QColor(self.stem.style('branchcolor'))
+            col.setAlpha(100)
+            brush.setColor(col.lighter())
+            self.setBrush(brush)
+            pen.setColor(col.darker())
+            self.setPen(pen)
+
+        path = QtGui.QPainterPath()
+        # path.addRect(-W/2, -W/2, W, W)
+        path.moveTo(QtCore.QPointF(-D, -d))
+        path.lineTo(QtCore.QPointF(-d, -d))
+        path.lineTo(QtCore.QPointF(-d, -D))
+        path.lineTo(QtCore.QPointF(d, -D))
+        path.lineTo(QtCore.QPointF(d, -d))
+        path.lineTo(QtCore.QPointF(D, -d))
+        path.lineTo(QtCore.QPointF(D, d))
+        path.lineTo(QtCore.QPointF(d, d))
+        path.lineTo(QtCore.QPointF(d, D))
+        path.lineTo(QtCore.QPointF(-d, D))
+        path.lineTo(QtCore.QPointF(-d, d))
+        path.lineTo(QtCore.QPointF(-D, d))
+        path.closeSubpath()
+
+        self.setPath(path)
+
+    def mousePressEvent(self, event):
+        event.accept()
+    def mouseMoveEvent(self, event):
+        self.stem.drawBud(self.mapToParent(event.pos()))
+        event.accept()
+
+    def mouseReleaseEvent(self, event):
+        self.stem.newStem(p=self.mapToParent(event.pos()))
+
+        # clear out stemtail
+        if self.stem.newstemtail is not None:
+            self.stem.scene().removeItem(self.stem.newstemtail)
+            self.stem.newstemtail = None
+        event.accept()
 ##----------------------------------------------------------------------
 class StemItem(QtWidgets.QGraphicsItem):
 ##----------------------------------------------------------------------
@@ -4811,6 +4900,44 @@ class StemItem(QtWidgets.QGraphicsItem):
         self.longPressWidget.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.gray))
         self.longPressWidget.hide()
         self.longPressWidget.setZValue(90)
+
+        ##
+        ## widget for stem actions
+        ##
+        # self.actionWidget = QtWidgets.QGraphicsEllipseItem(-10,0,10,10,self)
+        self.actionWidget = ActionWidget(self)
+        # self.actionWidget.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1))
+        # self.actionWidget.setBrush(QtGui.QBrush(QtGui.QColor(200,0,0,100)))
+        self.actionWidget.hide()
+        self.actionWidget.setZValue(90)
+
+        ##
+        ## widget to add children
+        ##
+        # self.childWidget = QtWidgets.QGraphicsPathItem()
+        # path = QtGui.QPainterPath()
+        # loc = QtCore.QPointF(0, 0)
+        # path.addEllipse(loc, 15, 15)
+        # path.moveTo(loc+QtCore.QPointF(-10, 0))
+        # path.lineTo(loc+QtCore.QPointF(10, 0))
+        # path.moveTo(loc+QtCore.QPointF(0, -10))
+        # path.lineTo(loc+QtCore.QPointF(0, 10))
+        # self.childWidget.setPath(path)
+        # self.childWidget = QtWidgets.QGraphicsEllipseItem(10,0,10,10,self)
+        self.childWidget = ChildWidget(self)
+        # self.childWidget.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1))
+        # self.childWidget.setBrush(QtGui.QBrush(QtGui.QColor(0,200,0,100)))
+        self.childWidget.hide()
+        self.childWidget.setZValue(90)
+
+        ##
+        ## widget to relocate stem
+        ##
+        # self.relocateWidget = QtWidgets.QGraphicsEllipseItem(0,0,10,10,self)
+        # self.relocateWidget.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1))
+        # self.relocateWidget.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.green))
+        # self.relocateWidget.hide()
+        # self.relocateWidget.setZValue(90)
 
         ##
         ## setup a basic starting point for flags etc
@@ -5118,7 +5245,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         else:
             defaults = {
                 'branchcolor':'#999999',
-                'scale':0.6,
+                'scale':CONFIG['child_scale'],
                 'opacity':1,
             }
             value = defaults[key]
@@ -5259,7 +5386,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         event.accept()
 
     def mouseReleaseEvent(self, event):
-        #logging.debug("StemReleaseEvent")
+        # logging.debug("StemReleaseEvent")
 
         p1 = event.scenePos()
         p0 = self._m_press_pos
@@ -5743,8 +5870,23 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         if self.isSelected():
             self.selectpath.show()
+            t = self.tip()
+            W = 15 # size of widget
+            dW = 16 # distance from tip (don't obscure the open/close widget)
+            # self.actionWidget.setRect(0,t.y()-W/2+self.stemwidth/2.0,W,W)
+            #self.actionWidget.setPos(0,t.y()-W/2+self.stemwidth/2.0)
+            self.actionWidget.show()
+            # self.relocateWidget.setRect(t.x()/2.0-W/2,t.y()-W/2+self.stemwidth/2.0-1,W,W)
+            # self.relocateWidget.show()
+            # self.childWidget.setRect(t.x()-W/2+self.direction()*dW,t.y()-W/2+self.stemwidth/2.0-1,W,W)
+            # self.childWidget.setPos(t.x()-W/2+self.direction()*dW,t.y()-W/2+self.stemwidth/2.0-1)
+            self.childWidget.setPos(t.x()+self.direction()*dW, 0)
+            self.childWidget.show()
         else:
             self.selectpath.hide()
+            self.actionWidget.hide()
+            self.childWidget.hide()
+            # self.relocateWidget.hide()
 
         if self.isBeingEdited:
             self.editedpath.show()
