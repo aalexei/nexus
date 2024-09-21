@@ -4762,13 +4762,12 @@ class ActionWidget(QtWidgets.QGraphicsPathItem):
         W = 16
         brush = self.brush()
         pen = self.pen()
-        if self.stem.depth > 0:
-            col = QtGui.QColor(self.stem.style('branchcolor'))
-            col.setAlpha(100)
-            brush.setColor(col.lighter())
-            self.setBrush(brush)
-            pen.setColor(col.darker())
-            self.setPen(pen)
+        col = QtGui.QColor(self.stem.style('branchcolor'))
+        col.setAlpha(100)
+        brush.setColor(col.lighter())
+        self.setBrush(brush)
+        pen.setColor(col.darker())
+        self.setPen(pen)
 
         path = QtGui.QPainterPath()
         path.addRect(-W/2, -W/2, W, W)
@@ -4798,13 +4797,12 @@ class ChildWidget(QtWidgets.QGraphicsPathItem):
         d = 4
         brush = self.brush()
         pen = self.pen()
-        if self.stem.depth > 0:
-            col = QtGui.QColor(self.stem.style('branchcolor'))
-            col.setAlpha(100)
-            brush.setColor(col.lighter())
-            self.setBrush(brush)
-            pen.setColor(col.darker())
-            self.setPen(pen)
+        col = QtGui.QColor(self.stem.style('branchcolor'))
+        col.setAlpha(100)
+        brush.setColor(col.lighter())
+        self.setBrush(brush)
+        pen.setColor(col.darker())
+        self.setPen(pen)
 
         path = QtGui.QPainterPath()
         # path.addRect(-W/2, -W/2, W, W)
@@ -5871,16 +5869,17 @@ class StemItem(QtWidgets.QGraphicsItem):
         if self.isSelected():
             self.selectpath.show()
             t = self.tip()
-            W = 15 # size of widget
             dW = 16 # distance from tip (don't obscure the open/close widget)
-            # self.actionWidget.setRect(0,t.y()-W/2+self.stemwidth/2.0,W,W)
-            #self.actionWidget.setPos(0,t.y()-W/2+self.stemwidth/2.0)
+            if self.direction()>0:
+                tt = self.selectpath.boundingRect().bottomRight()+QtCore.QPointF(-dW/2,dW)
+                bb = self.selectpath.boundingRect().bottomLeft()+QtCore.QPointF(dW/2,dW)
+            else:
+                tt = self.selectpath.boundingRect().bottomLeft()+QtCore.QPointF(dW/2,dW)
+                bb = self.selectpath.boundingRect().bottomRight()+QtCore.QPointF(-dW/2,dW)
+            self.actionWidget.setPos(bb)
             self.actionWidget.show()
-            # self.relocateWidget.setRect(t.x()/2.0-W/2,t.y()-W/2+self.stemwidth/2.0-1,W,W)
-            # self.relocateWidget.show()
-            # self.childWidget.setRect(t.x()-W/2+self.direction()*dW,t.y()-W/2+self.stemwidth/2.0-1,W,W)
-            # self.childWidget.setPos(t.x()-W/2+self.direction()*dW,t.y()-W/2+self.stemwidth/2.0-1)
-            self.childWidget.setPos(t.x()+self.direction()*dW, 0)
+            #self.childWidget.setPos(t.x()+self.direction()*dW, 0)
+            self.childWidget.setPos(tt)
             self.childWidget.show()
         else:
             self.selectpath.hide()
