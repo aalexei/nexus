@@ -4995,14 +4995,21 @@ class StemItem(QtWidgets.QGraphicsItem):
             return
 
         p = self.base()
-        T = scaleRotateMove(float(self.node.get('scale', 1.0)), self.node.get('angle', 0.0), p.x(), p.y())
+        if 'scale' in self.node:
+            scale = self.node['scale']
+        else:
+            ## Set the scale to the parent
+            scale = self.style('scale')
+            self.node['scale'] = scale
+            self.node.save()
+        T = scaleRotateMove(float(scale), self.node.get('angle', 0.0), p.x(), p.y())
         self.setTransform(T)
 
         self.setOpacity(self.style('opacity'))
 
         tmpposition = False
         if create or self.leaf is None:
-            ## depth goes off the QT structure with parents child
+            ## Depth goes off the QT structure with parents child
             self.depth = len(self.allParentStems())
             self.setZValue(-self.depth)
 
