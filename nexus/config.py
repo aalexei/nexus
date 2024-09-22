@@ -57,6 +57,8 @@ default_config = {
     # max cartesian distance error to tolerate
     "pen_simplify_tolerance": 0.1,
 
+    # Default scaling for child stems
+    "child_scale": 0.5,
 
     #
     # text item
