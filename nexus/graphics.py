@@ -404,7 +404,7 @@ class InputDialog(QtWidgets.QDialog):
         tags = self.stem.node.get('tags', set())
         self.tagsEdit.setText(' '.join(tags))
 
-        self.scalewidget.setValue(float(self.stem.node.get('scale', 1.0)))
+        self.scalewidget.setValue(float(self.stem.node.get('scale', CONFIG['child_scale'])))
 
         pix = QtGui.QPixmap(50, 50)
         if 'branchcolor' in self.stem.node:
@@ -418,20 +418,23 @@ class InputDialog(QtWidgets.QDialog):
             self.branchcolorinherit.setCheckState(QtCore.Qt.CheckState.Checked)
         self.branchcolorbutton.setIcon(QtGui.QIcon(pix))
 
-        # TODO why calling it twice?
-        self.ishighlighter = True
-        self.setPenCursor()
-        self.ishighlighter = False
-        self.setPenCursor()
+        # TODO why calling it twice? Trying without to see what effect it has
+        # self.ishighlighter = True
+        # self.setPenCursor()
+        # self.ishighlighter = False
+        # self.setPenCursor()
 
         #
         # Add items
         #
         self.scene.maxZ = 0
+
+        #
+        # Analyse what isems are in this stem
         # itemnumbers are used to set the mode
+        #
         itemnumbers = collections.Counter()
         itemrect = QtCore.QRectF()
-        #for k in self.scene.node.outN('e.kind = "In"'):
         for u,k in self.stem.node['content'].items():
             if k['kind'] == 'Stroke':
                 item = InkItem(uid=u, stem=stem, scene=self.scene)
@@ -995,13 +998,13 @@ class InputDialog(QtWidgets.QDialog):
         for item in self.scene.getItems():
             item.setMode(SelectMode)
 
-    def saveSettings(self):
+    # def saveSettings(self):
 
-        settings = QtCore.QSettings("Ectropy", "Nexus")
+    #     settings = QtCore.QSettings("Ectropy", "Nexus")
 
-        ## Temporarily (for this session) record the input geometry
-        g = self.geometry()
-        self.inputgeometry = [g.left(), g.top(), g.width(), g.height()]
+    #     ## Temporarily (for this session) record the input geometry
+    #     g = self.geometry()
+    #     self.inputgeometry = [g.left(), g.top(), g.width(), g.height()]
 
     def setTextControls(self, cursor):
         fmt = cursor.charFormat()
@@ -1864,7 +1867,7 @@ class PointerEvent():
     def __repr__(self):
         return f"PointerEvent('{self.type}', t={self.time}, dt={self.time-self.lastTime}, p={self.scenePos})"
 
-# XXX move modes into class
+# TODO move modes into class
 Free, Mouse, Tablet, Gesture = 0,1,2,3
 
 ##----------------------------------------------------------------------
@@ -1900,17 +1903,20 @@ class InkView(QtWidgets.QGraphicsView):
 
         self._eventstate = Free
 
-        # gesture has to overcome threshold before being recognised
-        # _sticky is the state variable
+        ## Gesture has to overcome threshold before being recognised
+        ## _sticky is the state variable
         self._sticky = True
 
         self._itemUnder = None
         self._event = None
 
-        # Extra potential filter to separate mouse and tablet
+        ## Extra potential filter to separate mouse and tablet
         self.tablettime = 0
 
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
+
+        ## Set default scale for the view
+        self.scale(3,3)
 
     def tabletEvent(self, event):
         '''
@@ -1934,12 +1940,11 @@ class InkView(QtWidgets.QGraphicsView):
                QtGui.QTabletEvent.Type.TabletRelease:"TabletRelease"}
         etype = tev.get(eventtype,"OtherTabletEvent")
 
-        # logging.debug("I {} pointer={} pressure={} tilt=({},{}) buttons={} device={} id={}".format(
+        # logging.debug("I {} pointer={} pressure={} tilt=({},{}) buttons={} device={}".format(
         #     etype, event.pointerType(), pressure,
         #     event.xTilt(), event.yTilt(),
-        #     int(event.buttons()),
+        #     repr(event.buttons()),
         #     repr(event.device()),
-        #     repr(event.uniqueId())
         #     ))
 
         pressure = pressureCurve(pressure,**CONFIG['pressure_curve'])
@@ -2234,11 +2239,6 @@ class InkView(QtWidgets.QGraphicsView):
         scene.maxZ +=1
         coords = smoothInkPath(scene.strokecoords)
 
-        # TODO v09  this is the onlu use of new()
-        # stroke = InkItem.new(scene.node, scene=scene,
-        #                      z=scene.maxZ, width=scene.pen.widthF(),
-        #                      color=scene.pen.color(), coords=coords)
-
         color = scene.pen.color()
         data = {
             'kind': 'Stroke',
@@ -2508,9 +2508,6 @@ class NexusScene(QtWidgets.QGraphicsScene):
         self.setSceneRect(-3000, -3000, 6000, 6000)
 
         ## default mode for new dialogs (will remember last one chosen)
-        # XXX remove newdialogmode now?
-        #self.newdialogmode = TextMode
-        #self.inputgeometry = None
         self.dialogstate = {
             'mode':TextMode,
             'geometry': None,
@@ -2837,6 +2834,9 @@ class NexusView(QtWidgets.QGraphicsView):
         #Qt6 self._v0 = QtCore.QPoint()
         self._sticky = True
 
+        # Trying to fix touchpad zoom on linux
+        # self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
+
     def scaleView(self, scaleFactor, point=None):
 
         matrix = self.transform()
@@ -2927,6 +2927,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
     def wheelEvent(self, event):
 
+        # logging.debug('wheelEvent %s', event)
         if (event.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier) or (event.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
 
             # logging.debug('wheelEvent (mod)')
@@ -3176,6 +3177,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
 
     def event(self, event):
+        # logging.debug('Event %s', event)
         if event.type() == QtCore.QEvent.Type.Gesture:
             return self.gestureEvent(event)
         else:
@@ -4001,7 +4003,6 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
         self.setZValue(self.get('z',0))
-        #self.setZValue(z)
 
         self.setTabChangesFocus(True)
 
@@ -5236,15 +5237,14 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         if key in self.node:
             value = self.node[key]
-
         elif self.parentStem() is not None:
+            # Inherit some styles
             value = self.parentStem().style(key)
-
         else:
             defaults = {
                 'branchcolor':'#999999',
                 'scale':CONFIG['child_scale'],
-                'opacity':1,
+                'opacity':1.0,
             }
             value = defaults[key]
 
@@ -5748,9 +5748,10 @@ class StemItem(QtWidgets.QGraphicsItem):
         newnode = G.Node('Stem', content={})
         newedge = G.Edge(self.node, 'Child', newnode)
 
-        settings = QtCore.QSettings("Ectropy", "Nexus")
+        # settings = QtCore.QSettings("Ectropy", "Nexus")
         if self.depth == 0:
-            scale = float(settings.value('new/stemscale'))
+            scale = CONFIG['child_scale']
+            #scale = float(settings.value('new/stemscale'))
             ## Set a random color
             newnode['branchcolor'] = self.newstemtail.brush().color().name()
         else:
