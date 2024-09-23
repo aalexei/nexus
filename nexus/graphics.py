@@ -4760,7 +4760,7 @@ class ActionWidget(QtWidgets.QGraphicsPathItem):
         self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1 , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
         self.setBrush(QtGui.QBrush(QtGui.QColor(230,230,230)))
 
-        W = 16
+        W = 12
         brush = self.brush()
         pen = self.pen()
         col = QtGui.QColor(self.stem.style('branchcolor'))
@@ -4794,8 +4794,8 @@ class ChildWidget(QtWidgets.QGraphicsPathItem):
         self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1 , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
         self.setBrush(QtGui.QBrush(QtGui.QColor(230,230,230)))
 
-        D = 8
-        d = 4
+        D = 6
+        d = 2
         brush = self.brush()
         pen = self.pen()
         col = QtGui.QColor(self.stem.style('branchcolor'))
