@@ -272,7 +272,6 @@ class InputDialog(QtWidgets.QDialog):
 
         self.sourceAct.setCheckable(True)
 
-
         editMenu = dialogMenuBar.addMenu(self.tr("&Edit"))
         #editMenu.addAction(self.undoAct)
         #editMenu.addSeparator()
@@ -418,11 +417,11 @@ class InputDialog(QtWidgets.QDialog):
             self.branchcolorinherit.setCheckState(QtCore.Qt.CheckState.Checked)
         self.branchcolorbutton.setIcon(QtGui.QIcon(pix))
 
-        # TODO why calling it twice? Trying without to see what effect it has
-        # self.ishighlighter = True
-        # self.setPenCursor()
-        # self.ishighlighter = False
-        # self.setPenCursor()
+        # Force redraw of pen and highlighter icons 
+        self.ishighlighter = True
+        self.setPenCursor()
+        self.ishighlighter = False
+        self.setPenCursor()
 
         #
         # Add items
