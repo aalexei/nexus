@@ -2394,8 +2394,7 @@ class InkView(QtWidgets.QGraphicsView):
 
         # base movement stickiness on view coordinates (finger motion)
         if not ( CONFIG['pinch_no_scale_threshold'][0]<Stot<CONFIG['pinch_no_scale_threshold'][1] \
-                 and abs(Rtot)<CONFIG['pinch_no_rotate_threshold'] \
-                 and dist<CONFIG['pinch_no_move_threshold'] ):
+                 and abs(Rtot)<CONFIG['pinch_no_rotate_threshold']): 
             self._sticky = False
 
         if not self._sticky:
@@ -3267,8 +3266,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
         # base movement stickiness on view coordinates (finger motion)
         if not ( CONFIG['pinch_no_scale_threshold'][0]<Stot<CONFIG['pinch_no_scale_threshold'][1] \
-                 and abs(Rtot)<CONFIG['pinch_no_rotate_threshold'] \
-                 and dist<CONFIG['pinch_no_move_threshold'] ):
+                 and abs(Rtot)<CONFIG['pinch_no_rotate_threshold']): 
             self._sticky = False
 
         if not self._sticky:
@@ -4846,7 +4844,8 @@ class StemItem(QtWidgets.QGraphicsItem):
     ## tip width of stems
     stemwidth = 5
 
-    _move_threshold = CONFIG['no_move_threshold']
+    #_move_threshold = CONFIG['no_move_threshold']
+    # _move_threshold = 0
 
     def __init__(self, node, override={}, parent = None, scene = None):
 
@@ -4893,11 +4892,11 @@ class StemItem(QtWidgets.QGraphicsItem):
         ##
         ## widget to show log press feedback
         ##
-        self.longPressWidget = QtWidgets.QGraphicsEllipseItem(0,0,6,6,self)
-        self.longPressWidget.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1))
-        self.longPressWidget.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.gray))
-        self.longPressWidget.hide()
-        self.longPressWidget.setZValue(90)
+        # self.longPressWidget = QtWidgets.QGraphicsEllipseItem(0,0,6,6,self)
+        # self.longPressWidget.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1))
+        # self.longPressWidget.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.gray))
+        # self.longPressWidget.hide()
+        # self.longPressWidget.setZValue(90)
 
         ##
         ## widget for stem actions
@@ -4959,10 +4958,10 @@ class StemItem(QtWidgets.QGraphicsItem):
         self.tagitems = None
         self.leaf = None
 
-        self._pressTimer = QtCore.QTimer()
-        self._pressTimer.setSingleShot(True)
-        self._pressTimer.timeout.connect(self.pressTimerExpire)
-        self._pressTimer.setInterval(CONFIG['long_press_time'])
+        # self._pressTimer = QtCore.QTimer()
+        # self._pressTimer.setSingleShot(True)
+        # self._pressTimer.timeout.connect(self.pressTimerExpire)
+        # self._pressTimer.setInterval(CONFIG['long_press_time'])
 
     def renew(self, reload=True, create=True, position=True, children=True, recurse=True):
         '''
@@ -5307,7 +5306,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         #logging.debug("StemPressEvent")
 
         # TODO refactor as _m_press_timer
-        self._pressTimer.start()
+        # self._pressTimer.start()
 
         self._m_press_pos = event.scenePos()
         self._m_state = MPRESS
@@ -5361,11 +5360,12 @@ class StemItem(QtWidgets.QGraphicsItem):
         #     return
 
         if self._m_state == MPRESS:
-            if d>self._move_threshold:
-                # Moved enough to register this as a move
-                self._m_state = MMOVE
-                self._pressTimer.stop()
-                # logging.debug('[1] Move start ->[2]')
+            self._m_state = MMOVE
+            # if d>self._move_threshold:
+            #     # Moved enough to register this as a move
+            #     self._m_state = MMOVE
+            #     # self._pressTimer.stop()
+            #     # logging.debug('[1] Move start ->[2]')
 
         elif self._m_state == MMOVE:
             # Move selected plus this one
@@ -5373,14 +5373,14 @@ class StemItem(QtWidgets.QGraphicsItem):
             # XXX select self if not selected
             self.moveSelected(p1-p0)
 
-        elif self._m_state == MLONG:
-            if d>self._move_threshold:
-                self._m_state = MADD
-                # logging.debug('[3] Moved ->[5]')
-            else:
-                # Nothing to be done but wait for release, sigh.
-                pass
-                # logging.debug('[3] Waiting')
+        # elif self._m_state == MLONG:
+        #     if d>self._move_threshold:
+        #         self._m_state = MADD
+        #         # logging.debug('[3] Moved ->[5]')
+        #     else:
+        #         # Nothing to be done but wait for release, sigh.
+        #         pass
+        #         # logging.debug('[3] Waiting')
 
         if self._m_state == MADD:
             # logging.debug('[5] show bud')
@@ -5394,15 +5394,16 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         p1 = event.scenePos()
         p0 = self._m_press_pos
-        self._pressTimer.stop()
+        # self._pressTimer.stop()
 
         # Use item pos as touch gesture shouldn't depend on zoom
         p0i = self.mapFromScene(p0)
         p1i = self.mapFromScene(p1)
         d = sqrt(abs((p1i.x()-p0i.x())**2+(p1i.y()-p0i.y())**2))
 
-        if self._m_state == MMOVE or \
-            (self._m_state == MPRESS and d>self._move_threshold):
+        # if self._m_state == MMOVE or \
+        #     (self._m_state == MPRESS and d>self._move_threshold):
+        if self._m_state == MMOVE:
             # logging.debug('[1]/[2] End - Move')
             # Move all selected stems including this one
 
@@ -5424,11 +5425,12 @@ class StemItem(QtWidgets.QGraphicsItem):
                 # XXX check for last intance flips
                 stem.renew(reload=False, children=False, create=False, recurse=False)
 
-        elif self._m_state == MADD or \
-            (self._m_state == MLONG and d>self._move_threshold):
+        # elif self._m_state == MADD or \
+        #     (self._m_state == MLONG and d>self._move_threshold):
+        elif self._m_state == MADD:
             # logging.debug('[5] End - Edit new stem')
 
-            self.longPressWidget.hide()
+            # self.longPressWidget.hide()
             self.newStem(p=event.pos())
 
             # clear out stemtail
@@ -5436,16 +5438,16 @@ class StemItem(QtWidgets.QGraphicsItem):
                 self.scene().removeItem(self.newstemtail)
                 self.newstemtail = None
 
-        elif self._m_state == MLONG: # or \
-            # logging.debug('[1]/[3] Long Press End - Menu')
-            # Launch context menu
-            self.longPressWidget.hide()
-            self.contextMenu(event.screenPos())
+        # elif self._m_state == MLONG: # or \
+        #     # logging.debug('[1]/[3] Long Press End - Menu')
+        #     # Launch context menu
+        #     # self.longPressWidget.hide()
+        #     self.contextMenu(event.screenPos())
 
         elif self._m_state == MDOUBLE:
             # logging.debug('[2] End - Edit stem')
             # edit current stem
-            self.longPressWidget.hide()
+            # self.longPressWidget.hide()
             self.editStem()
 
         else:
@@ -5466,24 +5468,24 @@ class StemItem(QtWidgets.QGraphicsItem):
         #     return
 
         # hide it here just in case it ends up hanging around
-        self.longPressWidget.hide()
+        # self.longPressWidget.hide()
         event.accept()
 
-    def pressTimerExpire(self):
-        if self._m_state == MPRESS:
-            self._m_state = MLONG
-            t = self.tip()
-            W = 20.0
-            color = QtGui.QColor(self.style('branchcolor'))
-            self.longPressWidget.setPen(QtGui.QPen(color,1))
-            color.setAlphaF(0.5)
-            self.longPressWidget.setBrush(QtGui.QBrush(color))
-            self.longPressWidget.setRect(t.x()-W/2,t.y()-W/2+self.stemwidth/2.0-1,W,W)
-            self.longPressWidget.show()
-            # logging.debug('[1] Long press registered ->[3]')
-        else:
-            # logging.debug('Timer triggered not in MPRESS')
-            pass
+    # def pressTimerExpire(self):
+    #     if self._m_state == MPRESS:
+    #         self._m_state = MLONG
+    #         t = self.tip()
+    #         W = 20.0
+    #         color = QtGui.QColor(self.style('branchcolor'))
+    #         self.longPressWidget.setPen(QtGui.QPen(color,1))
+    #         color.setAlphaF(0.5)
+    #         self.longPressWidget.setBrush(QtGui.QBrush(color))
+    #         self.longPressWidget.setRect(t.x()-W/2,t.y()-W/2+self.stemwidth/2.0-1,W,W)
+    #         self.longPressWidget.show()
+    #         # logging.debug('[1] Long press registered ->[3]')
+    #     else:
+    #         # logging.debug('Timer triggered not in MPRESS')
+    #         pass
 
 
     def contextMenu(self, global_pos=None):
