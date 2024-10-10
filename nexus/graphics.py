@@ -875,25 +875,25 @@ class InputDialog(QtWidgets.QDialog):
             item['z']=z+1
             self.stem.node['content'][uid]=item
             self.stem.node.save(setchange=True)
-            # batch = graphydb.generateUUID()
-            # n = self.scene.graph.Node('Text', source='', z=1,
-            #            frame=Transform().tolist()).save(setchange=True, batch=batch)
-            # e = self.scene.graph.Edge(self.scene.node, 'In', n).save(setchange=True, batch=batch)
             textitem = TextItem(uid, self.stem, scene=self.scene)
             textitem.positionChanged.connect(self.setTextControls)
-            textitem.setMode(TextMode)
-            textitem.setFocus()
+            #textitem.setMode(TextMode)
+            #textitem.setFocus()
+            items.append(textitem)
 
-        # TODO need method for adding text items to stem
+        # TODO need method for adding additional text items to stem
 
         for item in items:
-            ## Add default item if none; fulleditor access; non movable
+            ## set mode fulleditor access; non movable
             item.setMode(TextMode)
 
         ## Focus one of the items if possible
+        ## pick first one we come across
         for item in items:
             if isinstance(item, TextItem):
                 item.setFocus()
+                ## Make sure the item being editied in centred in view
+                self.view.fitInView(item.mapToScene(item.boundingRect()).boundingRect().adjusted(-10,-10,10,10), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
                 break
 
     def setHighlightModeClicked(self):
