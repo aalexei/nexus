@@ -73,7 +73,8 @@ default_config = {
 
     # Bundling ETBembo with Nexus
     "text_item_font_family": "ETBembo",
-    "text_item_font_size": 12,
+    # "text_item_font_size": 12,
+    "text_item_font_size": 9,
     # TODO retina screen halves the size? Get more consistent sizing across platforms
     "text_item_color": "#000000",
 
