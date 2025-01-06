@@ -21,16 +21,6 @@ from importlib.machinery import SourceFileLoader
 
 default_config = {
     #
-    # context menu
-    #
-
-    # long press timeout in ms
-    "long_press_time":800,
-
-    # number of pixels that are considered no-movement for press and hold.
-    "no_move_threshold":2,
-
-    #
     # pinch gesture
     #
     "pinch_no_move_threshold": 0,  # view pixels
