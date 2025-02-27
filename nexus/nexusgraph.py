@@ -553,7 +553,7 @@ class NexusGraph(graphydb.Graph):
             except urllib.error.HTTPError as x:
                 ref = f'<b>ERROR: {x}</b>'
             return ref
-        html = re.sub(r'ook:(\w+)', processook, html, re.DOTALL)
+        html = re.sub(r'@(\d{4}\w{2,6})', processook, html, re.DOTALL)
 
         # now linkify any other urls
         html = bleach.linkify(html)
