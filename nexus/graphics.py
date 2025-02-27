@@ -417,7 +417,7 @@ class InputDialog(QtWidgets.QDialog):
             self.branchcolorinherit.setCheckState(QtCore.Qt.CheckState.Checked)
         self.branchcolorbutton.setIcon(QtGui.QIcon(pix))
 
-        # Force redraw of pen and highlighter icons 
+        ## Force redraw of pen and highlighter icons 
         self.ishighlighter = True
         self.setPenCursor()
         self.ishighlighter = False
@@ -1473,8 +1473,12 @@ class InkScene(QtWidgets.QGraphicsScene):
         return ii
 
 
+##----------------------------------------------------------------------
 class TransformationWidget(QtWidgets.QGraphicsItem):
-
+##----------------------------------------------------------------------
+    """
+    Transform the selected items (scale and rotate)
+    """
     selected = []
     ResizeMode = 0
     RotateMode = 1
@@ -1768,7 +1772,9 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         self.resize()
 
 
+##----------------------------------------------------------------------
 class OverRect(QtWidgets.QGraphicsRectItem):
+##----------------------------------------------------------------------
 
     defaultcol = QtGui.QColor(100,100,100,30)
 
@@ -1792,7 +1798,9 @@ class OverRect(QtWidgets.QGraphicsRectItem):
         event.source = self.id
         self.parentItem().pointerReleaseEvent(event)
 
+##----------------------------------------------------------------------
 class TransformationHandle(QtWidgets.QGraphicsPathItem):
+##----------------------------------------------------------------------
 
     def __init__(self,  id, path, parent = None):
 
@@ -1828,7 +1836,9 @@ class TransformationHandle(QtWidgets.QGraphicsPathItem):
         self.parentItem().pointerReleaseEvent(event)
 
 
+##----------------------------------------------------------------------
 class PointerEvent():
+##----------------------------------------------------------------------
     '''
     Combine tablet and mouse events
     '''
@@ -3686,7 +3696,9 @@ def hsv_to_rgb(h, s, v):
     if h_i==5: r, g, b = v, p, q
     return '#%X%X%X'%(round(r*255),round(g*255),round(b*255))
 
+##----------------------------------------------------------------------
 class ContentItem:
+##----------------------------------------------------------------------
     """
     Helper class 
     """
