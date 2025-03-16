@@ -2479,7 +2479,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.setPresentationMode()
 
         elif self.recordModeAct.isChecked():
-            self.setRecordingMode()
+
+            if shutil.which('ffmpeg') is None:
+                QtWidgets.QMessageBox.information(None, "Warning", "Couldn't find ffmpeg")
+                # Go to edit mode
+                self.editModeAct.trigger()
+            else:
+                self.setRecordingMode()
 
         else:
             self.setEditingMode()

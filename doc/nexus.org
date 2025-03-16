@@ -10,6 +10,7 @@ Requirements:
 - bs4
 - bleach
 - apsw (https://rogerbinns.github.io/apsw/)
+- If you want to generate movies, you will also need to install ~ffmpeg~ (https://www.ffmpeg.org/)
 
 To install and run from source (assuming shell running bash or equivalent)
 - Create project directory
