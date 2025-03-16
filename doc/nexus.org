@@ -2,39 +2,62 @@
 
 These notes are sparse at the moment.
 
+* Modes
+
+Nexus has three modes: /Edit/, /Presentation/, and /Record/ mode. /Edit/ is the main mode.
+
 * Main map
+
+The map has a central topic, and branches made up of stems. Each child stem is scaled down relative to it's parent. You can chose to show or hide the children of a stem ( -/+ icon at the end of a stem). Stems can contain text, images, or pen writing.
 
 ** Interaction
 
 Since it will run on a variety of touch-screens and tablets, there are multiple ways to do most operations.
 
 *** Saving
+- No need to save, the map gets saved automatically on changes.
 
-- The map gets saved automatically on changes
+*** Selecting
+- Mouse click to select, shift-click to add to selection, click on background to deselect.
+- =c= adds children to selection
+- =e= adds siblings to selection
+- =a= selects all
 
 *** Moving branches
+- Select and drag.
+- Branches will flip over when crossing mid-line.
 
-- Click and drag
 *** Adding sub-branches
-
-- Once selected a '+' button becomes visible, drag this out to form a new branch.
-- Ctlr-click and drag.
-- Use the 2nd mouse button and click and drag.
+- Once a stem is selected a =+= button becomes visible, drag this out to form a new branch.
+- Ctlr-click and drag on a stem.
+- Use the 2nd mouse button and click and drag on a stem.
 
 *** Zooming in and out of the map
-
 - Ctrl and drag on background
 - Ctrl and mouse wheel
 - Pinch gesture
 
-*** Edit current branch
+*** Scaling stems
+- Select and press =+= / =-=
+- Select and press =s= for dialog to set relative scale
 
+*** Edit current branch
 - Double click
 - Select branch then press menu icon, select edit.
 
-*** Close editing dialog
+*** Editing dialog
+- Press exit button (far left on toolbar) to close, or press =Esc= key.
+- Dialog position is remembered.
+- Gear icon switches to branch settings view (setting scale, color, tags etc)
 
-- Press Esc
+* Views / Frames
+- The frames that are set can be seen by toggling the =i= icon or using =Cmd-I=.
+- Pressing =+= button with add the current view as a frame, =-= button removes a frame, and the circle will replace the selected frame with the current view on the main window.
+- Double clicking on a frame with jump to that view
+- Selecting "Show Frames" will show the selected frames on the main screen as rectangle and can be edited
+- Note the views are set so that the *width* is guaranteed to be shown on the presenting device (which might have a different aspect ratio)
+- An arrow is shown on displayed frames to indicate vertical (the map view can be rotated before capturing the frame).
+
 
 * File format
 
