@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2010-2024 Alexei Gilchrist
+# Copyright 2010-2025 Alexei Gilchrist
 #
 # This file is part of Nexus.
 #
