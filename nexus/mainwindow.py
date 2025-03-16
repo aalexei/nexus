@@ -75,9 +75,9 @@ def convert_xml_to_graph(filename):
     root = f.getroot()
     if root.tag != "nexus":
         raise ValueError("not a nexus file")
-    ##
-    ## Apply some version specific fixes
-    ##
+    #
+    # Apply some version specific fixes
+    #
     version = float(root.get('version'))
     if version < 0.221:
         raise ValueError("nexus map version < 0.221 ")
@@ -106,9 +106,9 @@ def convert_xml_to_graph(filename):
             T3 = T2.inverted()[0]
             view.set('transform','[%f,%f,%f,%f,%f,%f,%f,%f,1]'%(T3.m11(),T3.m12(),T3.m13(),T3.m21(),T3.m22(),T3.m33(),T.m13(),T.m32()))
 
-    ##
-    ## Create graphydb in memory first
-    ##
+    #
+    # Create graphydb in memory first
+    #
     g=nexusgraph.NexusGraph()
 
     tags = {}
@@ -162,10 +162,10 @@ def convert_xml_to_graph(filename):
                 se = g.Edge(v, 'Tagged', stem)
                 se.save(setchange=False)
 
-            ## All the content is saved under keys 'item<uid>'
-            ## so undo only stores unchanged items
+            # All the content is saved under keys 'item<uid>'
+            # so undo only stores unchanged items
             elif itemxml.tag == 'text':
-                ## add to stem content
+                # add to stem content
                 v = {'kind':'Text'}
                 v['maxwidth'] = float(itemxml.get('maxwidth'))
                 v['source'] = itemxml.text
@@ -190,7 +190,7 @@ def convert_xml_to_graph(filename):
                 se = g.Edge(stem, 'Attached', im).save(setchange=False)
 
                 v = {'kind':'Image'}
-                ## images are linked by the sha1 of the content
+                # images are linked by the sha1 of the content
                 v['datasha1'] = im['sha1']
                 v['frame'] = graphics.Transform.fromxml(itemxml.get('transform')).tolist()
                 v['z'] = itemz
@@ -201,14 +201,14 @@ def convert_xml_to_graph(filename):
             elif itemxml.tag == 'stroke':
                 v = {'kind':'Stroke'}
                 v['color'] = itemxml.get('color', '#000000')
-                ## opacity = alpha
+                # opacity = alpha
                 v['opacity'] = float(itemxml.get('alpha', '1.0'))
                 v['type'] = itemxml.get('type')
                 v['width'] = float(itemxml.get('width', '1.3'))
                 v['stroke'] = eval(itemxml.text)
                 v['frame'] = graphics.Transform.fromxml(itemxml.get('transform')).tolist()
                 v['z'] = itemz
-                ## Use uid to be able to track changes
+                # Use uid to be able to track changes
                 stem['item'+graphydb.generateUUID()] = v
 
                 itemz += 1
@@ -233,11 +233,11 @@ def convert_xml_to_graph(filename):
         if itemxml.tag == 'stem':
             addstem(itemxml, graphroot)
 
-    ##
-    ## Copy memory graph to file in place of original xml
-    ##
+    #
+    # Copy memory graph to file in place of original xml
+    #
 
-    ## First move old file aside
+    # First move old file aside
     logging.info("Moving old file aside")
     path = Path(filename)
     oldformat = path.with_suffix(".oldnex")
@@ -248,7 +248,7 @@ def convert_xml_to_graph(filename):
     if path.exists():
         raise Exception("Something went wrong in renaming file, '%s' still exists"%path)
 
-    ## Create graph file under original name and copy contents across
+    # Create graph file under original name and copy contents across
     logging.info("Saving graph-based file")
     g2 = nexusgraph.NexusGraph(str(path))
     with g2.connection.backup("main", g.connection, "main") as b:
@@ -264,7 +264,7 @@ def convert_to_full_tree(g):
     Convert <0.8 to 0.8 style where everything is a node in the graph
     '''
 
-    ## First move old file aside
+    # First move old file aside
     logging.info("Backing up pre 0.8 file")
     path = Path(g.path)
 
@@ -280,27 +280,27 @@ def convert_to_full_tree(g):
         raise Exception("Something went wrong in copying '%s' to '%s'"%(path,oldformat))
 
     g2 = g
-    ## Clear the undo stack as it may not make sense after changes
+    # Clear the undo stack as it may not make sense after changes
     g2.clearchanges()
 
     imageshas = {}
     images = g2.fetch('[n:Image]')
     for im in images:
-        ## Change the kind as we'll have kind Image from the items
+        # Change the kind as we'll have kind Image from the items
         if im['sha1'] in imageshas:
             # Remove accidental duplicates
             im.delete(disconnect=True, setchange=False)
             continue
 
         imageshas[im['sha1']] = im
-        ## Change kind so it doesn't conflict with image item
+        # Change kind so it doesn't conflict with image item
         im['kind'] = "ImageData"
         im.save(setchange=False)
-        ## Break edges as we'll relink on the items based on sha1
+        # Break edges as we'll relink on the items based on sha1
         for e in im.bothE():
             e.delete(setchange=False)
 
-    ## Change tags into attribute instead of node
+    # Change tags into attribute instead of node
     tagnodes = g2.fetch('[n:Tag]')
     for tn in tagnodes:
         tagged = tn.outN('e.kind="Tagged"')
@@ -313,7 +313,7 @@ def convert_to_full_tree(g):
 
     tagnodes.delete(disconnect=True, setchange=False)
 
-    ## Now expand out the items into separate nodes
+    # Now expand out the items into separate nodes
     stems = g2.fetch('[n:Stem]')
     for s in stems:
         # Add content items
@@ -464,7 +464,7 @@ class NewOrOpenDialog(QtWidgets.QDialog):
 
         listWidget.itemClicked.connect(self.recentFileOpen)
 
-        ## Update the recent files
+        # Update the recent files
         settings = QtCore.QSettings("Ectropy", "Nexus")
         files = settings.value('recentFileList', [])
 
@@ -540,20 +540,20 @@ class NexusApplication(QtWidgets.QApplication):
         self.streaming_ready_time = 0
 
     def updateWindowMenu(self):
-        ## First update indicators for active window
+        # First update indicators for active window
         activewindow = self.activeWindow()
 
-        ## Clear the window list
+        # Clear the window list
         for action in self.windowMenu.actions():
             if hasattr(action, "windowAction"):
                 self.windowMenu.removeAction(action)
 
-        ## N.B. we need to keep a copy of the window list otherwise
-        ## Python's garbage collector will throw away our MainWindows!
+        # N.B. we need to keep a copy of the window list otherwise
+        # Python's garbage collector will throw away our MainWindows!
         self.windows = self.windowList()
         for window in self.windows:
             act = QtGui.QAction(QtGui.QIcon(":/images/nexusicon.svg"), window.windowTitle(), self)
-            ## tag the action so we can identify and delete it
+            # tag the action so we can identify and delete it
             act.windowAction = True
             if window == activewindow:
                 act.setEnabled(False)
@@ -609,18 +609,18 @@ class NexusApplication(QtWidgets.QApplication):
     def createNewFile(self, path):
         '''
         '''
-        ## Ensure the file ends in ".nex"
+        # Ensure the file ends in ".nex"
         P = Path(path).with_suffix(".nex")
 
         if P.exists():
-            ## Dialog to overwrite
+            # Dialog to overwrite
             raise Exception('File already exists')
 
         g = nexusgraph.NexusGraph(str(P))
         graphroot = g.Node('Root').save(setchange=False)
 
         cuid = graphydb.generateUUID()
-        ## Create basic Root node
+        # Create basic Root node
         stem = g.Node(
             kind='Stem',
             scale = 1.0,
@@ -890,7 +890,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timerLabel.setStyleSheet("color:rgba(155,0,0,100); font: 300pt")
         self.timerLabel.hide()
 
-        ## Need to keep a reference or it will get garbage collected!
+        # Need to keep a reference or it will get garbage collected!
         app = QtWidgets.QApplication.instance()
         app.updateWindowMenu()
 
@@ -992,14 +992,14 @@ class MainWindow(QtWidgets.QMainWindow):
         app.dialogNew()
 
     def openRecentFile(self):
-        ## Action target
+        # Action target
         action = self.sender()
         if action:
             app = QtWidgets.QApplication.instance()
             app.raiseOrOpen(action.data())
 
     def saveAs(self):
-        ## Action target
+        # Action target
 
         curpath = Path(self.scene.graph.path)
         # TODO set same directory?
@@ -1008,10 +1008,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         path, dummy = QtWidgets.QFileDialog.getSaveFileName(None, "New File", filter="Nexus (*.nex) ;; All files (*)")
         if len(path) > 0:
-            ## Ensure the file ends in ".nex"
+            # Ensure the file ends in ".nex"
             path = Path(path).with_suffix(".nex")
 
-            ## Create graph file under original name and copy contents across
+            # Create graph file under original name and copy contents across
             self.showMessage("Copying %s -> %s"%(str(curpath), str(path)))
             g2 = nexusgraph.NexusGraph(str(path))
             with g2.connection.backup("main", graph.connection, "main") as b:
@@ -1028,7 +1028,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Find all .nex files linked from this one and export whole lot to converted SVG files
         '''
 
-        ## Get target directory
+        # Get target directory
         dialog = QtWidgets.QFileDialog(self, self.tr("Choose target folder"))
         dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptOpen)
         dialog.setFileMode(QtWidgets.QFileDialog.Directory)
@@ -1046,7 +1046,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     continue
                 for k,v in stem.items():
                     if k.startswith('item') and v['kind']=="Text":
-                        ## find any links
+                        # find any links
                         try:
                             objs = et.fromstring(v['source'])
                         except et.ParseError:
@@ -1077,13 +1077,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         while len(links)>0:
             app.processEvents()
-            ## pick a file and load it
+            # pick a file and load it
             link = links.pop()
 
             g = self.loadOrConvertMap(str(basepath.joinpath(link)))
             newlinks = getlinks(g, basepath)
 
-            ## mark file as visited
+            # mark file as visited
             maps.add(link)
 
             for l in newlinks:
@@ -1093,11 +1093,11 @@ class MainWindow(QtWidgets.QMainWindow):
         progress.setMaximum(len(maps))
         progress.setLabelText("Converting %d maps..."%len(maps))
 
-        ## Maps now contain a set of linked maps with relative paths (to this one)
+        # Maps now contain a set of linked maps with relative paths (to this one)
         for i,m in enumerate(maps):
             app.processEvents()
 
-            ## Copy entire graph to memory to modify so we don't mess up undo etc
+            # Copy entire graph to memory to modify so we don't mess up undo etc
             g = nexusgraph.NexusGraph()
             gf = nexusgraph.NexusGraph(str(basepath.joinpath(m)))
             with g.connection.backup("main", gf.connection, "main") as b:
@@ -1168,13 +1168,13 @@ class MainWindow(QtWidgets.QMainWindow):
         backgroundbrush = scene.backgroundBrush()
         scene.setBackgroundBrush(QtGui.QBrush())
 
-        ## Clean up scene ready for export
+        # Clean up scene ready for export
         frames = False
         if self.viewsFramesAct.isChecked():
             frames = True
             self.viewsFramesAct.trigger()
 
-        ## Deselect everything
+        # Deselect everything
         scene.clearSelection()
 
         hiddenstems = []
@@ -1187,7 +1187,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 R=R.united(child.boundingRect())
 
 
-        ## Links are broken in SVGgenerator ... work around this
+        # Links are broken in SVGgenerator ... work around this
         links = {}
         textitems = []
         linknumber=0
@@ -1221,29 +1221,29 @@ class MainWindow(QtWidgets.QMainWindow):
                             links[randkey] = {'url': link.attrib['href'], 'text': text}
 
 
-                            ## replace text by random key so we can pick it up later in the svg
+                            # replace text by random key so we can pick it up later in the svg
                             span.text = randkey
 
-                            ## set item's xml from html (may end up doing multiple times if multiple links)
+                            # set item's xml from html (may end up doing multiple times if multiple links)
                             textitem.setHtml(et.tostring(objs).decode('utf-8'))
 
-                            ## store item and html to restore after svg generation
-                            ## duplicates won't matter
+                            # store item and html to restore after svg generation
+                            # duplicates won't matter
                             textitems.append((textitem, html))
 
 
-                            ## change the a-link to span and remove the undelying span so we avoid the stupid underline decoration
+                            # change the a-link to span and remove the undelying span so we avoid the stupid underline decoration
                             #link.clear()
                             #link.tag = 'span'
 
-                            ## replace text by random key so we can pick it up later in the svg
+                            # replace text by random key so we can pick it up later in the svg
                             #link.text = randkey
 
-        ## Get the title of the root node
+        # Get the title of the root node
         title = scene.root().titles()[0]
 
-        ## grab source rect, this will be same as target
-        ## which makes transforms easy
+        # grab source rect, this will be same as target
+        # which makes transforms easy
         sourceRect = scene.itemsBoundingRect()
 
         WIDTH = sourceRect.width()
@@ -1264,7 +1264,7 @@ class MainWindow(QtWidgets.QMainWindow):
         scene.render(painter, sourceRect, sourceRect)
         painter.end()
 
-        ## return text strings to previous
+        # return text strings to previous
         for textitem, html in textitems:
             textitem.setHtml(html)
 
@@ -1273,13 +1273,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         root = et.fromstring(buff.data())
 
-        ## QT produces a whole lot of empty groups with lots of attributes. Collapse them here
+        # QT produces a whole lot of empty groups with lots of attributes. Collapse them here
         for parentg in root.findall('{http://www.w3.org/2000/svg}g'):
             for g in parentg.findall('{http://www.w3.org/2000/svg}g'):
                 if len(g) == 0:
                     parentg.remove(g)
 
-        ## wrap graphical elements in group for zooming and panning
+        # wrap graphical elements in group for zooming and panning
         G = et.Element('g')
         G.set('id', 'viewcontrol')
         G.set('transform', 'matrix(1,0,0,1,{},{})'.format(int(-R.left()), int(-R.top())))
@@ -1289,7 +1289,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 root.remove(e)
         root.append(G)
 
-        ## this plays havock with zoom
+        # this plays havock with zoom
         if 'viewBox' in root.attrib:
             del root.attrib['viewBox']
 
@@ -1297,12 +1297,12 @@ class MainWindow(QtWidgets.QMainWindow):
         root.set('width', '100%')
         root.set('height', '100%')
 
-        ## go through and change links to nex files to actual links to svg files
+        # go through and change links to nex files to actual links to svg files
         for txtxml in root.iter('{http://www.w3.org/2000/svg}text'):
             if txtxml.text in links:
                 url = links[txtxml.text]['url']
 
-                ## convert .nex to .svgz
+                # convert .nex to .svgz
                 basename, ext = os.path.splitext(url)
                 if ext == '.nex':
                     url = basename+'.svg'
@@ -1315,15 +1315,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 txtxml.append(linkxml)
 
 
-        ## TODO how to delete them entirely?
+        # TODO how to delete them entirely?
         for g in root.iter('{http://www.w3.org/2000/svg}g'):
             # remove default value
             # TODO problems if nested withon an opacity!=1 ?
             if g.get('fill-opacity', '') == '1':
                 del g.attrib['fill-opacity']
 
-            ## remove font attributes from groups that have only paths or images
-            ## and line attributes (and font since in text) from only text groups
+            # remove font attributes from groups that have only paths or images
+            # and line attributes (and font since in text) from only text groups
             onlypath = True
             onlytext = True
             for c in g:
@@ -1342,7 +1342,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         del g.attrib[a]
 
 
-        ## truncate numbers - don't need full precision
+        # truncate numbers - don't need full precision
         # TODO % rounding would be better
         simpledec = re.compile(r'\d*\.\d+')
         def mround(match):
@@ -1353,7 +1353,7 @@ class MainWindow(QtWidgets.QMainWindow):
             d2 = re.sub(simpledec, mround, d)
             p.set('d', d2)
 
-            ## remove default values
+            # remove default values
             if p.get('vector-effect','')=='none':
                 del p.attrib['vector-effect']
 
@@ -1875,11 +1875,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def undo(self):
         changeditems = self.scene.graph.undo()
-        ## first pass - refresh the whole lot
+        # first pass - refresh the whole lot
         # TODO more efficient undo by looking at changeditems
         changedtypes = [t for t,uid in changeditems]
         if '+' in changedtypes:
-            ## Refresh the whole lot as we don't know where it was removed from
+            # Refresh the whole lot as we don't know where it was removed from
             self.scene.root().renew()
             return
 
@@ -1915,7 +1915,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         try:
             g = nexusgraph.NexusGraph(filename)
-            g.stats ## this will throw an Exception if it fails
+            g.stats # this will throw an Exception if it fails
         except apsw.NotADBError:
             self.showMessage("{} is not a graphydb, converting...".format(filename))
             g = convert_xml_to_graph(filename)
@@ -1946,7 +1946,7 @@ class MainWindow(QtWidgets.QMainWindow):
             scene = graphics.NexusScene(self)
             scene.graph = g
 
-            ## Find base items and create trees
+            # Find base items and create trees
             # TODO there should only be 1 root item - check
             rootnodes = g.fetch('(r:Root) -(e:Child)> [n:Stem]')
             for n in rootnodes:
@@ -1980,26 +1980,26 @@ class MainWindow(QtWidgets.QMainWindow):
             if item.isVisible():
                 sourceRect = sourceRect.united(item.sceneBoundingRect())
 
-        ## Add a small marking so doesn't get clipped
+        # Add a small marking so doesn't get clipped
         margin = 10
         sourceRect = QtCore.QRectF(sourceRect.x()-margin, sourceRect.y()-margin, sourceRect.width()+2*margin,sourceRect.height()+2*margin)
-        ## this is how scene.render() works out the scaling ratio for KeepAspectRatio
+        # this is how scene.render() works out the scaling ratio for KeepAspectRatio
         xratio = targetRect.width() / sourceRect.width()
         yratio = targetRect.height() / sourceRect.height()
         ratio = min(xratio, yratio)
 
-        ## by default the top left corners of source and target will coincide
-        ## these are the offsets of painter to centre map
+        # by default the top left corners of source and target will coincide
+        # these are the offsets of painter to centre map
         dx = (targetRect.width() - ratio*sourceRect.width())/2.0
         dy = (targetRect.height() - ratio*sourceRect.height())/2.0
 
-        ## this will center the map
+        # this will center the map
         painter.translate(dx, dy)
 
-        ## top and left justified:
+        # top and left justified:
         #painter.translate(0, 0)
 
-        ## top and centred:
+        # top and centred:
         #painter.translate(dx, 0)
 
         self.scene.render(painter, targetRect, sourceRect)
@@ -2061,14 +2061,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def highResRender(self, painter, viewitem, rect, targetRect, visibleStems):
 
-        ## hide items not in view
+        # hide items not in view
         inview = []
         for item in viewitem['_rect'].collidingItems():
             if isinstance(item, graphics.StemItem):
                 inview.append(item)
-                ## if parents hide so do the children
+                # if parents hide so do the children
                 inview.extend(item.allParentStems())
-                ## add any children not explicitly hidden since at the very least the tails will be visible
+                # add any children not explicitly hidden since at the very least the tails will be visible
                 for child in item.childStems2:
                     if child in visibleStems:
                         inview.append(child)
@@ -2084,7 +2084,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         self.view.render(painter, targetRect, rect)
 
-        ## show items previously visible (or collidingItems won't register them for next view)
+        # show items previously visible (or collidingItems won't register them for next view)
         for stem in visibleStems:
             stem.show()
 
@@ -2142,19 +2142,19 @@ class MainWindow(QtWidgets.QMainWindow):
                 hiddenstems.append(child)
 
         if views:
-            ## Used for print preview:
+            # Used for print preview:
             #dialog.paintRequested.connect(self.printViews)
 
             if dialog.exec():
                 self.printViews(self.printer)
         else:
-            ## Used for print preview:
+            # Used for print preview:
             #dialog.paintRequested.connect(self.printMap)
 
             if dialog.exec():
                 self.printMap(self.printer)
 
-        ## Restore frames visibility
+        # Restore frames visibility
         if frames:
             self.viewsFramesAct.trigger()
         for child in hiddenstems:
@@ -2289,7 +2289,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(selected)==0:
             return
 
-        ## Are they all selected?
+        # Are they all selected?
         allselected = reduce(lambda x,y: x and y, selected)
 
         for stem in self.scene.allChildStems(includeroot=False):
@@ -2356,7 +2356,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtGui.QDesktopServices.openUrl(QtCore.QUrl(urllib.parse.urljoin('file:',path)))
 
         else:
-            ## pass URL to OS to open ..
+            # pass URL to OS to open ..
             self.showMessage("Opening %s"%str(url))
             QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
 
@@ -2366,15 +2366,15 @@ class MainWindow(QtWidgets.QMainWindow):
         if viewitem is None:
             return
 
-        ## Below we implement the algorithm in
-        ## "Smooth and Efficient Zooming and Panning" J.J. van Wijk and W.A.A. Nuij
+        # Below we implement the algorithm in
+        # "Smooth and Efficient Zooming and Panning" J.J. van Wijk and W.A.A. Nuij
 
-        ## Effective velocity, this will determine the number of steps
+        # Effective velocity, this will determine the number of steps
         V = 0.003
-        ## rho is a tradeoff between zooming and panning, higher values jump more
+        # rho is a tradeoff between zooming and panning, higher values jump more
         rho = 1.6
 
-        ## initial point
+        # initial point
         sides0 = self.view.getViewSides()
         lp0 = QtCore.QPointF(*sides0['left'])
         rp0 = QtCore.QPointF(*sides0['right'])
@@ -2382,27 +2382,27 @@ class MainWindow(QtWidgets.QMainWindow):
         width0 = sqrt((lp0.x()-rp0.x())**2+(lp0.y()-rp0.y())**2)
         rot0 = atan2(-(rp0-lp0).y(), (rp0-lp0).x())
 
-        ## final point
+        # final point
         lp1 = QtCore.QPointF(*viewitem['left'])
         rp1 = QtCore.QPointF(*viewitem['right'])
         c1 = (lp1+rp1)/2.0
         width1 = sqrt((lp1.x()-rp1.x())**2+(lp1.y()-rp1.y())**2)
         rot1 = atan2(-(rp1-lp1).y(), (rp1-lp1).x())
 
-        ## the algorithm below is in terms of the width of the field of view
-        ## the natural width at scaling 1 will be 1
+        # the algorithm below is in terms of the width of the field of view
+        # the natural width at scaling 1 will be 1
 
-        ## the transform scale is inversely proportional with field of view
+        # the transform scale is inversely proportional with field of view
         w0 = width0
         w1 = width1
 
-        ## we are moving along a 2D line from 0 to u1
+        # we are moving along a 2D line from 0 to u1
         u1 = sqrt( (c1.x()-c0.x())**2 + (c1.y()-c0.y())**2 )
 
-        ## unit vector in direction of motion
+        # unit vector in direction of motion
         uvector = (c1-c0)/u1
 
-        ## s is the distance (?) along the path [0 -> S]
+        # s is the distance (?) along the path [0 -> S]
         try:
             b0 = (w1**2 - w0**2 + rho**4 * u1**2 )/(2*w0*u1*rho**2 )
             b1 = (w1**2 - w0**2 - rho**4 * u1**2 )/(2*w1*u1*rho**2 )
@@ -2414,8 +2414,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         tottime = S/V
 
-        ## how often to call the frame update in ms
-        ## 33 = 30 frames/s
+        # how often to call the frame update in ms
+        # 33 = 30 frames/s
         dt = 33
 
         totalsteps = int(round(tottime/dt))
@@ -2435,7 +2435,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             drot = 0
 
-        ## Do all the calculations initially and cache the results
+        # Do all the calculations initially and cache the results
         self.viewsteps = []
         for ii in range(1,totalsteps):
             s = ii/float(totalsteps)*S
@@ -3268,7 +3268,7 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
     def mouseMoveEvent(self, event):
 
         if not hasattr(event,"sourceId"):
-            ## this is for plain moves
+            # this is for plain moves
             super().mouseMoveEvent(event)
             return
 
@@ -3425,12 +3425,12 @@ class ViewsWidget(QtWidgets.QWidget):
 
         self.toolbar = toolbar
 
-        ## create main layout
+        # create main layout
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
-        ## create listview
+        # create listview
         self.viewsListView = ViewsListView()
         self.viewsListView.setModel(self.viewsModel)
         self.viewsListView.doubleClicked.connect(self.doubleClicked)
@@ -3439,7 +3439,7 @@ class ViewsWidget(QtWidgets.QWidget):
         # self.viewsListView.selectionChange.connect(self.selectionChanged)
         layout.addWidget(self.viewsListView)
 
-        ## create actions
+        # create actions
         self.resetViewAct = QtGui.QAction(QtGui.QIcon(":/images/view-reset.svg"), self.tr("&Reset View"), self)
         self.resetViewAct.setStatusTip(self.tr("Reset item to current view"))
         self.resetViewAct.triggered.connect(self.resetView)
@@ -3452,7 +3452,7 @@ class ViewsWidget(QtWidgets.QWidget):
         self.deleteViewAct.setStatusTip(self.tr("Delete selected View"))
         self.deleteViewAct.triggered.connect(self.deleteView)
 
-        ## create toolbar
+        # create toolbar
         self.toolbar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
         self.toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonIconOnly)
 

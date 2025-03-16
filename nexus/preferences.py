@@ -130,7 +130,7 @@ class NewStemPage(QtWidgets.QWidget):
         #packageLayout = QtGui.QVBoxLayout()
         #packageLayout.addWidget(packageList)
         #packageGroup.setLayout(packageLayout)
-##
+#
         ##mainLayout = QtGui.QVBoxLayout()
         #mainLayout.addWidget(updateGroup)
         #mainLayout.addWidget(packageGroup)
