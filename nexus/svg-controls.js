@@ -1,7 +1,7 @@
 function svgcontrols(){
 
-    // XXX set up for unique ID's so can have multiple maps?
-    // XXX test on other devices
+    // TODO set up for unique ID's so can have multiple maps?
+    // TODO test on other devices
 
     // the key elements
     var svge = document.getElementById('nexusmap');

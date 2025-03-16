@@ -1,5 +1,5 @@
 ##
-## Copyright 2010-2024 Alexei Gilchrist
+## Copyright 2010-2025 Alexei Gilchrist
 ##
 ## This file is part of Nexus.
 ##
@@ -327,7 +327,7 @@ class NexusGraph(graphydb.Graph):
         return copynode, "OK"
 
     def itemFromImage(self, image):
-        # XXX image: jpg/png distinctions?
+        # TODO image: jpg/png distinctions?
 
         dataenc = ImageToData(image)
         sha1 = hashlib.sha1(dataenc.encode('utf-8')).hexdigest()
@@ -345,26 +345,12 @@ class NexusGraph(graphydb.Graph):
 
         T = [scale, 0.0, 0.0, 0.0, scale, 0.0, 0.0, 0.0, 1.0]
 
-        # imgnode['frame'] = T
-        # imgnode['sha1'] = sha1
-        # imgnode.save(setchange=False)
-
         # TODO check to see if data exists already
         imgdatanode = {'kind':'ImageData', 'data':dataenc, 'sha1': sha1}
-        # datanode['data'] = dataenc
-        # datanode['sha1'] = sha1
-        # datanode.save(setchange=False)
 
         copydata = CopyFormat()
         copydata.addAsContent([{'kind':'Image', 'frame':T, 'sha1':sha1}])
         copydata.images[sha1] = imgdatanode
-        # copynode = self.getCopyNode(clear=True)
-        # stem = self.Node('Stem', pos=[10,10], flip=1,
-        #                  scale=0.6).save(setchange=False)
-
-        # self.Edge(copynode, 'Child', stem).save(setchange=False)
-        # self.Edge(stem, 'In', imgnode).save(setchange=False)
-        # self.Edge(imgnode, 'With', datanode).save(setchange=False)
 
         return copydata, 'OK'
 
@@ -421,35 +407,6 @@ class NexusGraph(graphydb.Graph):
                         linkpath += "?" + query
                     text = '<a href="x-devonthink-item:%s">%s</a>'%(linkpath, info['name'])
 
-
-                # elif str(url.scheme())=='bookends':
-                #     uuid = str(url.path())[1:]
-                #     data = devonthink.getBEinfo(uuid)
-
-                #     authors = []
-                #     for a in data.get('authors','').split('\n'):
-                #         ns = a.split(',')
-                #         if len(ns)>0:
-                #             authors.append(ns[0])
-                #     authors = ' '.join(authors)
-                #     title = data.get('title','???')
-                #     so = re.match('(1\d\d\d|2\d\d\d)', data.get('thedate','????'))
-                #     if so:
-                #         year = so.group()
-                #     else:
-                #         year = '????'
-                #     journal = data.get('journal','')
-                #     if len(journal)>0:
-                #         journal = '<br/><i>'+journal+'</i>'
-
-                #     text = '<b>{year}</b> {authors}<br/><a href="{link}">{title}</a> {journal}'.format(
-                #         link = url.toString(),
-                #         title=title,
-                #         authors=authors,
-                #         year=year,
-                #         journal=journal,
-                #     )
-
                 else:
                     text = '<a href="%s">%s</a>'%(url.toString(), name)
 
@@ -461,18 +418,6 @@ class NexusGraph(graphydb.Graph):
                 'frame':graphics.Transform().tolist()
             }])
 
-            # item =  self.Node('Text')
-            # item['maxwidth'] = CONFIG['text_item_width']
-            # item['source'] = text
-            # item['frame'] = graphics.Transform().tolist()
-            # item['z'] = 0
-            # item.save(setchange=False)
-
-            # stem = self.Node('Stem', pos=[10,10], flip=1,
-            #                  scale=0.6).save(setchange=False)
-
-            # self.Edge(copynode, 'Child', stem).save(setchange=False)
-            # self.Edge(stem, 'In', item).save(setchange=False)
 
         return copydata, 'OK'
 
@@ -490,42 +435,11 @@ class NexusGraph(graphydb.Graph):
             'source':html,
             'frame':graphics.Transform().tolist()
         }])
-        # item = self.Node('Text')
-        # item['maxwidth'] = CONFIG['text_item_width']
-        # item['source'] = html
-        # item['frame'] = graphics.Transform().tolist()
-        # item['z'] = 0
-        # item.save(setchange=False)
-
-        # copynode = self.getCopyNode(clear=True)
-        # stem = self.Node('Stem', pos=[10,10], flip=1, z=0, scale=0.6).save(setchange=False)
-
-        # self.Edge(copynode, 'Child', stem).save(setchange=False)
-        # self.Edge(stem, 'In', item).save(setchange=False)
 
         return copydata, 'OK'
-        #return [textnode], "OK"
 
 
     def itemFromText(self, text):
-        #if text.startswith('papers3://'):
-        #    ## this is actually an application url
-        #    text = '<a href="%s">papers3</a>'%text
-        #elif text.startswith('omnifocus://'):
-        #    text = '<a href="%s">omnifocus</a>'%text
-        #else:
-        #
-        #    # XXX Genaralise the url linker below to include papers3 and omnifocus?
-        #
-        #    text=re.sub("((http[s]?|file)://(?:[a-zA-Z]|[0-9]|[#$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)",  r'<a href="\1">\1</a>', text)
-#
-        #    # XXX <pre> doesn't work so well .. maybe "paste as"
-        #    ## check to see if text has \n or \r and wrap in <pre> </pre> tags
-        #    if re.search(r'\\n|\\r',text):
-        #        #text = "<code>%s</code>"%text
-        #        text = re.sub(r"\\n|\\r", r"<br />\\n", text)
-        #
-        #    text = text.strip()
 
         # first linkify any perculiar protocols
         link_re = re.compile(
@@ -565,51 +479,6 @@ class NexusGraph(graphydb.Graph):
             'source':html,
             'frame':graphics.Transform().tolist()
         }])
-        # item = self.Node('Text')
-        # item['maxwidth'] = CONFIG['text_item_width']
-        # item['source'] = html
-        # item['frame'] = graphics.Transform().tolist()
-        # item['z'] = 0
-        # item.save(setchange=False)
-
-        # copynode = self.getCopyNode(clear=True)
-        # stem = self.Node('Stem', pos=[10,10], flip=1, z=0, scale=0.6).save(setchange=False)
-
-        # self.Edge(copynode, 'Child', stem).save(setchange=False)
-        # self.Edge(stem, 'In', item).save(setchange=False)
 
         return copydata, 'OK'
-        #return [textnode], "OK"
 
-    # def addImageNode(self, g, parentnode, item, itemdata, batch):
-    #     '''
-    #     Add an image node with data node or link to existing datanode if already in graph
-    #     '''
-
-    #     # TODO might have multiple images to link!
-    #     node = g.Node('Image')
-    #     #node.save(batch=batch)
-    #     edge = g.Edge(parentnode, "With", node)
-    #     #edge.save(batch=batch)
-
-    #     sha = item['sha1']
-    #     img = g.findImageData(sha)
-    #     if img is None:
-    #         # Add ImageData and edge
-    #         logging.debug("Adding new image to map")
-    #         imagedata = g.Node('ImageData')
-    #         imagedata.update(itemdata)
-    #         #imagedata.save(batch=batch)
-    #         e=g.Edge(self.stem.node, "With", imagedata)
-    #         #e.save(batch=batch)
-    #     else:
-    #         logging.debug("Found image already in map")
-    #         # ImageData already in graph, just link
-    #         # Only link if edge not already there, so first scan them all
-    #         for e in self.stem.node.outE('e.kind="With"'):
-    #             if e.end['sha1'] == sha:
-    #                 logging.debug("Found existing link from stem to image")
-    #                 break
-    #         else:
-    #             logging.debug("Adding new link from stem to image")
-    #             g.Edge(self.stem.node, "With", img).save(setchange=True, batch=batch)

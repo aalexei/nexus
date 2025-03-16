@@ -1,5 +1,5 @@
 ##
-## Copyright 2010-2024 Alexei Gilchrist
+## Copyright 2010-2025 Alexei Gilchrist
 ##
 ## This file is part of Nexus.
 ##
@@ -18,17 +18,25 @@
 
 from pathlib import Path
 from importlib.machinery import SourceFileLoader
+import platform
+
+# TODO retina screen halves the size? Should set a platform independent size
+# For the moment set a platform dependent size
+if platform.system()=="Darwin":
+    text_item_font_size = 12
+else:
+    text_item_font_size = 9
 
 default_config = {
     #
-    # pinch gesture
+    # Pinch Gesture
     #
     "pinch_no_move_threshold": 0,  # view pixels
     "pinch_no_rotate_threshold": 20, # degrees
     "pinch_no_scale_threshold": [0.92, 1.08], # scale factors
 
     #
-    # input dialog
+    # Input Dialog
     #
     # completely ignore mouse moves when using pen
     "input_ignore_mouse": False,
@@ -51,25 +59,21 @@ default_config = {
     "child_scale": 0.5,
 
     #
-    # text item
+    # Text item
     #
-
     # Default size of textbox
     "text_item_width": 380,
 
     #
-    # font
+    # Font
     #
-
     # Bundling ETBembo with Nexus
     "text_item_font_family": "ETBembo",
-    # "text_item_font_size": 12,
-    "text_item_font_size": 9,
-    # TODO retina screen halves the size? Get more consistent sizing across platforms
+    "text_item_font_size": text_item_font_size,
     "text_item_color": "#000000",
 
     #
-    # laser trail
+    # Laser Trail
     # Colour format: #AARRGGBB
     #
     "trail_outer_color": "#AA00E000",
@@ -104,7 +108,7 @@ def get_config():
 
     config = default_config.copy()
 
-    # any of these config files should define a config dictionary with keys to update
+    # Any of these config files should define a config dictionary with keys to update
     # the default config
 
     # TODO make robust against errors in config files

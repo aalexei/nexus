@@ -1,5 +1,5 @@
 ##
-## Copyright 2010-2024 Alexei Gilchrist
+## Copyright 2010-2025 Alexei Gilchrist
 ##
 ## This file is part of Nexus.
 ##
@@ -130,7 +130,7 @@ class NewStemPage(QtWidgets.QWidget):
         #packageLayout = QtGui.QVBoxLayout()
         #packageLayout.addWidget(packageList)
         #packageGroup.setLayout(packageLayout)
-##
+#
         ##mainLayout = QtGui.QVBoxLayout()
         #mainLayout.addWidget(updateGroup)
         #mainLayout.addWidget(packageGroup)

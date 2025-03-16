@@ -1,5 +1,5 @@
 ##
-## Copyright 2010-2024 Alexei Gilchrist
+## Copyright 2010-2025 Alexei Gilchrist
 ##
 ## This file is part of Nexus.
 ##
@@ -44,9 +44,9 @@ EraserMode = 3
 # Mouse press states
 MPRESS, MMOVE, MLONG, MDOUBLE, MADD = 1,2,3,4,5
 
-VERSION=0.9
+VERSION=0.91
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class Transform(QtGui.QTransform):
     '''
     Add some functionality to QT's QTransform
@@ -69,7 +69,7 @@ class Transform(QtGui.QTransform):
         '''
         Expects a string like "[8.94, 0.0, 1.605, 0.0, 8.94, 0.0, -28.35, -5.78, 1.0]"
         '''
-        numbers = re.findall('(-?\d+\.?(?:\d+)?(?:e[+-]\d+)?)',s)
+        numbers = re.findall(r'(-?\d+\.?(?:\d+)?(?:e[+-]\d+)?)',s)
         if len(numbers)!=9:
             raise Exception
 
@@ -79,7 +79,7 @@ class Transform(QtGui.QTransform):
 
     def getRotation(self):
         # Assumes scaling same in x and y!
-        # XXX make general
+        # TODO make general
         x0,y0 = self.map(0.0,0.0)
         x1,y1 = self.map(1.0,0.0)
         angle = atan2(y1-y0,x1-x0) # between -pi and pi
@@ -120,13 +120,13 @@ class Transform(QtGui.QTransform):
             self.m21(),self.m22(),self.m23(),
             self.m31(),self.m32(),self.m33())
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 def scaleRotateMove(scale=1.0, angle=0.0, dx=0.0, dy=0.0):
     scale = float(scale)
     T = QtGui.QTransform().translate(dx,dy).scale(scale, scale).rotate(angle)
     return T
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 def pressureCurve(p, x1=0.5, y1=0.5):
     '''
     Return presure curve using quadratic bezier with points
@@ -137,9 +137,9 @@ def pressureCurve(p, x1=0.5, y1=0.5):
     else:
         return (p*(2*x1-1)*(2*y1-1)-2*(sqrt(p-2*p*x1+x1**2)-x1)*(x1-y1))/(1-2*x1)**2
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class OverView(QtWidgets.QDialog):
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 
     def __init__(self, scene,  parent=None):
 
@@ -159,9 +159,9 @@ class OverView(QtWidgets.QDialog):
 
         self.view.fitInView(self.scene.itemsBoundingRect())
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class InputDialog(QtWidgets.QDialog):
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 
     # TODO item grouping
     # TODO apply colour changes to selected items
@@ -417,7 +417,7 @@ class InputDialog(QtWidgets.QDialog):
             self.branchcolorinherit.setCheckState(QtCore.Qt.CheckState.Checked)
         self.branchcolorbutton.setIcon(QtGui.QIcon(pix))
 
-        ## Force redraw of pen and highlighter icons 
+        # Force redraw of pen and highlighter icons 
         self.ishighlighter = True
         self.setPenCursor()
         self.ishighlighter = False
@@ -440,7 +440,7 @@ class InputDialog(QtWidgets.QDialog):
                 itemnumbers['stroke']+=1
             elif k['kind'] == 'Text':
                 item = TextItem(uid=u, stem=stem, scene=self.scene)
-                ## this is needed to make alignments work:
+                # this is needed to make alignments work:
                 item.positionChanged.connect(self.setTextControls)
                 itemnumbers['text']+=1
             elif k['kind'] == 'Image':
@@ -455,11 +455,11 @@ class InputDialog(QtWidgets.QDialog):
         self.view.centerOn(itemrect.center())
 
         # TODO clean up code
-        ## set the initial mode
+        # set the initial mode
         #if sum(itemnumbers.values()) == 0:
 
         # if len(items) == 0:
-        #     ## it's a new blank item, go off the mode
+        #     # it's a new blank item, go off the mode
         #     if newdialogmode==SelectMode:
         #         self.selectmode.trigger()
         #     elif newdialogmode==PenMode:
@@ -468,13 +468,13 @@ class InputDialog(QtWidgets.QDialog):
         #         self.textmode.trigger()
         # else:
         #     if itemnumbers['image']>0 or (itemnumbers['stroke']>0 and itemnumbers['text']>0):
-        #         ## if there is an image choose selection mode
+        #         # if there is an image choose selection mode
         #         self.selectmode.trigger()
         #     elif itemnumbers['stroke'] > 0:
-        #         ## if there is strokes choose pen mode
+        #         # if there is strokes choose pen mode
         #         self.penmode.trigger()
         #     else:
-        #         ## otherwise text mode or that recorded in state
+        #         # otherwise text mode or that recorded in state
         #         self.textmode.trigger()
 
         if self.propmode.isChecked():
@@ -611,12 +611,12 @@ class InputDialog(QtWidgets.QDialog):
         self.closeAct = QtGui.QAction(QtGui.QIcon(":/images/exit.svg"),self.tr("Close"), self)
         self.closeAct.triggered.connect(self.saveClose)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.propmode = QtGui.QAction(QtGui.QIcon(":/images/cog.svg"),self.tr("Properties"), self)
         self.propmode.setCheckable(True)
         self.propmode.triggered.connect(self.setPropMode)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.textmode = QtGui.QAction(QtGui.QIcon(":/images/text.svg"),self.tr("&Text mode"), self)
         self.textmode.triggered.connect(self.setTextMode)
 
@@ -635,78 +635,78 @@ class InputDialog(QtWidgets.QDialog):
         self.selectmode = QtGui.QAction(QtGui.QIcon(":/images/pointer.svg"),self.tr("&Select mode"), self)
         self.selectmode.triggered.connect(self.setSelectMode)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.cutAct = QtGui.QAction(QtGui.QIcon(":/images/edit-cut.svg"),self.tr("Cu&t"), self)
         self.cutAct.setShortcut(QtGui.QKeySequence.StandardKey.Cut)
         self.cutAct.setStatusTip(self.tr("Cut selected to clipboard"))
         self.cutAct.triggered.connect(self.cutEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.copyAct = QtGui.QAction(QtGui.QIcon(":/images/edit-copy.svg"),self.tr("&Copy"), self)
         self.copyAct.setShortcut(QtGui.QKeySequence.StandardKey.Copy)
         self.copyAct.setStatusTip(self.tr("Copy selected to clipboard"))
         self.copyAct.triggered.connect(self.copyEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.pasteAct = QtGui.QAction(QtGui.QIcon(":/images/edit-paste.svg"), self.tr("&Paste"), self)
         self.pasteAct.setShortcut(QtGui.QKeySequence.StandardKey.Paste)
         self.pasteAct.setStatusTip(self.tr("Paste the clipboard's contents"))
         self.pasteAct.triggered.connect(self.pasteEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.deleteAct = QtGui.QAction(QtGui.QIcon(":/images/edit-delete.svg"), self.tr("&Delete"), self)
         self.deleteAct.setShortcut(QtGui.QKeySequence.StandardKey.Delete)
         self.deleteAct.setStatusTip(self.tr("Delete selected"))
         self.deleteAct.triggered.connect(self.deleteEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.zoomInAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-in.svg"), self.tr("Zoom In"), self)
         self.zoomInAct.setShortcut(QtGui.QKeySequence.StandardKey.ZoomIn)
         self.zoomInAct.setStatusTip(self.tr("Zoom in"))
         self.zoomInAct.triggered.connect(self.view.zoomIn)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.zoomOutAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-out.svg"), self.tr("Zoom Out"), self)
         self.zoomOutAct.setShortcut(QtGui.QKeySequence.StandardKey.ZoomOut)
         self.zoomOutAct.setStatusTip(self.tr("Zoom out"))
         self.zoomOutAct.triggered.connect(self.view.zoomOut)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.zoomOriginalAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-one.svg"), self.tr("Reset Zoom"), self)
         self.zoomOriginalAct.setStatusTip(self.tr("Reset Zoom"))
         self.zoomOriginalAct.triggered.connect(self.view.zoomOriginal)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.raiseAct = QtGui.QAction(QtGui.QIcon(":/images/raise.svg"), self.tr("Raise"), self)
         self.raiseAct.setStatusTip(self.tr("Raise selected items"))
         self.raiseAct.setVisible(False)
         self.raiseAct.triggered.connect(self.raiseItemsEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.raiseTopAct = QtGui.QAction(QtGui.QIcon(":/images/raise-top.svg"), self.tr("Raise to top"), self)
         self.raiseTopAct.setStatusTip(self.tr("Raise selected items to top"))
         self.raiseTopAct.setVisible(False)
         self.raiseTopAct.triggered.connect(self.raiseItemsTopEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.lowerAct = QtGui.QAction(QtGui.QIcon(":/images/lower.svg"), self.tr("Lower"), self)
         self.lowerAct.setStatusTip(self.tr("Lower selected items"))
         self.lowerAct.setVisible(False)
         self.lowerAct.triggered.connect(self.lowerItemsEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.lowerBottomAct = QtGui.QAction(QtGui.QIcon(":/images/lower-bottom.svg"), self.tr("Lower to bottom"), self)
         self.lowerBottomAct.setStatusTip(self.tr("Lower selected items to bottom"))
         self.lowerBottomAct.setVisible(False)
         self.lowerBottomAct.triggered.connect(self.lowerItemsBottomEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.sourceAct = QtGui.QAction(QtGui.QIcon(":/images/source.svg"), self.tr("Show source"), self)
         self.sourceAct.setStatusTip(self.tr("Edit the source"))
         self.sourceAct.setVisible(False)
         self.sourceAct.triggered.connect(self.showTextSourceEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.boldAct = QtGui.QAction(QtGui.QIcon(":/images/text-bold.svg"), self.tr("Bold"), self)
         self.boldAct.setStatusTip(self.tr("Bold Selection"))
         self.boldAct.setVisible(False)
@@ -716,7 +716,7 @@ class InputDialog(QtWidgets.QDialog):
         self.boldAct.setFont(bold)
         self.boldAct.triggered.connect(self.textBoldEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.italicAct = QtGui.QAction(QtGui.QIcon(":/images/text-italic.svg"), self.tr("Italic"), self)
         self.italicAct.setStatusTip(self.tr("Italic Selection"))
         self.italicAct.setVisible(False)
@@ -726,7 +726,7 @@ class InputDialog(QtWidgets.QDialog):
         self.italicAct.setFont(italic)
         self.italicAct.triggered.connect(self.textItalicEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.underlineAct = QtGui.QAction(QtGui.QIcon(":/images/text-underline.svg"), self.tr("Underline"), self)
         self.underlineAct.setStatusTip(self.tr("Underline Selection"))
         self.underlineAct.setVisible(False)
@@ -736,7 +736,7 @@ class InputDialog(QtWidgets.QDialog):
         self.underlineAct.setFont(under)
         self.underlineAct.triggered.connect(self.textUnderlineEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         pix = QtGui.QPixmap(16,16)
         pix.fill(QtCore.Qt.GlobalColor.black)
         self.textColorAct = QtGui.QAction(QtGui.QIcon(pix), self.tr("Color"), self)
@@ -744,7 +744,7 @@ class InputDialog(QtWidgets.QDialog):
         self.textColorAct.setVisible(False)
         self.textColorAct.triggered.connect(self.textColorEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         pix = QtGui.QPixmap(16,16)
         pix.fill(QtCore.Qt.GlobalColor.yellow)
         self.textBackColorAct = QtGui.QAction(QtGui.QIcon(pix), self.tr("Background Color"), self)
@@ -752,13 +752,13 @@ class InputDialog(QtWidgets.QDialog):
         self.textBackColorAct.setVisible(False)
         self.textBackColorAct.triggered [ bool ].connect(self.textBackColorEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.fontAct = QtGui.QAction(QtGui.QIcon(":/images/text-font.svg"), self.tr("Font"), self)
         self.fontAct.setStatusTip(self.tr("Font Selection"))
         self.fontAct.setVisible(True)
         self.fontAct.triggered.connect(self.textFontEvent)
 
-        ## ----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------
         self.clearFormatAct = QtGui.QAction(QtGui.QIcon(":/images/text-clear.svg"), self.tr("Clear"), self)
         self.clearFormatAct.setStatusTip(self.tr("Clear Format"))
         self.clearFormatAct.setVisible(False)
@@ -795,7 +795,7 @@ class InputDialog(QtWidgets.QDialog):
     def setPenCursor(self):
 
         if not self.ishighlighter:
-            ## Pen selected
+            # Pen selected
             color = QtGui.QColor(self.scene.graph.getsetting('pencolor', '#FF000000'))
             size = self.scene.graph.getsetting('pensize', 1.5)
 
@@ -806,7 +806,7 @@ class InputDialog(QtWidgets.QDialog):
             self.penmode.setIcon(self.PenIcon(":/images/pencil.svg", color))
 
         else:
-            ## Highlighter selected
+            # Highlighter selected
             color = QtGui.QColor(self.scene.graph.getsetting('hicolor', '#60FFFFA0'))
             size = self.scene.graph.getsetting('hisize', 5)
 
@@ -866,7 +866,7 @@ class InputDialog(QtWidgets.QDialog):
                 break
 
         if not textitempresent:
-            ## Add a blank TextItem
+            # Add a blank TextItem
             item = {'kind':'Text', 'source':'', 'frame':Transform().tolist()}
             uid = graphydb.generateUUID()
             z = 0
@@ -884,22 +884,22 @@ class InputDialog(QtWidgets.QDialog):
         # TODO need method for adding additional text items to stem
 
         for item in items:
-            ## set mode fulleditor access; non movable
+            # set mode fulleditor access; non movable
             item.setMode(TextMode)
 
-        ## Focus one of the items if possible
-        ## pick first one we come across
+        # Focus one of the items if possible
+        # pick first one we come across
         for item in items:
             if isinstance(item, TextItem):
                 item.setFocus()
-                ## Make sure the item being editied in centred in view
+                # Make sure the item being editied in centred in view
                 self.view.fitInView(item.mapToScene(item.boundingRect()).boundingRect().adjusted(-10,-10,10,10), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
                 break
 
     def setHighlightModeClicked(self):
 
         if self.scene.mode == PenMode and self.ishighlighter:
-            ## Clicked while selected
+            # Clicked while selected
             d = tools.PenDialog(self.scene.pen, "highlighter", self)
             d.exec()
             color = self.scene.pen.color().name(QtGui.QColor.NameFormat.HexArgb)
@@ -915,7 +915,7 @@ class InputDialog(QtWidgets.QDialog):
 
     def setPenModeClicked(self):
         if self.scene.mode == PenMode and not self.ishighlighter:
-            ## Clicked while selected
+            # Clicked while selected
             d = tools.PenDialog(self.scene.pen, "pen", self)
             d.exec()
             color = self.scene.pen.color().name(QtGui.QColor.NameFormat.HexArgb)
@@ -966,7 +966,7 @@ class InputDialog(QtWidgets.QDialog):
         self.view.viewport().setCursor(QtCore.Qt.CursorShape.CrossCursor)
         self.scene.mode = EraserMode
 
-    # XXX should drawing modes be in the scene instead?
+    # TODO should drawing modes be in the scene instead?
 
     def setSelectMode(self):
         '''
@@ -1001,7 +1001,7 @@ class InputDialog(QtWidgets.QDialog):
 
     #     settings = QtCore.QSettings("Ectropy", "Nexus")
 
-    #     ## Temporarily (for this session) record the input geometry
+    #     # Temporarily (for this session) record the input geometry
     #     g = self.geometry()
     #     self.inputgeometry = [g.left(), g.top(), g.width(), g.height()]
 
@@ -1012,13 +1012,13 @@ class InputDialog(QtWidgets.QDialog):
         self.italicAct.setChecked(fmt.fontItalic())
         self.underlineAct.setChecked(fmt.fontUnderline())
 
-        # XXX more efficient to check for color change first?
+        # TODO more efficient to check for color change first?
         pix = QtGui.QPixmap(16, 16)
         pix.fill(fmt.foreground().color())
         icon = QtGui.QIcon(pix)
         self.textColorAct.setIcon(icon)
 
-        ## How to set background to zero
+        # How to set background to zero
         pix = QtGui.QPixmap(16, 16)
         col = fmt.background().color()
         if not fmt.background().isOpaque():
@@ -1068,7 +1068,7 @@ class InputDialog(QtWidgets.QDialog):
 
     def textBoldEvent(self, state):
 
-        # XXX tool button should reflect current selection
+        # TODO tool button should reflect current selection
         for item in self.scene.getItems():
             if isinstance(item, TextItem) and item.hasFocus():
                 fmt = QtGui.QTextCharFormat()
@@ -1083,7 +1083,7 @@ class InputDialog(QtWidgets.QDialog):
 
     def textItalicEvent(self, state):
 
-        # XXX tool button should reflect current selection
+        # TODO tool button should reflect current selection
         for item in self.scene.getItems():
             if isinstance(item, TextItem) and item.hasFocus():
                 fmt = QtGui.QTextCharFormat()
@@ -1099,7 +1099,7 @@ class InputDialog(QtWidgets.QDialog):
 
     def textUnderlineEvent(self, state):
 
-        # XXX tool button should reflect current selection
+        # TODO tool button should reflect current selection
         for item in self.scene.getItems():
             if isinstance(item, TextItem) and item.hasFocus():
                 fmt = QtGui.QTextCharFormat()
@@ -1118,7 +1118,7 @@ class InputDialog(QtWidgets.QDialog):
         for item in self.scene.getItems():
             if isinstance(item, TextItem) and item.hasFocus():
 
-                # XXX current color selection
+                # TODO current color selection
                 col = QtWidgets.QColorDialog.getColor()
                 if col.isValid():
                     fmt = QtGui.QTextCharFormat()
@@ -1134,7 +1134,7 @@ class InputDialog(QtWidgets.QDialog):
         for item in self.scene.getItems():
             if isinstance(item, TextItem) and item.hasFocus():
 
-                # XXX current color selection
+                # TODO current color selection
                 col = QtWidgets.QColorDialog.getColor()
                 if col.isValid():
                     fmt = QtGui.QTextCharFormat()
@@ -1148,7 +1148,7 @@ class InputDialog(QtWidgets.QDialog):
 
         for item in self.scene.getItems():
             if isinstance(item, TextItem) and item.hasFocus():
-                # XXX totally clear all formatting?
+                # TODO totally clear all formatting?
                 fmt = QtGui.QTextCharFormat()
                 item.textCursor().setCharFormat(fmt)
                 fmt = QtGui.QTextBlockFormat()
@@ -1193,31 +1193,31 @@ class InputDialog(QtWidgets.QDialog):
         clipboard = QtWidgets.QApplication.clipboard()
         mimedata = QtCore.QMimeData()
 
-        ##
-        ## Copy a pixmap of the selected items for external use
-        ##
+        #
+        # Copy a pixmap of the selected items for external use
+        #
         rect = QtCore.QRectF()
 
-        ## Unselect items so selection marks dont show up
+        # Unselect items so selection marks dont show up
         for item in selected:
             rect=rect.united(item.sceneBoundingRect())
             item.setSelected(False)
 
-        ## Grab all items that will show up in the region
+        # Grab all items that will show up in the region
         # TODO isn't this the same as above?,
         allregionitems = self.scene.items(rect)
 
-        ## Build a pixmap at 2x the size for better resolution
+        # Build a pixmap at 2x the size for better resolution
         pixmap = QtGui.QPixmap(rect.size().toSize()*2)
 
-        ## Make background transparent
+        # Make background transparent
         pixmap.fill( QtGui.QColor(0,0,0,0))
         painter = QtGui.QPainter(pixmap)
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         painter.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
         painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
 
-        ## Hide unselected visible items that are in the rect
+        # Hide unselected visible items that are in the rect
         hiddenitems = []
         for item in allregionitems:
             if item not in selected and item.isVisible():
@@ -1228,16 +1228,16 @@ class InputDialog(QtWidgets.QDialog):
         painter.end()
         mimedata.setImageData(pixmap)
 
-        ## Return selection
+        # Return selection
         for item in selected:
             item.setSelected(True)
-        ## Return hidden items
+        # Return hidden items
         for item in hiddenitems:
             item.setVisible(True)
 
-        ##
-        ## Copy Nexus internal data for pasting elsewhere in a tree
-        ##
+        #
+        # Copy Nexus internal data for pasting elsewhere in a tree
+        #
         # TODO the following potentially changes the z-order
         content = []
         imageshas = set()
@@ -1270,7 +1270,7 @@ class InputDialog(QtWidgets.QDialog):
         # TODO check for images ... check size and scale appropriately
         # TODO paste to central topics (nothing selected)
 
-        # XXX image from nexus nor taken as item so lose transformations
+        # TODO image from nexus nor taken as item so lose transformations
 
         clipboard = QtWidgets.QApplication.clipboard()
         mimedata = clipboard.mimeData()
@@ -1334,8 +1334,8 @@ class InputDialog(QtWidgets.QDialog):
         # TODO clear selection or replace it?
         self.scene.clearSelection()
 
-        # XXX move to view so that we can get current point
-        ## position of cursor
+        # TODO move to view so that we can get current point
+        # position of cursor
         # cp = self.scene.mapFromGlobal(QtGui.QCursor.pos())
         # if not self.scene.geometry().contains(cp):
         #     cp = QtCore.QPoint(0,0)
@@ -1352,7 +1352,7 @@ class InputDialog(QtWidgets.QDialog):
                 item=InkItem(uid=uid, stem=self.stem, scene=self.scene)
             elif n['kind'] == 'Text':
                 item=TextItem(uid=uid, stem=self.stem, scene=self.scene)
-                ## this is needed to make alignments work:
+                # this is needed to make alignments work:
                 item.positionChanged.connect(self.setTextControls)
             elif n['kind'] == 'Image':
                 # N.B. PixmapItem expects the data to be in a subnode in the graph
@@ -1361,8 +1361,8 @@ class InputDialog(QtWidgets.QDialog):
             pastedobjects.append(item)
 
 
-        ## translate all the items so that top left of their
-        ## bounding box is at the target position
+        # translate all the items so that top left of their
+        # bounding box is at the target position
         itemrect = QtCore.QRectF()
         for item in pastedobjects:
             itemrect = itemrect.united(item.sceneBoundingRect())
@@ -1372,7 +1372,7 @@ class InputDialog(QtWidgets.QDialog):
         # t.translate(dp.x(),dp.y())
         t.translate(3,-3)
         for item in pastedobjects:
-            ## note QTs backward transforms
+            # note QTs backward transforms
             item.setTransform(item.transform()*t)
             item['frame'] = Transform(item.transform()).tolist()
             contentchanged = True
@@ -1399,9 +1399,9 @@ class MyEvent(QtWidgets.QGraphicsSceneMouseEvent):
     def buttons(self):
         return self._buttons
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class InkScene(QtWidgets.QGraphicsScene):
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 
     maxZ = 1
     mode = TextMode
@@ -1473,9 +1473,9 @@ class InkScene(QtWidgets.QGraphicsScene):
         return ii
 
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class TransformationWidget(QtWidgets.QGraphicsItem):
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
     """
     Transform the selected items (scale and rotate)
     """
@@ -1488,7 +1488,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         super().__init__()
         self.scene = scene
 
-        ## double headed arrow origin on left point
+        # double headed arrow origin on left point
         dapath=QtGui.QPainterPath()
         dapath.lineTo(8, -8)
         dapath.lineTo(8, -4)
@@ -1501,7 +1501,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         dapath.lineTo(8, 8)
         dapath.lineTo(0, 0)
 
-        ## double headed curved arrow
+        # double headed curved arrow
         x0 = 12
         y0 = 4
         capath=QtGui.QPainterPath()
@@ -1582,7 +1582,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
 
 
     def paint(self, painter, option, widget):
-        ## this has to be overriden
+        # this has to be overriden
         pass
 
     def hide(self):
@@ -1596,25 +1596,25 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         #QtWidgets.QGraphicsItem.mousePressEvent(self, event)
 
         if not hasattr(event, "source"):
-            ## ignore events if they are not from one of the sub widgets
+            # ignore events if they are not from one of the sub widgets
             return
 
         if len(self.selected)==0:
-            ## Nothing to be done
-            ## this shouldn't normally trigger
+            # Nothing to be done
+            # this shouldn't normally trigger
             return
 
         #self.mousePressScreenPos = event.screenPos
         #self.mousePressTime = time.time()
 
-        ## find bounding rect of selected items
+        # find bounding rect of selected items
         rect = QtCore.QRectF()
         for item in self.selected:
             rect=rect.united(item.sceneBoundingRect())
 
-        # XXX draw pivot point
+        # TODO draw pivot point
 
-        ## pivot in scene coords
+        # pivot in scene coords
         if (event.modifiers & QtCore.Qt.KeyboardModifier.AltModifier) or \
            event.source in ["rNE","rNW","rSW","rSE"]:
             self.pivot = rect.center()
@@ -1659,14 +1659,14 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
                 item.stem.node.save(setchange=True, batch=batch)
                 item._changed = False
 
-        ## NB if stem reloaded it will break node reference
+        # NB if stem reloaded it will break node reference
         self.scene.refreshStem(reload=False)
         # sp = event.screenPos()
         # t = time.time()
 
         # dp = sp-self.mousePressScreenPos
         # dt=t-self.mousePressTime
-        # # XXX needs tweaking, esp to incoporate with doubleClick
+        # # TODO needs tweaking, esp to incoporate with doubleClick
         # if dp.manhattanLength()<3:
         #     if dt < 0.6:
         #         self.mouseClickEvent(event)
@@ -1708,7 +1708,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         else:
             ky = (p1[1]-pv[1])/(p0[1]-pv[1])
 
-        ## Keep aspect ratio while scaling unless shift is used
+        # Keep aspect ratio while scaling unless shift is used
         if not( event.modifiers & QtCore.Qt.KeyboardModifier.ShiftModifier):
             if abs(kx-1.0)>abs(ky-1.0):
                 ky=kx
@@ -1717,8 +1717,8 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
 
         scale.scale(kx,ky)
 
-        ## QTs transform is transposed from usual math sense!
-        ## operators apply from left to right and act on row vectors
+        # QTs transform is transposed from usual math sense!
+        # operators apply from left to right and act on row vectors
         transform = translate*scale*translateback
 
         for item in self.selected:
@@ -1744,8 +1744,8 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         theta = (theta1-theta0)
         rotate.rotateRadians(theta)
 
-        ## QTs transform is transposed from usual math sense!
-        ## operators apply from left to right and act on row vectors
+        # QTs transform is transposed from usual math sense!
+        # operators apply from left to right and act on row vectors
         transform = translate*rotate*translateback
 
         for item in self.selected:
@@ -1772,9 +1772,9 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         self.resize()
 
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class OverRect(QtWidgets.QGraphicsRectItem):
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 
     defaultcol = QtGui.QColor(100,100,100,30)
 
@@ -1798,9 +1798,9 @@ class OverRect(QtWidgets.QGraphicsRectItem):
         event.source = self.id
         self.parentItem().pointerReleaseEvent(event)
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class TransformationHandle(QtWidgets.QGraphicsPathItem):
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 
     def __init__(self,  id, path, parent = None):
 
@@ -1812,7 +1812,7 @@ class TransformationHandle(QtWidgets.QGraphicsPathItem):
         self.setAcceptHoverEvents(True)
         self.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.black))
 
-        ## this is so that the widget doesn't change with scene scaling
+        # this is so that the widget doesn't change with scene scaling
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations,  True)
 
     def hoverEnterEvent(self, event):
@@ -1836,9 +1836,9 @@ class TransformationHandle(QtWidgets.QGraphicsPathItem):
         self.parentItem().pointerReleaseEvent(event)
 
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class PointerEvent():
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
     '''
     Combine tablet and mouse events
     '''
@@ -1879,9 +1879,9 @@ class PointerEvent():
 # TODO move modes into class
 Free, Mouse, Tablet, Gesture = 0,1,2,3
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class InkView(QtWidgets.QGraphicsView):
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
     viewChangeStream = QtCore.pyqtSignal(QtWidgets.QGraphicsView)
 
     def __init__(self, scene, parent = None):
@@ -1912,19 +1912,19 @@ class InkView(QtWidgets.QGraphicsView):
 
         self._eventstate = Free
 
-        ## Gesture has to overcome threshold before being recognised
-        ## _sticky is the state variable
+        # Gesture has to overcome threshold before being recognised
+        # _sticky is the state variable
         self._sticky = True
 
         self._itemUnder = None
         self._event = None
 
-        ## Extra potential filter to separate mouse and tablet
+        # Extra potential filter to separate mouse and tablet
         self.tablettime = 0
 
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
 
-        ## Set default scale for the view
+        # Set default scale for the view
         self.scale(3,3)
 
     def tabletEvent(self, event):
@@ -2128,10 +2128,10 @@ class InkView(QtWidgets.QGraphicsView):
             itemunder.pointerPressEvent(event)
 
         else:
-            ## this grouping is so we can delete the items easily
+            # this grouping is so we can delete the items easily
             scene.tmpselect = QtWidgets.QGraphicsPolygonItem()
             scene.tmpselect.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.gray, 0.5 , QtCore.Qt.PenStyle.DotLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
-            ## draw over everything
+            # draw over everything
             scene.tmpselect.setZValue(1000)
             scene.addItem(scene.tmpselect)
 
@@ -2164,7 +2164,7 @@ class InkView(QtWidgets.QGraphicsView):
 
             if not hasattr(scene, "tmpselect"):
                 return
-            ## find surrounded items and select them
+            # find surrounded items and select them
             items = []
             for item in list(scene.items()):
                 if type(item) in [TextItem, InkItem, PixmapItem]:
@@ -2190,10 +2190,10 @@ class InkView(QtWidgets.QGraphicsView):
         scene = self.scene()
         scene._lastScenePos = scenePos
 
-        ## this grouping is so we can delete the items easily
+        # this grouping is so we can delete the items easily
         scene.tmpgroup = QtWidgets.QGraphicsItemGroup()
 
-        ## draw over everything
+        # draw over everything
         scene.tmpgroup.setZValue(1000)
         scene.addItem(scene.tmpgroup)
 
@@ -2209,9 +2209,9 @@ class InkView(QtWidgets.QGraphicsView):
         t = time.time()
         scene = self.scene()
 
-        ## empasise more the initial changes in pressure
-        ## tunes to astropad .. alittle heavy for wacom
-        ## XXX make the pressure curve user adjustable
+        # empasise more the initial changes in pressure
+        # tunes to astropad .. alittle heavy for wacom
+        # TODO make the pressure curve user adjustable
         #pressure = 1-exp(-2*pressure)
         #a= -0.3
         #b = 4
@@ -2225,8 +2225,8 @@ class InkView(QtWidgets.QGraphicsView):
         scene.strokecoords.append(point)
         scene._tmppath.append(point)
 
-        ## only draw the stroke segment every few calls
-        ## otherwise mac can't cope and rate goes down, poor thing.
+        # only draw the stroke segment every few calls
+        # otherwise mac can't cope and rate goes down, poor thing.
         if len(scene._tmppath)>4:
             x0,y0,z0,t0 = scene._tmppath[0]
             for x1,y1,z1,t1 in scene._tmppath[1:]:
@@ -2306,7 +2306,7 @@ class InkView(QtWidgets.QGraphicsView):
         scene = self.scene()
         item = scene.itemAt(scenePos, transform)
 
-        ## only erase pen strokes, this makes is easy to annotate images
+        # only erase pen strokes, this makes is easy to annotate images
         if item is not None and isinstance(item, InkItem):
             item.deleteNodeItem()
             self.scene().refreshStem(reload=False)
@@ -2398,7 +2398,7 @@ class InkView(QtWidgets.QGraphicsView):
         Stot = pinch.totalScaleFactor()
         dv = v1-self._v0
 
-        # XXX Following not working on mac?
+        # TODO Following not working on mac?
         dist = sqrt(dv.x()**2+dv.y()**2)
         # logging.debug('Pinch dist %f', dist)
 
@@ -2431,7 +2431,7 @@ class InkView(QtWidgets.QGraphicsView):
         return True
 
     def scaleView(self, scaleFactor):
-        # XXX this seems a really bizare way of doing the scaling!
+        # TODO this seems a really bizare way of doing the scaling!
         factor = self.transform().scale(scaleFactor, scaleFactor).mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
         if factor < 0.07 or factor > 100:
             return
@@ -2497,16 +2497,16 @@ class InkView(QtWidgets.QGraphicsView):
         super().focusInEvent(event)
         self.viewChangeStream.emit(self)
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class NexusScene(QtWidgets.QGraphicsScene):
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 
     statusMessage = QtCore.pyqtSignal(str)
     linkClicked = QtCore.pyqtSignal(str)
     mapModified = QtCore.pyqtSignal()
     showEditDialog = QtCore.pyqtSignal(object)
 
-    ## in presentation mode (changes how items react):
+    # in presentation mode (changes how items react):
     #presentation = False
     mode = "edit"
 
@@ -2515,7 +2515,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
         self.setSceneRect(-3000, -3000, 6000, 6000)
 
-        ## default mode for new dialogs (will remember last one chosen)
+        # default mode for new dialogs (will remember last one chosen)
         self.dialogstate = {
             'mode':TextMode,
             'geometry': None,
@@ -2534,7 +2534,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
         mimedata = event.mimeData()
 
-        ## need to give feedback as to which item is closest
+        # need to give feedback as to which item is closest
         if mimedata.hasImage() or mimedata.hasHtml() or mimedata.hasText() or mimedata.hasUrls():
             event.acceptProposedAction()
         else:
@@ -2559,8 +2559,8 @@ class NexusScene(QtWidgets.QGraphicsScene):
         cp = view.mapFromGlobal(QtGui.QCursor.pos())
         targetpos = QtCore.QPointF(view.mapToScene(cp))
 
-        ## Find position relative to closest stem
-        ## Take a guess as a starting value
+        # Find position relative to closest stem
+        # Take a guess as a starting value
         closest = self.childStems()[0]
         pclosest = closest.mapFromScene(targetpos)-closest.tip()
         for target in self.allChildStems():
@@ -2580,7 +2580,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         '''
         Delete selected items
         '''
-        ## find selected base stems (selection may include children)
+        # find selected base stems (selection may include children)
         nodes = graphydb.NSet()
         parents = []
         if stem is None:
@@ -2643,7 +2643,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         else:
             selected = {stem}
 
-        ## find selected base stems (the selection may include children)
+        # find selected base stems (the selection may include children)
         nodes = graphydb.NSet()
         for item in selected:
             if isinstance(item, StemItem) \
@@ -2743,7 +2743,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         for root in self.childStems():
             if includeroot:
                 if nottaggedhide and 'hide' in root.getTags():
-                    ## this is silly but if they request it ... ah well
+                    # this is silly but if they request it ... ah well
                     continue
                 allstems.append(root)
             allstems.extend(root.allChildStems(nottaggedhide))
@@ -2762,7 +2762,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         return stems
 
     def root(self):
-        # XXX this will fail if there are more than one root's
+        # TODO this will fail if there are more than one root's
         return self.childStems()[0]
 
 
@@ -2771,9 +2771,9 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
 
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class NexusView(QtWidgets.QGraphicsView):
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 
     DRAGOFF = 0
     DRAGPAN = 1
@@ -2848,7 +2848,7 @@ class NexusView(QtWidgets.QGraphicsView):
     def scaleView(self, scaleFactor, point=None):
 
         matrix = self.transform()
-        ## first check final scale is within an acceptable range
+        # first check final scale is within an acceptable range
 
         factor = matrix.scale(scaleFactor, scaleFactor).mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
         if factor < 0.05 or factor > 1000:
@@ -2873,7 +2873,7 @@ class NexusView(QtWidgets.QGraphicsView):
         self.scaleView(1 / 1.15)
 
     def zoomOriginal(self):
-        ## XXX set 1:1 zoom
+        # TODO set 1:1 zoom
         logging.warn("zoomOriginal not implemented")
 
     def zoomSelection(self):
@@ -3005,8 +3005,8 @@ class NexusView(QtWidgets.QGraphicsView):
             QtWidgets.QGraphicsView.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):
-        # XXX performance
-        ## movement triggers drag move
+        # TODO performance
+        # movement triggers drag move
 
         # if abs(self.pinchtime - time.time())<self._ignoremousetime:
         #     event.accept()
@@ -3228,12 +3228,12 @@ class NexusView(QtWidgets.QGraphicsView):
         self._dragmode = self.DRAGOFF
 
         if anchor == QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse:
-            ## this is used in normal mode
+            # this is used in normal mode
             #v1 = self.mapToScene(self.mapFromGlobal(QtGui.QCursor.pos()))
             #p = c1
             pass
         elif anchor == QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter:
-            ## this is used in presentation mode
+            # this is used in presentation mode
             v1 = QtCore.QPointF(self.viewport().rect().center())
         else:
             pass
@@ -3270,7 +3270,7 @@ class NexusView(QtWidgets.QGraphicsView):
         Stot = pinch.totalScaleFactor()
         dv = v1-self._v0
 
-        # XXX Following not working on mac?
+        # TODO Following not working on mac?
         dist = sqrt(dv.x()**2+dv.y()**2)
         #logging.debug('Pinch dist %f', dist)
 
@@ -3290,7 +3290,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
             D = QtCore.QPointF(v1)*Tc*Minv-self._s0
 
-            # XXX Limit total scale?
+            # TODO Limit total scale?
 
             M.translate(D.x(),D.y())
             self.setTransform(M, False)
@@ -3306,9 +3306,9 @@ class NexusView(QtWidgets.QGraphicsView):
         self.viewChangeStream.emit(self)
 
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class BackgroundDialog(QtWidgets.QDialog):
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 
     def __init__(self, scene,  parent=None):
 
@@ -3316,7 +3316,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         self.setModal(False)
         self.setWindowTitle("Map background")
 
-        ## store the scene locally so we can make live changes
+        # store the scene locally so we can make live changes
         self.scene = scene
 
         brush = self.scene.backgroundBrush()
@@ -3330,7 +3330,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         button.clicked.connect(self.clearBack)
         baselayout.addWidget(button, 0, 1)
 
-        ## -------------------------------------------------
+        # -------------------------------------------------
         page  = QtWidgets.QGroupBox("Solid Color")
         page.setCheckable(True)
         baselayout.addWidget(page, 1, 0, 1, 2)
@@ -3355,7 +3355,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         button.clicked.connect(self.setColor)
         self.colorswatchbutton = button
 
-        ## -------------------------------------------------
+        # -------------------------------------------------
         page  = QtWidgets.QGroupBox("Tiled Image")
         page.setCheckable(True)
         baselayout.addWidget(page, 2, 0, 1, 2)
@@ -3376,7 +3376,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         layout.addWidget(button,0,1)
 
 
-        ## -------------------------------------------------
+        # -------------------------------------------------
         page  = QtWidgets.QGroupBox("Radial Gradient")
         page.setCheckable(True)
         baselayout.addWidget(page, 3, 0, 1, 2)
@@ -3421,7 +3421,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         layout.addWidget(self.radius, 1, 1)
         self.radius.valueChanged.connect(self.setRadialBrush)
 
-        ## -------------------------------------------------
+        # -------------------------------------------------
         page  = QtWidgets.QGroupBox("General Properties")
         baselayout.addWidget(page, 4, 0, 1, 2)
         layout = QtWidgets.QGridLayout()
@@ -3538,7 +3538,7 @@ class BackgroundDialog(QtWidgets.QDialog):
                 self.page3.setChecked(True)
 
 
-## ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 def dot(v1,v2):
     '''
     return the dot product between v1 and v2
@@ -3548,7 +3548,7 @@ def dot(v1,v2):
     for a in map(lambda x,y:x*y, v1,v2):
         ans+=a
     return ans
-## ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 def distanceToLine(P,A,B):
     '''
     Calculate Euclidean distance from P to line A-B in any number of dimensions
@@ -3590,11 +3590,11 @@ def gaussianSmoothing(P, factor=0.6, near=7):
             Ps[ii][0] = s0 * P[ii][0] + s1 * P[ii - 1][0] + s1 * P[ii + 1][0]
             Ps[ii][1] = s0 * P[ii][1] + s1 * P[ii - 1][1] + s1 * P[ii + 1][1]
             Ps[ii][2] = s0 * P[ii][2] + s1 * P[ii - 1][2] + s1 * P[ii + 1][2]
-            # XXX also smooth the width?
+            # TODO also smooth the width?
 
     return Ps
 
-## ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 def simplifyLowes(curve, i,f, simplified, tol=.1):
     '''
     Recursively simplify a curve using Lowes method
@@ -3610,7 +3610,7 @@ def simplifyLowes(curve, i,f, simplified, tol=.1):
     pl1 = curve[i]
     pl2 = curve[f]
 
-    ## store frame numbers
+    # store frame numbers
     simplified.add(pl1[0])
     simplified.add(pl2[0])
 
@@ -3680,8 +3680,8 @@ def sign(x):
     return -2*(x<0)+1
 
 
-## HSV values in [0..1]
-## returns [r, g, b] values from 0 to 255
+# HSV values in [0..1]
+# returns [r, g, b] values from 0 to 255
 def hsv_to_rgb(h, s, v):
     h_i = int(h*6)
     f = h*6 - h_i
@@ -3696,9 +3696,9 @@ def hsv_to_rgb(h, s, v):
     if h_i==5: r, g, b = v, p, q
     return '#%X%X%X'%(round(r*255),round(g*255),round(b*255))
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class ContentItem:
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
     """
     Helper class 
     """
@@ -3721,15 +3721,15 @@ class ContentItem:
         else:
             return default
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 
     def __init__(self, uid, stem, scene=None, parent=None):
-        ## Rendered in one of two ways:
-        ## 1) in tree: scene = None and add to Leaf parent
-        ## 2) in edit dialog: scene = edit scene
-        ## Both have stem = StemItem (on NexusScene) which contains data in stem.node
+        # Rendered in one of two ways:
+        # 1) in tree: scene = None and add to Leaf parent
+        # 2) in edit dialog: scene = edit scene
+        # Both have stem = StemItem (on NexusScene) which contains data in stem.node
 
         self.uid = uid
         self.stem = stem
@@ -3742,7 +3742,7 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
 
         self.setAcceptHoverEvents(True)
         self.originalCursor = None
-        # XXX consolidate cursor setting code
+        # TODO consolidate cursor setting code
 
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
@@ -3823,7 +3823,7 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
             d = b1-b0
             length =  sqrt(d.x()**2+d.y()**2)
             d = d/length
-            ## rotate by 90 deg
+            # rotate by 90 deg
             p = QtCore.QPointF(-d.y(),d.x())
 
             p0 = b0-p*width0/2.0
@@ -3849,9 +3849,9 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
         self.coords = S
 
     def shape(self):
-        # XXX performance
+        # TODO performance
 
-        ## make the shape of the item a little thicker - make it much easier to select and move!
+        # make the shape of the item a little thicker - make it much easier to select and move!
         stroker = QtGui.QPainterPathStroker()
         stroker.setWidth(5)
         path = stroker.createStroke(self.path())
@@ -3902,9 +3902,9 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
         QtWidgets.QGraphicsPathItem.hoverLeaveEvent(self, event)
 
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class TextWidthWidget(QtWidgets.QGraphicsPathItem):
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -3928,7 +3928,7 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
         if setwidth:
             self.parentItem().maxTextWidth = width
 
-        ## create box handle for changing width
+        # create box handle for changing width
         r = QtCore.QRectF(width-0.5, 0.5, 8, 8)
 
         path=QtGui.QPainterPath()
@@ -3956,7 +3956,7 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
         x = max(0, event.scenePos[0])-x0
         self.parentItem().setTextWidth(x)
 
-        ## NB the actual width will depend on the font ... set it from the widget
+        # NB the actual width will depend on the font ... set it from the widget
         self.setShape(setwidth=True)
         self.setSelected(False)
 
@@ -3970,13 +3970,13 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
 
 
 
-##----------------------------------------------------------------------
+#----------------------------------------------------------------------
 class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
-##------------------`----------------------------------------------------
+#------------------`----------------------------------------------------
 
     url = None
 
-    ## these modes should not overlap with pen/text/select modes
+    # these modes should not overlap with pen/text/select modes
     StaticMode = 10
     EditMode = 11
     EditSourceMode = 12
@@ -3988,10 +3988,10 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
     positionChanged = QtCore.pyqtSignal(QtGui.QTextCursor)
 
     def __init__(self, uid, stem, scene=None, parent=None):
-        ## Rendered in one of two ways:
-        ## 1) in tree: scene = None and add to Leaf parent
-        ## 2) in edit dialog: scene = edit scene
-        ## Both have stem = StemItem (on NexusScene) which contains data in stem.node
+        # Rendered in one of two ways:
+        # 1) in tree: scene = None and add to Leaf parent
+        # 2) in edit dialog: scene = edit scene
+        # Both have stem = StemItem (on NexusScene) which contains data in stem.node
 
         self.uid = uid
         self.stem = stem
@@ -4022,7 +4022,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         self.document().contentsChanged.connect(self.widthWidget.contentsChanged)
         self.linkHovered.connect(self.linkHover)
 
-        ## set the default mode
+        # set the default mode
         self.setHtml(self['source'])
         self.setStaticMode()
 
@@ -4034,26 +4034,26 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
     def getSrc(self):
 
-        ## first look at the existing mode to grab the data
+        # first look at the existing mode to grab the data
 
         if self.mode == self.EditSourceMode:
-            ## what's visible is the source .. grab verbatim
+            # what's visible is the source .. grab verbatim
             src = self.toPlainText().strip()
         else:
-            ## what's visible is interpreted .. grab source
+            # what's visible is interpreted .. grab source
             src = self.document().toHtml().strip()
 
-        ## clean up the html.
-        ## Here is the problem: QT puts the default font in
-        ## the <body> tag but it doesn't read it back from the html, so that if
-        ## you change the font in the <body> tag, QT will move that change into
-        ## a <span> tag thereby locking it in place in the actual html.
-        ## Similarly if you change the default font and it doesn't correspond
-        ## to that in the <body> it will get shifted. Ironically the default
-        ## text colour is handled outside the html ... these two behaviours
-        ## play havock with inheritance down stems so we will strip off the
-        ## body tag and ignore it and track the default font and color
-        ## ourselves
+        # clean up the html.
+        # Here is the problem: QT puts the default font in
+        # the <body> tag but it doesn't read it back from the html, so that if
+        # you change the font in the <body> tag, QT will move that change into
+        # a <span> tag thereby locking it in place in the actual html.
+        # Similarly if you change the default font and it doesn't correspond
+        # to that in the <body> it will get shifted. Ironically the default
+        # text colour is handled outside the html ... these two behaviours
+        # play havock with inheritance down stems so we will strip off the
+        # body tag and ignore it and track the default font and color
+        # ourselves
 
         soup = BeautifulSoup(src, "html.parser")
 
@@ -4068,8 +4068,8 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
     def setMode(self, mode):
 
-        ## now set up the mode ...
-        ## first process coarse graphics modes
+        # now set up the mode ...
+        # first process coarse graphics modes
         if mode == PenMode:
             self.setPenMode()
         elif mode == SelectMode:
@@ -4095,23 +4095,23 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         self.mode = self.StaticMode
 
-        ## set source so it's interpreted as html
+        # set source so it's interpreted as html
         self.setHtml(src)
 
         self.setTextWidth(-1)
         if self.document().idealWidth() > self.maxTextWidth:
             self.setTextWidth(self.maxTextWidth)
 
-        ## remove any textselections
+        # remove any textselections
         cursor = self.textCursor()
         cursor.clearSelection()
         self.setTextCursor(cursor)
         self.setFont(self.DefaultFont)
 
-        ## no special cursors
+        # no special cursors
         self.unsetCursor()
 
-        ## width-setting widget hidden
+        # width-setting widget hidden
         self.widthWidget.hide()
 
         self.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.LinksAccessibleByMouse)
@@ -4181,7 +4181,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         self.mode = self.EditMode
 
-        ## clear any formatting for edit mode
+        # clear any formatting for edit mode
         doc = self.document()
         doc.clear()
 
@@ -4190,7 +4190,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         self.setHtml(src)
 
-        # XXX without adjusting the size the src can be unreasonably long
+        # TODO without adjusting the size the src can be unreasonably long
         self.setTextWidth(self.maxTextWidth)
 
         cursor = self.textCursor()
@@ -4214,7 +4214,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         self.mode = self.EditSourceMode
 
-        ## clear any formatting for edit mode
+        # clear any formatting for edit mode
         doc = self.document()
         doc.clear()
 
@@ -4225,11 +4225,11 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         font.setPointSize(9)
         self.setFont(font)
 
-        ## load up the text depending on editMode
-        # XXX escape the characters in unicode?
+        # load up the text depending on editMode
+        # TODO escape the characters in unicode?
         self.setPlainText(src)
 
-        ## generally want a wide width for the source
+        # generally want a wide width for the source
         self.setTextWidth(CONFIG['text_item_width'])
 
         cursor = self.textCursor()
@@ -4252,7 +4252,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         if self.mode in [self.EditMode, self.EditSourceMode]:
 
-            ## clean up other items
+            # clean up other items
             items = self.scene().getItems()
 
             for item in items:
@@ -4300,12 +4300,12 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
     def mousePressEvent(self, event):
         if self.url is not None:
             try:
-                ## remove any existing links so we don't end up emiting multiple signals
+                # remove any existing links so we don't end up emiting multiple signals
                 self.linkClicked.disconnect(self.scene().linkClicked)
             except TypeError:
-                ## if the connection didn't exist it will emit a TypeError exception
+                # if the connection didn't exist it will emit a TypeError exception
                 pass
-            # XXX should replace with Qt.UniqueConnection but...
+            # TODO should replace with Qt.UniqueConnection but...
             # doesn't seem to work yet (v4.6-1) giving the error:
             # AttributeError: type object 'Qt' has no attribute 'UniqueConnection'
             # self.linkClicked.connect(self.scene().linkClicked, QtCore.Qt.ConnectionType.UniqueConnection)
@@ -4314,7 +4314,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             return
 
         if self.mode == self.StaticMode:
-            ## normal actions
+            # normal actions
             parent = self.parentItem()
             parent.mousePressEvent(event)
         else:
@@ -4329,7 +4329,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
     #         return
 
     #     if self.mode in [self.EditMode, self.EditSourceMode]:
-    #         ## normal actions
+    #         # normal actions
     #         QtWidgets.QGraphicsTextItem.mouseMoveEvent(self, event)
     #         return
 
@@ -4357,15 +4357,15 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
     def keyPressEvent(self, event):
 
         # if event.key()==QtCore.Qt.Key.Key_Return and event.modifiers()==QtCore.Qt.KeyboardModifier.NoModifier:
-        #     ## pass event along so 'OK' is clicked .. (get actual return with shift-return)
+        #     # pass event along so 'OK' is clicked .. (get actual return with shift-return)
         #     QtWidgets.QGraphicsItem.keyPressEvent(self, event)
         #     return
 
         if self.mode == self.EditMode and event.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier:
 
-            # XXX combine text format with input dialog actions
+            # TODO combine text format with input dialog actions
             if event.key() == QtCore.Qt.Key.Key_B:
-                ## set bold
+                # set bold
                 cursor = self.textCursor()
                 fmt = cursor.charFormat()
                 fmt.setFontWeight(QtGui.QFont.Weight.Normal \
@@ -4374,14 +4374,14 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
                 cursor.mergeCharFormat(fmt)
 
             elif event.key() == QtCore.Qt.Key.Key_I:
-                ## toggle italic
+                # toggle italic
                 cursor = self.textCursor()
                 fmt = cursor.charFormat()
                 fmt.setFontItalic(not fmt.fontItalic())
                 cursor.mergeCharFormat(fmt)
 
             elif event.key() == QtCore.Qt.Key.Key_U:
-                ## toggle underline
+                # toggle underline
                 cursor = self.textCursor()
                 fmt = cursor.charFormat()
                 fmt.setFontUnderline(not fmt.fontUnderline())
@@ -4395,7 +4395,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             QtWidgets.QGraphicsTextItem.keyPressEvent(self, event)
             self.positionChanged.emit(self.textCursor())
         else:
-            ## pass event on
+            # pass event on
             for item in self.scene().selectedItems():
                 if item.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable:
                     item.handleKeyPressEvent(event)
@@ -4427,7 +4427,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
             self.url = url
 
-            # XXX should this be done at creation time? what if scene not defined?
+            # TODO should this be done at creation time? what if scene not defined?
             self.statusMessage.connect(self.scene().statusMessage)
 
             self.statusMessage.emit(str(url))
@@ -4457,8 +4457,8 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
     def paint(self, painter, option, widget):
 
-        ## if editing source put a light gray background to make it easier
-        ## to see ... chances are the source view will overlap other items
+        # if editing source put a light gray background to make it easier
+        # to see ... chances are the source view will overlap other items
         if self.mode == self.EditSourceMode:
             painter.setBrush(QtGui.QBrush(QtGui.QColor(240,240,240)))
             painter.setPen(QtGui.QPen(QtGui.QColor(0,0,0,0)))
@@ -4472,10 +4472,10 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
     # TODO lossless encoding? png/jpg .. preserve details
 
     def __init__(self, uid, stem, scene=None, parent=None):
-        ## Rendered in one of two ways:
-        ## 1) in tree: scene = None and add to Leaf parent
-        ## 2) in edit dialog: scene = edit scene
-        ## Both have stem = StemItem (on NexusScene) which contains data in stem.node
+        # Rendered in one of two ways:
+        # 1) in tree: scene = None and add to Leaf parent
+        # 2) in edit dialog: scene = edit scene
+        # Both have stem = StemItem (on NexusScene) which contains data in stem.node
 
         self.uid = uid
         self.stem = stem
@@ -4491,7 +4491,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
         #self.setZValue(z)
         self.setTransform(Transform(*self['frame']))
 
-        ## Set pixmap from stored data
+        # Set pixmap from stored data
         ## Need to find correct image based on sha1
         datanode = self.stem.node.outN('n.kind="ImageData" AND n.data.sha1=:sha1', sha1=self['sha1']).one
         if datanode is None:
@@ -4708,7 +4708,7 @@ class OpenCloseWidget(QtWidgets.QGraphicsPathItem):
         #    rect = self.stem.leaf.boundingRect()
         #    loc = rect.center()
         #else:
-        #    # XXX scale
+        #    # TODO scale
         #    loc = self.stem.tip()+QtCore.QPointF(0, 2.5)
 
         loc = QtCore.QPointF(0, 0)
@@ -4861,7 +4861,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
     def __init__(self, node, override={}, parent = None, scene = None):
 
-        # XXX is this still necessary?
+        # TODO is this still necessary?
         if parent is None:
             super().__init__()
             scene.addItem(self)
@@ -5069,7 +5069,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
     def createLeaf(self):
 
-        # XXX check to see what needs to be changed instead of obliterating
+        # TODO check to see what needs to be changed instead of obliterating
 
         ## first clear any old leaf items
         if self.leaf is not None:
@@ -5078,7 +5078,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         self.leaf = Leaf(stem=self)
         self.leaf.setZValue(10)
 
-        # XXX removing this means central node in wrong place
+        # TODO removing this means central node in wrong place
         self.positionLeaf()
 
         ##
@@ -5216,7 +5216,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         if self.depth==0:
             p = self.boundingRect().bottomRight()-QtCore.QPointF(0,0)
         else:
-            # XXX why the correction of -2?
+            # TODO why the correction of -2?
             p = self.tip()+QtCore.QPointF(0,self.stemwidth-2)/2.0
         self.openclose.setTransform(QtGui.QTransform.fromTranslate(p.x(),p.y()))
 
@@ -5382,7 +5382,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         elif self._m_state == MMOVE:
             # Move selected plus this one
             # logging.debug('[2] Moving')
-            # XXX select self if not selected
+            # TODO select self if not selected
             self.moveSelected(p1-p0)
 
         # elif self._m_state == MLONG:
@@ -5434,7 +5434,7 @@ class StemItem(QtWidgets.QGraphicsItem):
                     stem.parentStem().reindexChildren()
 
                 ## N.B. may flip at last instance?
-                # XXX check for last intance flips
+                # TODO check for last intance flips
                 stem.renew(reload=False, children=False, create=False, recurse=False)
 
         # elif self._m_state == MADD or \
@@ -5680,7 +5680,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         return out
 
     def suggestChildPosition(self):
-        # XXX to be used in long press and paste ...  not working
+        # TODO to be used in long press and paste ...  not working
 
         tip = self.tip()
 
@@ -5695,71 +5695,6 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         return X,Y
 
-    # def addChildStem(self, data, batch=None):
-
-    #     newnode = self.node.graph.Node('Stem', content=[])
-    #     newedge = self.node.graph.Edge(self.node, 'Child', newnode)
-
-    #     settings = QtCore.QSettings("Ectropy", "Nexus")
-    #     if self.depth == 0:
-    #         scale = float(settings.value('new/stemscale'))
-    #     else:
-    #         scale = self.transform().m11()
-
-    #     ## Place the new stem below the children following the rough pattern
-    #     tip = self.tip()
-    #     points = [-c.mapFromParent(c.parentStem().tip()) for c in self.childStems2]
-    #     if len(points)>1:
-    #         ## Get the rough position of the children
-    #         maxy = points[0].y()
-    #         miny = points[0].y()
-    #         meanx=points[0].x()
-    #         for p in points[1:]:
-    #             maxy = max(maxy, p.y())
-    #             miny = min(miny, p.y())
-    #             meanx += p.x()
-    #         meanx = meanx/float(len(points))
-
-    #         x = meanx
-    #         y = maxy+(maxy-miny)/float(len(points)-1)
-
-    #     elif len(points)==1:
-    #         x = points[0].x()
-    #         y = points[0].y()+50
-
-    #     else:
-    #         x = self.direction()*30
-    #         y = -50
-
-    #     if scale != 1:
-    #         newnode['scale'] = scale
-    #     newnode['pos'] = [x*scale, y*scale]
-    #     newnode['flip'] = sign(x)*self.direction()
-
-    #     newnode.update(data)
-
-    #     if batch is None:
-    #         batch = graphydb.generateUUID()
-    #     newnode.save(batch=batch, setchange=True)
-    #     newedge.save(batch=batch, setchange=True)
-
-    #     stem = StemItem(newnode, parent=self, scene=self.scene())
-
-    #     leaf = Leaf(stem.node, None)
-    #     if stem.direction()<0:
-    #         p = leaf.w()-leaf.e()
-    #     else:
-    #         p = leaf.e()-leaf.w()
-
-    #     self.childStems2.append(stem)
-    #     stem.renew(reload=False, create=False, position=False)
-    #     stem.parentStem().reindexChildren()
-
-    #     self.openclose.setSymbol()
-
-    #     return stem
-
-        # XXX .. images?
 
     def newStem(self, p=QtCore.QPointF(), fullscreen=False, iconified=False):
 
@@ -5793,26 +5728,8 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         newstem = StemItem(newnode, parent=self)
         self.childStems2.append(newstem)
-        # remember the cursor
-        #cur = self.cursor()
-        # d = InputDialog(newnode, newedge, stem=self,
-        #                 state = self.scene().dialogstate,
-        #                 fullscreen=fullscreen,
-        #                 )
 
         self.scene().showEditDialog.emit(newstem)
-        # d.setDialog(newnode, newedge, self)
-        # d.show()
-        # d.exec()
-
-        #self.renew(reload=False)
-
-        #self.setCursor(cur)
-        ## store the geometry of input window
-        # self.scene().dialogstate['geometry'] = d.inputgeometry
-
-        ## remember new-stem dialog state
-        # self.scene().dialogstate['mode'] = d.scene.mode
 
         self.scene().removeItem(self.newstemtail)
         self.newstemtail = None
@@ -5858,18 +5775,6 @@ class StemItem(QtWidgets.QGraphicsItem):
             theta=fmod(2*pi+atan2(y,x), 2*pi)
         return theta
 
-    # def childStems(self):
-    #     '''
-    #     return list of direct child stems
-    #     '''
-    #     childstems = []
-    #     for item in self.childItems():
-    #         if isinstance(item, StemItem):
-    #             childstems.append(item)
-    #
-    #     childstems.sort(key=functools.cmp_to_key(self.sortByPos))
-    #
-    #     return childstems
 
     def allChildStems(self, nottaggedhide=False):
         '''

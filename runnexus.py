@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2010-2024 Alexei Gilchrist
+# Copyright 2010-2025 Alexei Gilchrist
 #
 # This file is part of Nexus.
 #
@@ -25,7 +25,8 @@ from pathlib import Path
 from nexus.graphics import VERSION
 import logging
 
-#import cProfile
+# import cProfile
+
 # if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
 #     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
 # if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
@@ -45,12 +46,12 @@ if __name__ == "__main__":
     for f in validfiles:
         app.raiseOrOpen(f)
 
-    # if nothing has been opened then do dialog
+    ## If nothing has been opened then do dialog
     if len(app.windowList())==0:
         d = NewOrOpenDialog()
         # d.exec_()
         d.show()
         # d.activateWindow()
 
-    #cProfile.run('app.exec_()','stats')
+    # cProfile.run('app.exec_()','stats')
     app.exec()

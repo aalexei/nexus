@@ -1,10 +1,10 @@
 #+TITLE: Nexus
 
-A flexible cross platform mind-mapper written in python and using the QT toolkit.
+A flexible cross platform mind-mapper written in Python and using the QT toolkit.
 
 * Installation
 
-Nexus requires ~python3~. Use ~pip~ to install ~PyQt6~, ~apsw~, ~bs4~ and ~bleach~.
+Nexus requires ~Python 3~. Use ~pip~ to install ~PyQt6~, ~apsw~, ~bs4~ and ~bleach~.
 
 * Detailed docs
 
