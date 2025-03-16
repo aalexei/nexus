@@ -174,7 +174,7 @@ def jsonextract(param):
         e.g. `x.data.y` becomes `json_extract(x.data, "$.y")`
 
     '''
-    return re.sub('(\w+)\.data\.(\w+)',r'json_extract(\1.data, "$.\2")', param)
+    return re.sub(r'(\w+)\.data\.(\w+)',r'json_extract(\1.data, "$.\2")', param)
 
 def ensurelist(x):
     '''
@@ -771,8 +771,8 @@ class Graph:
         aliases = {}
         collect = None
         left = None
-        search1 = re.compile('\(([\w:]+)\)')
-        search2 = re.compile('\[([\w:,]+)\]')
+        search1 = re.compile(r'\(([\w:]+)\)')
+        search2 = re.compile(r'\[([\w:,]+)\]')
         for p in CHAIN.split():
             ## parse kind of item
             if p[-1] == '>':

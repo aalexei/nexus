@@ -69,7 +69,7 @@ class Transform(QtGui.QTransform):
         '''
         Expects a string like "[8.94, 0.0, 1.605, 0.0, 8.94, 0.0, -28.35, -5.78, 1.0]"
         '''
-        numbers = re.findall('(-?\d+\.?(?:\d+)?(?:e[+-]\d+)?)',s)
+        numbers = re.findall(r'(-?\d+\.?(?:\d+)?(?:e[+-]\d+)?)',s)
         if len(numbers)!=9:
             raise Exception
 
