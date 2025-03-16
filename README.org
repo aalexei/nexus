@@ -1,10 +1,39 @@
 #+TITLE: Nexus
 
-A flexible cross platform mind-mapper written in Python and using the QT toolkit.
+Unleash your creativity with Nexus, the ultimate mind mapping app that goes beyond traditional boundaries. Integrate text, images, and pen input for dynamic and interactive brainstorming. Available on Mac, Windows, and Linux, Nexus transforms note-taking and presentations with features like branch customization, scalable content, and innovative key-framing for smooth navigation. Export your ideas to PDF or interactive SVG files, and captivate audiences with its presentation mode. Record and share presentation with integrated audio and video capabilities, or stream your sessions live. With robust pen support across various devices, Nexus empowers you to think, create, and present like never before. Dive into the future of mind mapping today!
+
+Features:
+1. It has been tested and used regularly on Mac, Windows, and Linux, and has been extensively used for notetaking and delivering presentations.
+1. Branches can be places anywhere, partially closed, scaled, coloured and tagged.
+1. Branch contents (text, images or pen strokes) can be scaled, rotated and moved.
+1. It is possible to key-frame locations and zoom level, and jump back. They can be edited later.
+1. Can export map to PDF (whole map, or frames as individual pages) or SVG with embedded JS to implement zoom and pan.
+1. Has a presentation mode that can play back frames, move arbitrarily, and show a transient pointer or trail.
+1. Has a recording mode that records audio and generates compact video of movement around map (requires ~ffmpeg~).
+1. Can stream the movement and pointer on localhost (which can then be mixed with live video using OBS for example)
+1. Automatically saves changes and has undo buffer.
+1. Pen input supported on Windows, Linux tablets, Wacom tablets, Mac using Sidecar with iPad.
 
 * Installation
 
-Nexus requires ~Python 3~. Use ~pip~ to install ~PyQt6~, ~apsw~, ~bs4~ and ~bleach~.
+Requirements:
+- ~Python 3~ with modules ~pyqt6~, ~bs4~, ~bleach~, ~apsw~ (https://rogerbinns.github.io/apsw/).
+- If you want to generate movies, you will also need to also install ~ffmpeg~ (https://www.ffmpeg.org/).
+
+To install and run from source (assuming a shell running bash or equivalent)
+- Create project directory
+  : mkdir nexus; cd nexus
+- Get the source from github
+  : git clone https://github.com/aalexei/nexus.git nexus-github
+- Create a virtual python environment
+  : python3 -m venv nexus-env
+- Activate it
+  : ./nexus-env/bin/activate
+- Install requirements
+  : pip install pyqt6 bs4 bleach apsw
+- Launch Nexus
+  : ./nexus-github/runnexus.py
+- Enjoy
 
 * Detailed docs
 
