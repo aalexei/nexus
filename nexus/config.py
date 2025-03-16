@@ -18,6 +18,14 @@
 
 from pathlib import Path
 from importlib.machinery import SourceFileLoader
+import platform
+
+# TODO retina screen halves the size? Should set a platform independent size
+# For the moment set a platform dependent size
+if platform.system()=="Darwin":
+    text_item_font_size = 12
+else:
+    text_item_font_size = 9
 
 default_config = {
     #
@@ -61,8 +69,7 @@ default_config = {
     #
     # Bundling ETBembo with Nexus
     "text_item_font_family": "ETBembo",
-    "text_item_font_size": 12,
-    # TODO retina screen halves the size? Get more consistent sizing across platforms
+    "text_item_font_size": text_item_font_size,
     "text_item_color": "#000000",
 
     #
