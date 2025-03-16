@@ -36,11 +36,11 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 
 CONFIG = config.get_config()
 
-# Used to preserve links in svg generation
-# Choose narrow symbols
+## Used to preserve links in svg generation
+## Choose narrow symbols
 alphabet = '1ijltI|.,[](){};:!%^`'
 
-## minified script for navigation
+## Minified js script for navigation in SVG
 SVGCTRL=r'''function svgcontrols(){function t(){l.width.baseVal.value=c.getBoundingClientRect().width,l.height.baseVal.value=c.getBoundingClientRect().height}function e(t,e){var n="matrix("+e.a+","+e.b+","+e.c+","+e.d+","+e.e+","+e.f+")";t.setAttributeNS(null,"transform",n)}function n(){var t=c.getBoundingClientRect(),e=a.getBoundingClientRect(),n=(e.left+e.right)/2,l=(e.top+e.bottom)/2,r=(t.left+t.right)/2-n,u=(t.top+t.bottom)/2-l;o(.9*Math.min(t.height/e.height,t.width/e.width),n,l),i(r,u)}function i(t,n){var i=a.getCTM().a,o=c.getBoundingClientRect(),l=a.getBoundingClientRect(),r=20;t>0&&l.left+t/i>o.right-r&&(t=o.right-r-l.left),0>t&&l.right+t/i<o.left+r&&(t=o.left+r-l.right),n>0&&l.top+n/i>o.bottom-r&&(n=o.bottom-r-l.top),0>n&&l.bottom+n/i<o.top+r&&(n=o.top+r-l.bottom);var u=c.createSVGMatrix().translate(t/i,n/i);e(a,a.getCTM().multiply(u))}function o(t,n,i){var o=c.createSVGPoint(),l=c.getBoundingClientRect();o.x=n-l.left,o.y=i-l.top,o=o.matrixTransform(a.getCTM().inverse());var r=a.getCTM();r.a*t>=Y&&r.a*t<=E?newscale=t:newscale=1;var u=c.createSVGMatrix().translate(o.x,o.y).scale(newscale).translate(-o.x,-o.y);e(a,r.multiply(u))}var c=document.getElementById("nexusmap"),a=document.getElementById("viewcontrol"),l=document.createElementNS("http://www.w3.org/2000/svg","rect");l.setAttribute("id","eventcatcher"),l.setAttribute("x","0"),l.setAttribute("y","0"),l.setAttribute("width","1"),l.setAttribute("height","1"),l.setAttribute("style","fill:none;"),l.setAttribute("pointer-events","none"),c.appendChild(l);var r,u,s,h,g,d,v,f,m,p,w,b,M,C,E=100,Y=.5,x=.008,y="",X=1;c.addEventListener("wheel",function(e){if(t(),e.preventDefault(),e.ctrlKey){var n=Math.exp(-e.deltaY*x);o(n,e.clientX,e.clientY)}else i(-e.deltaX,-e.deltaY)},!1),c.addEventListener("mousedown",function(e){t(),""==y&&(y="dragging",r=e.clientX,u=e.clientY)},!1),c.addEventListener("mousemove",function(t){"dragging"==y&&(g=t.clientX,d=t.clientY,i(g-r,d-u),r=g,u=d)},!1),c.addEventListener("mouseup",function(t){"dragging"==y&&(y="")},!1),window.addEventListener("mouseup",function(t){y=""}),c.addEventListener("touchstart",function(e){y="",t(),1==e.touches.length?(y="panning",r=e.touches[0].clientX,u=e.touches[0].clientY):2==e.touches.length&&(y="zooming",r=e.touches[0].clientX,u=e.touches[0].clientY,s=e.touches[1].clientX,h=e.touches[1].clientY,X=a.getCTM().a,w=(r+s)/2,b=(u+h)/2,m=Math.sqrt(Math.pow(s-r,2)+Math.pow(h-u,2)),X=1)},!1),c.addEventListener("touchmove",function(t){if(t.preventDefault(),"panning"==y)g=t.touches[0].clientX,d=t.touches[0].clientY,i(g-r,d-u),r=g,u=d;else if("zooming"==y){g=t.touches[0].clientX,d=t.touches[0].clientY,v=t.touches[1].clientX,f=t.touches[1].clientY,M=(g+v)/2,C=(d+f)/2,p=Math.sqrt(Math.pow(v-g,2)+Math.pow(f-d,2));var e=p/m;o(e/X,M,C),r=g,u=d,s=v,h=f,X=e}},!1),c.addEventListener("touchleave",function(t){y="",X=1},!1),t(),n()}svgcontrols();
 '''
 ## The setup for this map
@@ -48,7 +48,7 @@ CONTROL=r''' '''
 ## Combine
 NAVJS="<![CDATA[\n{}{}]]>".format(SVGCTRL,CONTROL)
 
-## function from http://infix.se/2007/02/06/gentlemen-indent-your-xml
+## Function from http://infix.se/2007/02/06/gentlemen-indent-your-xml
 def indentxml(elem, level=0):
     i = "\n" + level*"  "
     if len(elem):
@@ -175,7 +175,7 @@ def convert_xml_to_graph(filename):
                 itemz += 1
 
             elif itemxml.tag == 'image':
-                # XXX collect duplicates?
+                # TODO collect duplicates?
                 sha1 = hashlib.sha1(itemxml.text.encode('utf-8')).hexdigest()
                 existingim = g.fetch('(n:Image)', 'n.data.sha1 = :sha1', sha1=sha1).one
 
@@ -280,27 +280,27 @@ def convert_to_full_tree(g):
         raise Exception("Something went wrong in copying '%s' to '%s'"%(path,oldformat))
 
     g2 = g
-    # clear the undo stack as it may not make sense after changes
+    ## Clear the undo stack as it may not make sense after changes
     g2.clearchanges()
 
     imageshas = {}
     images = g2.fetch('[n:Image]')
     for im in images:
-        # Change the kind as we'll have kind Image from the items
+        ## Change the kind as we'll have kind Image from the items
         if im['sha1'] in imageshas:
             # Remove accidental duplicates
             im.delete(disconnect=True, setchange=False)
             continue
 
         imageshas[im['sha1']] = im
-        # Change kind so it doesn't conflict with image item
+        ## Change kind so it doesn't conflict with image item
         im['kind'] = "ImageData"
         im.save(setchange=False)
-        # Break edges as we'll relink on the items based on sha1
+        ## Break edges as we'll relink on the items based on sha1
         for e in im.bothE():
             e.delete(setchange=False)
 
-    # Change tags into attribute instead of node
+    ## Change tags into attribute instead of node
     tagnodes = g2.fetch('[n:Tag]')
     for tn in tagnodes:
         tagged = tn.outN('e.kind="Tagged"')
@@ -313,7 +313,7 @@ def convert_to_full_tree(g):
 
     tagnodes.delete(disconnect=True, setchange=False)
 
-    # Now expand out the items into separate nodes
+    ## Now expand out the items into separate nodes
     stems = g2.fetch('[n:Stem]')
     for s in stems:
         # Add content items
@@ -589,10 +589,6 @@ class NexusApplication(QtWidgets.QApplication):
         w.activateWindow()
         w.raise_()
 
-        # try out transparancy
-        # w.setWindowFlag(QtCore.Qt.WindowType.FramelessWindowHint)
-        # w.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True)
-
         return w
 
     def dialogOpen(self):
@@ -717,7 +713,6 @@ class NexusApplication(QtWidgets.QApplication):
         view.scene().setBackgroundBrush(brush)
 
         # Render the graphicsview onto the image and save it out.
-        # view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         painter.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         view.render(painter, QtCore.QRectF(image.rect()), rect)
 
@@ -729,14 +724,6 @@ class NexusApplication(QtWidgets.QApplication):
         self.view_image = image
         self.streaming_ready_time = time.time()
 
-        # # convert QImage to bytes
-        # buffer = QtCore.QBuffer()
-        # buffer.open(QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        # ok = image.save(buffer, "PNG")
-        # self.view_bytes = buffer.data().data()
-
-        # toc = time.time()
-        # logging.debug(f"gen image: {toc-tic:.2f}s")
 #----------------------------------------------------------------------
 HOST, PORT = '127.0.0.1', 12345
 
@@ -826,7 +813,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editDialog = graphics.InputDialog()
 
         #
-        # scene and view
+        # Scene and View
         #
         self.scene = self.loadMap(fileName)
 
@@ -834,11 +821,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.view = graphics.NexusView(self.scene)
         self.setCentralWidget(self.view)
-
-        # dock = QtWidgets.QDockWidget(self.tr("Edit"), self)
-        # self.editwidget = EditWidget(self)
-        # dock.setWidget(self.editwidget)
-        # self.addDockWidget(QtCore.Qt.DockWidgetArea.TopDockWidgetArea, dock)
 
         #
         # Views widget
@@ -883,7 +865,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.view.fitInView(rect, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
-        ## update the recent files
+        # Update the recent files
         settings = QtCore.QSettings("Ectropy", "Nexus")
         files = settings.value('recentFileList', [])
 
@@ -908,7 +890,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timerLabel.setStyleSheet("color:rgba(155,0,0,100); font: 300pt")
         self.timerLabel.hide()
 
-        ## need to keep a reference or it will get garbage collected!
+        ## Need to keep a reference or it will get garbage collected!
         app = QtWidgets.QApplication.instance()
         app.updateWindowMenu()
 
@@ -962,7 +944,7 @@ class MainWindow(QtWidgets.QMainWindow):
         '''
         Make sure there is a consistent set of settings
         '''
-        # XXX rename to set factory defaults and include function to do so
+        # TODO rename to set factory defaults and include function to do so
 
         settings = QtCore.QSettings("Ectropy", "Nexus")
 
@@ -1020,7 +1002,7 @@ class MainWindow(QtWidgets.QMainWindow):
         ## Action target
 
         curpath = Path(self.scene.graph.path)
-        # XXX set same directory?
+        # TODO set same directory?
 
         graph = self.scene.graph
 
@@ -1111,11 +1093,11 @@ class MainWindow(QtWidgets.QMainWindow):
         progress.setMaximum(len(maps))
         progress.setLabelText("Converting %d maps..."%len(maps))
 
-        ## maps now containst a set of linked maps with relative paths (to this one)
+        ## Maps now contain a set of linked maps with relative paths (to this one)
         for i,m in enumerate(maps):
             app.processEvents()
 
-            ## copy entire graph to memory to modify so we don't mess up undo etc
+            ## Copy entire graph to memory to modify so we don't mess up undo etc
             g = nexusgraph.NexusGraph()
             gf = nexusgraph.NexusGraph(str(basepath.joinpath(m)))
             with g.connection.backup("main", gf.connection, "main") as b:
@@ -1167,7 +1149,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def exportSVG(self, scene=None, path=None):
 
         if scene is None or scene==False:
-            # XXX the False is a hack to catch slot call from action
+            # TODO the False is a hack to catch slot call from action
             scene = self.scene
 
         if path is None:
@@ -1288,7 +1270,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         et.register_namespace("","http://www.w3.org/2000/svg")
         et.register_namespace("xlink","http://www.w3.org/1999/xlink") # why does this only sometimes get linked?
-        #root.set('xmlns:xlink', 'http://www.w3.org/1999/xlink')
 
         root = et.fromstring(buff.data())
 
@@ -1334,10 +1315,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 txtxml.append(linkxml)
 
 
-        ## XXX how to delete them entirely?
+        ## TODO how to delete them entirely?
         for g in root.iter('{http://www.w3.org/2000/svg}g'):
             # remove default value
-            # XXX problems if nested withon an opacity!=1 ?
+            # TODO problems if nested withon an opacity!=1 ?
             if g.get('fill-opacity', '') == '1':
                 del g.attrib['fill-opacity']
 
@@ -1362,7 +1343,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
         ## truncate numbers - don't need full precision
-        # XXX % rounding would be better
+        # TODO % rounding would be better
         simpledec = re.compile(r'\d*\.\d+')
         def mround(match):
             return "{:.1f}".format(float(match.group()))
@@ -1895,7 +1876,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def undo(self):
         changeditems = self.scene.graph.undo()
         ## first pass - refresh the whole lot
-        # XXX more efficient undo by looking at changeditems
+        # TODO more efficient undo by looking at changeditems
         changedtypes = [t for t,uid in changeditems]
         if '+' in changedtypes:
             ## Refresh the whole lot as we don't know where it was removed from
@@ -1920,8 +1901,8 @@ class MainWindow(QtWidgets.QMainWindow):
             if p not in allchidren:
                 p.renew()
 
-        # XXX sometimes no parents?!
-        # XXX happens when reversing a hide as the stems are no longer in scene!
+        # TODO sometimes no parents?!
+        # TODO happens when reversing a hide as the stems are no longer in scene!
         if len(parents)==0:
             self.scene.root().renew()
 
@@ -1966,7 +1947,7 @@ class MainWindow(QtWidgets.QMainWindow):
             scene.graph = g
 
             ## Find base items and create trees
-            # XXX there should only be 1 root item - check
+            # TODO there should only be 1 root item - check
             rootnodes = g.fetch('(r:Root) -(e:Child)> [n:Stem]')
             for n in rootnodes:
                 root = graphics.StemItem(node=n, scene=scene)
@@ -2069,7 +2050,7 @@ class MainWindow(QtWidgets.QMainWindow):
             #self.lowResRender(painter, rect, targetRect)
 
 
-            # XXX hide any view rects
+            # TODO hide any view rects
 
             if ii < VIEWS-1:
                 self.printer.newPage()
@@ -3078,144 +3059,6 @@ class FilterEdit(QtWidgets.QLineEdit):
         self.runfilter.emit(str(self.text()))
 
 
-
-# class RecordDialog(QtWidgets.QDialog):
-
-
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-
-#         self.setWindowTitle("Record")
-#         #self.setWindowFlags(QtCore.Qt.WindowType.WindowStaysOnTopHint)
-
-#         self.audiorecorder = QAudioRecorder()
-
-#         codecs = self.audiorecorder.supportedAudioCodecs()
-#         containers = self.audiorecorder.supportedContainers()
-#         sample_rates = self.audiorecorder.supportedAudioSampleRates()
-
-
-#         #self.setWindowOpacity(0.6)
-
-#         QBtn = QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel
-
-#         self.buttonBox = QtWidgets.QDialogButtonBox(QBtn)
-#         self.buttonBox.accepted.connect(self.accept)
-#         self.buttonBox.rejected.connect(self.reject)
-
-#         #self.audio = pyaudio.PyAudio()
-
-#         #
-#         # list of input devices
-#         #
-#         # info = self.audio.get_host_api_info_by_index(0)
-#         # numdevices = info.get('deviceCount')
-#         # devices = []
-#         # for i in range(0, numdevices):
-#         #     if (self.audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
-#         #         devices.append(self.audio.get_device_info_by_host_api_device_index(0, i).get('name'))
-
-#         sources = self.audiorecorder.audioInputs()
-#         print(sources)
-#         default_source = self.audiorecorder.defaultAudioInput()
-#         sources.remove(default_source)
-#         sources.insert(0, default_source)
-#         self.sources = QtWidgets.QComboBox()
-#         self.sources.addItems(sources)
-#         self.sources.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
-#         self.sources.setMinimumContentsLength(6)
-
-#         #
-#         # Levels
-#         #
-#         self.levels = QtWidgets.QLabel("? ?")
-
-#         #
-#         # output file name
-#         #
-#         self.outputfilename = QtWidgets.QLineEdit("output.wav")
-
-#         #
-#         # Record button
-#         #
-#         self.recordbutton = QtWidgets.QPushButton("Record")
-#         # self.recordbutton.setCheckable(True)
-#         self.recordbutton.setMinimumSize(100,100)
-#         self.recordbutton.clicked.connect(self.recordPushed)
-
-#         form = QtWidgets.QFormLayout()
-#         form.addRow("Source:", self.sources)
-#         form.addRow("Levels:", self.levels)
-#         form.addRow("Output:", self.outputfilename )
-
-#         self.layout = QtWidgets.QVBoxLayout()
-#         self.layout.addLayout(form)
-#         self.layout.addWidget(self.recordbutton)
-#         self.layout.addWidget(self.buttonBox)
-#         self.setLayout(self.layout)
-
-#         self.audiorecorder.stateChanged.connect(self.onStateChange)
-#         self.onStateChange()
-
-#     def onStateChange(self):
-
-#         if self.audiorecorder.state()==QAudioRecorder.StoppedState:
-#             self.recordbutton.setStyleSheet("background-color: #400000;")
-#             self.recordbutton.setText('Off')
-#         elif self.audiorecorder.state()==QAudioRecorder.RecordingState:
-#             self.recordbutton.setStyleSheet("background-color: #A00000;")
-#             self.recordbutton.setText('Recording')
-#         else:
-#             self.recordbutton.setStyleSheet("background-color: #900000;")
-#             self.recordbutton.setText('Paused')
-
-#     def recordPushed(self):
-
-#         # TODO on record pass keypresses to main window
-#         # TODO or implement as toolbar
-#         if self.audiorecorder.state()==QAudioRecorder.StoppedState:
-#             self.setSettings()
-
-#             self.audiorecorder.record()
-#         elif self.audiorecorder.state()==QAudioRecorder.RecordingState:
-#             pass
-#             self.audiorecorder.pause()
-#         else:
-#             pass
-#             self.audiorecorder.record()
-
-#     def setSettings(self):
-#         settings = QAudioEncoderSettings()
-#         settings.setCodec('audio/pcm')
-#         settings.setSampleRate(44100)
-#         settings.setChannelCount(2)
-#         self.audiorecorder.setAudioSettings(settings)
-#         self.audiorecorder.setContainerFormat('audio/x-wav')
-#         self.audiorecorder.setOutputLocation(QtCore.QUrl('output.wav'))
-#         self.audiorecorder.setAudioInput(self.sources.currentText())
-
-#     def accept(self):
-
-#         # save audio
-#         self.audiorecorder.stop()
-
-#         # TODO generate frames
-
-#         # TODO generate video
-
-#         # TODO combine audio and video
-
-#         print('accept()')
-
-#     def reject(self):
-#         # Cancel / close window / escape
-#         print('reject()')
-#         self.audiorecorder.stop()
-
-#         # TODO escape from recording mode on main window
-
-#         super().reject()
-
 class PreferencesDialog(QtWidgets.QDialog):
     '''
     Main preferences dialog
@@ -3318,7 +3161,7 @@ class ViewsModel(QtCore.QAbstractListModel):
 
 class RectangleChanged(QtCore.QObject):
 
-    # QGraphics items can;t signal as they don't inherit from QObject
+    # QGraphics items can't signal as they don't inherit from QObject
     # Create a signal class that can
     signal = QtCore.pyqtSignal(dict)
 

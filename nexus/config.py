@@ -21,14 +21,14 @@ from importlib.machinery import SourceFileLoader
 
 default_config = {
     #
-    # pinch gesture
+    # Pinch Gesture
     #
     "pinch_no_move_threshold": 0,  # view pixels
     "pinch_no_rotate_threshold": 20, # degrees
     "pinch_no_scale_threshold": [0.92, 1.08], # scale factors
 
     #
-    # input dialog
+    # Input Dialog
     #
     # completely ignore mouse moves when using pen
     "input_ignore_mouse": False,
@@ -51,16 +51,14 @@ default_config = {
     "child_scale": 0.5,
 
     #
-    # text item
+    # Text item
     #
-
     # Default size of textbox
     "text_item_width": 380,
 
     #
-    # font
+    # Font
     #
-
     # Bundling ETBembo with Nexus
     "text_item_font_family": "ETBembo",
     "text_item_font_size": 12,
@@ -68,7 +66,7 @@ default_config = {
     "text_item_color": "#000000",
 
     #
-    # laser trail
+    # Laser Trail
     # Colour format: #AARRGGBB
     #
     "trail_outer_color": "#AA00E000",
@@ -103,7 +101,7 @@ def get_config():
 
     config = default_config.copy()
 
-    # any of these config files should define a config dictionary with keys to update
+    # Any of these config files should define a config dictionary with keys to update
     # the default config
 
     # TODO make robust against errors in config files
