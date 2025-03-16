@@ -1,6 +1,6 @@
 #+TITLE: Nexus
 
-/Nexus/ is a mindmapping app that supports text, images and stylus input. It will run on Mac, Windows, and Linux. It's been mainly tested on mac and linux.
+/Nexus/ is a mindmapping app that supports text, images and stylus input. It will run on Mac, Windows, and Linux.
 
 * Installation
 
@@ -16,17 +16,20 @@
 
 Since it will run on a variety of touch-screens and tablets, there are multiple ways to do most operations.
 
+*** Saving
+
+- The map gets saved automatically on changes
+
 *** Moving branches
 
 - Click and drag
-
 *** Adding sub-branches
 
-- Ctlr-click and drag
-- 2nd mouse button and drag
-- Long press and drag
+- Once selected a '+' button becomes visible, drag this out to form a new branch.
+- Ctlr-click and drag.
+- Use the 2nd mouse button and click and drag.
 
-*** Zoom
+*** Zooming in and out of the map
 
 - Ctrl and drag on background
 - Ctrl and mouse wheel
@@ -35,7 +38,11 @@ Since it will run on a variety of touch-screens and tablets, there are multiple 
 *** Edit current branch
 
 - Double click
-- Longpress then select edit from pop-up menu
+- Select branch then press menu icon, select edit.
+
+*** Close editing dialog
+
+- Press Esc
 
 * File format
 
