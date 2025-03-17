@@ -2,68 +2,94 @@
 
 These notes are sparse at the moment.
 
-* Modes
+** Modes
 
-Nexus has three modes: /Edit/, /Presentation/, and /Record/ mode. /Edit/ is the main mode.
+Nexus has three modes: /Edit/, /Presentation/, and /Record/. /Edit/ is the main mode.
 
-* Main map
+** Edit mode
 
-The map has a central topic, and branches made up of stems. Each child stem is scaled down relative to it's parent. You can chose to show or hide the children of a stem ( -/+ icon at the end of a stem). Stems can contain text, images, or pen writing.
+The main window shows the map which has a central topic, and branches made up of stems. Each child stem has a position, scale and rotation  /relative to its parent/. Stems can contain text, images, or pen writing.
 
-** Interaction
+*** Interaction
 
-Since it will run on a variety of touch-screens and tablets, there are multiple ways to do most operations.
+Since Nexus will run on a variety of touch-screens, tablets and desktops, there are multiple ways to do most operations to try and match natural inputs with different devices like mouse, touch or pen.
 
-*** Saving
-- No need to save, the map gets saved automatically on changes.
-
-*** Selecting
-- Mouse click to select, shift-click to add to selection, click on background to deselect.
-- =c= adds children to selection
-- =e= adds siblings to selection
-- =a= selects all
-
-*** Moving branches
-- Select and drag.
-- Branches will flip over when crossing mid-line.
-
-*** Adding sub-branches
-- Once a stem is selected a =+= button becomes visible, drag this out to form a new branch.
-- Ctlr-click and drag on a stem.
-- Use the 2nd mouse button and click and drag on a stem.
-
-*** Zooming in and out of the map
+**** Zooming in and out of the map
 - Ctrl and drag on background
 - Ctrl and mouse wheel
 - Pinch gesture
+- Click on zoom controls in toolbar
 
-*** Scaling stems
-- Select and press =+= / =-=
-- Select and press =s= for dialog to set relative scale
+**** Selecting stems
+- Mouse click to select, shift-click to add/remove from selection, click on background to deselect all.
+- =c= adds children to selection.
+- =e= adds siblings to selection.
+- =a= selects all/none.
 
-*** Edit current branch
+**** Scaling stems
+- Select stems and press =+= / =-=
+- Select stens and press =s= for dialog to set stem scale
+
+**** Moving branches
+- Select and drag. N.B. moving or scaling a parent stem will affect all children as transformations are relative
+- Branches will flip over when crossing mid-line.
+
+**** Adding child stems
+- Once a stem is selected a =+= button becomes visible near tip of stem, drag this out to form a new branch.
+- Ctlr-click and drag on a stem.
+- Use the 2nd-mouse button and click and drag on a stem.
+
+**** Showing and hiding child stems
+- Use the small =-= / =+= icon at the tip of the parent stem
+- Select stem and press =h= to hide (can be re-shown with the button on the parent)
+
+**** Rotating view
+- Select =Allow Rotations= in =View= menu, then use rotation gestures on input device,
+- Any stored views will also be rotated,
+- Adding rotations to presentations is probably nausea inducing.
+
+**** Edit current stem
 - Double click
-- Select branch then press menu icon, select edit.
+- Select stem then press menu icon near the base of the stem, choose =Edit=.
 
 *** Editing dialog
 - Press exit button (far left on toolbar) to close, or press =Esc= key.
-- Dialog position is remembered.
-- Gear icon switches to branch settings view (setting scale, color, tags etc)
+- The dialog position is remembered.
+- The Gear icon switches to branch settings view (setting scale, color, tags etc, and dialog properties)
+- The dialog has 5 modes - /Text/, /Pen/, /Highlighter/, /Eraser/, /Select/.
+- If a tablet pen is configured correctly, the eraser is automatically selected when used
+- The setting =Allow Canvas Rotation= in the dialog settings lets you rotate the dialog canvas. This does not effect the stem. Usfeful for using a stylus on a laptop.
+- The setting =Dialog Appearance= in the dialog settings switches between the input dialog acting as a normal window, a maximised window, and a full screen window. Exactly what this means depends on your platform and window manager.
+- The dialog can also be made translucent. Sometimes useful, but depends on platform and window manager.
 
-* Views / Frames
-- The frames that are set can be seen by toggling the =i= icon or using =Cmd-I=.
-- Pressing =+= button with add the current view as a frame, =-= button removes a frame, and the circle will replace the selected frame with the current view on the main window.
+
+*** Views / Frames
+
+What is seen on the main window with a given position and zoom factor is called a view. Views can be stored as 'frames' for a bookmark or for presentations.
+
+- The frames that are set can be seen by toggling the =i= icon in the toolbar or using =Cmd-I=. This will show a side panel with the frames.
+- Pressing the =+= button on the side panel will add the current view as a frame, the =-= button removes selected frames, and the circle button will replace the selected frame with the current view on the main window.
 - Double clicking on a frame with jump to that view
-- Selecting "Show Frames" will show the selected frames on the main screen as rectangle and can be edited
+- Selecting =Show Frames= in the =View= menu will show selected frames on the main screen as rectangles and can be edited (moved and scaled)
 - Note the views are set so that the *width* is guaranteed to be shown on the presenting device (which might have a different aspect ratio)
-- An arrow is shown on displayed frames to indicate vertical (the map view can be rotated before capturing the frame).
+- An arrow is shown on displayed frames to indicate up direction (the map view can be rotated before capturing the frame).
 
 
-* File format
+** Presentation mode
 
-The file format for /Nexus/ is an sqlite database structured as a graph database using ~graphydb~.
+To be done
 
-** Graph structure
+** Record mode
+
+To be done
+
+** File format
+
+(Needs updating)
+
+The file format for /Nexus/ is an sqlite database structured as a graph database using ~graphydb~. You could access the data using ~graphydb~, or directly to write converters. The structure is given below.
+
+*** Graph structure
 
     # CONNECTIONS
     # View -Transition-> View
@@ -87,14 +113,14 @@ In addition, Edges have the following and no additional attributes:
 | enduid   | The uid of the end node   |
 
 
-*** Root
+**** Root
 
 Each graph has a single root (assumed) node of kind ~Root~ from which everything
 else is linked. No internal data on Root.
 
 Links: ~Root-Child->Stem~
 
-*** Stem
+**** Stem
 
 Stems hold the basic structure of the map as a DAG.
 
@@ -113,7 +139,7 @@ Links: ~Stem-Child->Stem~, ~Root-Child->Stem~, ~Stem-With->ImageData~.
 
 The content attribute is a list of dicts. Each has a 'kind' key with the following kinds:
 
-**** Stroke
+***** Stroke
 
 | key     | description    |
 |---------+----------------|
@@ -124,7 +150,7 @@ The content attribute is a list of dicts. Each has a 'kind' key with the followi
 | stroke  | list of tuples |
 | frame   |                |
 
-**** Text
+***** Text
 
 | key      | description |
 |----------+-------------|
@@ -132,14 +158,14 @@ The content attribute is a list of dicts. Each has a 'kind' key with the followi
 | maxwidth |             |
 | frame    |             |
 
-**** Image
+***** Image
 
 | key   | description |
 |-------+-------------|
 | frame |             |
 | sha1  |             |
 
-*** ImageData
+**** ImageData
 
 | key  | description            |
 |------+------------------------|
@@ -148,7 +174,7 @@ The content attribute is a list of dicts. Each has a 'kind' key with the followi
 
 Links: ~Stem-With->ImageData~
 
-*** View
+**** View
 
 | key   | description                 |
 |-------+-----------------------------|
@@ -159,9 +185,12 @@ Links: ~View-Transition->View~
 
 By encoding the left and right points, the view position, scale, rotation can be encoded in a way that handles displaying on different aspect ratios in a predictable manner.
 
-* Copy format
+** Copy format
 
-The copy format that is used internally is a cut-down version of the nodes and content json data.
+(Needs updating)
+
+The copy format that is used internally is a cut-down version of the nodes and content json data and is self-contained so stems can be copied across different maps. You can also write scripts that accept and interpret the embedded data.
+
 UIDs are not stored, neither are local fields beginning with underscore '_'
 Child Stems are nested in 'children' list.
 Any linked ImageData nodes are added to 'images' dict under their sha1 hashes
