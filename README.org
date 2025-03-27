@@ -28,7 +28,7 @@ To install and run from source (assuming a shell running bash or equivalent)
 - Create a virtual python environment
   : python3 -m venv nexus-env
 - Activate it
-  : ./nexus-env/bin/activate
+  : . ./nexus-env/bin/activate
 - Install requirements
   : pip install pyqt6 bs4 bleach apsw
 - Launch Nexus
