@@ -555,7 +555,8 @@ class NexusApplication(QtWidgets.QApplication):
         # Python's garbage collector will throw away our MainWindows!
         self.windows = self.windowList()
         for window in self.windows:
-            act = QtGui.QAction(QtGui.QIcon(":/images/nexusicon.svg"), window.windowTitle(), self)
+            act = QtGui.QAction(QtGui.QIcon(":/images/nexusicon.svg"),
+                                window.windowTitle(), self)
             # tag the action so we can identify and delete it
             act.windowAction = True
             if window == activewindow:
@@ -602,7 +603,8 @@ class NexusApplication(QtWidgets.QApplication):
             return None
 
     def dialogNew(self):
-        path, dummy = QtWidgets.QFileDialog.getSaveFileName(None, "New File", filter="Nexus (*.nex) ;; All files (*)")
+        path, dummy = QtWidgets.QFileDialog.getSaveFileName(None, "New File",
+                                            filter="Nexus (*.nex) ;; All files (*)")
         if len(path) > 0:
             return self.createNewFile(path)
         else:
@@ -848,7 +850,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.scene.statusMessage.connect(self.showMessage)
         self.scene.linkClicked.connect(self.linkClicked)
 
-
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
 
         QtWidgets.QApplication.restoreOverrideCursor()
@@ -1004,7 +1005,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         graph = self.scene.graph
 
-        path, dummy = QtWidgets.QFileDialog.getSaveFileName(None, "New File", filter="Nexus (*.nex) ;; All files (*)")
+        path, dummy = QtWidgets.QFileDialog.getSaveFileName(None, "New File",
+                                            filter="Nexus (*.nex) ;; All files (*)")
         if len(path) > 0:
             # Ensure the file ends in ".nex"
             path = Path(path).with_suffix(".nex")
@@ -1124,8 +1126,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def exportText(self):
 
-        filename, dummy = QtWidgets.QFileDialog.getSaveFileName(self, self.tr("Export Text"), filter="Text files (*.txt) ;; All files (*)")
-        if len(filename)==0:
+        filename, dummy = QtWidgets.QFileDialog.getSaveFileName(self,
+            self.tr("Export Text"), filter="Text files (*.txt) ;; All files (*)")
+        if len(filename) == 0:
             return False
         path, ext = os.path.splitext(str(filename))
         path += '.txt'
@@ -1150,9 +1153,10 @@ class MainWindow(QtWidgets.QMainWindow):
             scene = self.scene
 
         if path is None:
-            pa,ext = os.path.splitext(str(self.scene.graph. path))
+            pa, ext = os.path.splitext(str(self.scene.graph.path))
 
-            fileName, dummy = QtWidgets.QFileDialog.getSaveFileName(self, self.tr("Export SVG"), pa+'.svg', filter="SVG files (*.svg) ;; All files (*)")
+            fileName, dummy = QtWidgets.QFileDialog.getSaveFileName(self,
+                self.tr("Export SVG"), pa+'.svg', filter="SVG files (*.svg) ;; All files (*)")
             if len(fileName) == 0:
                 return False
             path, ext = os.path.splitext(str(fileName))
@@ -1196,7 +1200,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     objs = et.fromstring(html)
                     # find any links
                     for link in objs.iter('a'):
-                        # QT puts a span with the link style in the text part! SVGgenerator converts this to a drawn line :(
+                        # QT puts a span with the link style in the text part!
+                        # SVGgenerator converts this to a drawn line :(
                         span = link.find('span')
                         if span is not None:
                             text = span.text
@@ -1217,7 +1222,6 @@ class MainWindow(QtWidgets.QMainWindow):
                             # store key - [url, original text]
                             links[randkey] = {'url': link.attrib['href'], 'text': text}
 
-
                             # replace text by random key so we can pick it up later in the svg
                             span.text = randkey
 
@@ -1228,13 +1232,13 @@ class MainWindow(QtWidgets.QMainWindow):
                             # duplicates won't matter
                             textitems.append((textitem, html))
 
-
-                            # change the a-link to span and remove the undelying span so we avoid the stupid underline decoration
-                            #link.clear()
-                            #link.tag = 'span'
+                            # change the a-link to span and remove the undelying span
+                            # so we avoid the stupid underline decoration
+                            # link.clear()
+                            # link.tag = 'span'
 
                             # replace text by random key so we can pick it up later in the svg
-                            #link.text = randkey
+                            # link.text = randkey
 
         # Get the title of the root node
         title = scene.root().titles()[0]
@@ -1265,12 +1269,14 @@ class MainWindow(QtWidgets.QMainWindow):
         for textitem, html in textitems:
             textitem.setHtml(html)
 
-        et.register_namespace("","http://www.w3.org/2000/svg")
-        et.register_namespace("xlink","http://www.w3.org/1999/xlink") # why does this only sometimes get linked?
+        et.register_namespace("", "http://www.w3.org/2000/svg")
+        et.register_namespace("xlink", "http://www.w3.org/1999/xlink")
+        # why does this only sometimes get linked?
 
         root = et.fromstring(buff.data())
 
-        # QT produces a whole lot of empty groups with lots of attributes. Collapse them here
+        # QT produces a whole lot of empty groups with lots of attributes.
+        # Collapse them here
         for parentg in root.findall('{http://www.w3.org/2000/svg}g'):
             for g in parentg.findall('{http://www.w3.org/2000/svg}g'):
                 if len(g) == 0:
@@ -1306,11 +1312,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 text = links[txtxml.text]['text']
 
-                linkxml = et.Element('a', {'{http://www.w3.org/1999/xlink}href':url, 'fill':'blue'})
+                linkxml = et.Element('a', {'{http://www.w3.org/1999/xlink}href': url,
+                                           'fill': 'blue'})
                 linkxml.text = text
                 txtxml.text = ''
                 txtxml.append(linkxml)
-
 
         # TODO how to delete them entirely?
         for g in root.iter('{http://www.w3.org/2000/svg}g'):
@@ -1342,10 +1348,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     if a in g.attrib:
                         del g.attrib[a]
 
-
         # truncate numbers - don't need full precision
         # TODO % rounding would be better
         simpledec = re.compile(r'\d*\.\d+')
+
         def mround(match):
             return "{:.1f}".format(float(match.group()))
 
@@ -1383,49 +1389,57 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.about(self, self.tr("About Nexus"),
                                 self.tr("Nexus - flexible mindmapping\n"
                                         "Alexei Gilchrist\n"
-                                        "version %s\nGPL v3"%str(graphics.VERSION)))
+                                        "version %s\nGPL v3" % str(graphics.VERSION)))
 
     def createActions(self):
 
         app = QtWidgets.QApplication.instance()
 
         # ----------------------------------------------------------------------------------
-        self.newAct = QtGui.QAction(QtGui.QIcon(":/images/new.svg"), self.tr("&New"), self)
+        self.newAct = QtGui.QAction(QtGui.QIcon(":/images/new.svg"),
+                                    self.tr("&New"), self)
         self.newAct.setShortcut(QtGui.QKeySequence.StandardKey.New)
         self.newAct.setStatusTip(self.tr("Create a new file"))
         self.newAct.triggered.connect(self.newFile)
 
         # ----------------------------------------------------------------------------------
-        self.openAct = QtGui.QAction(QtGui.QIcon(":/images/open.svg"),self.tr("&Open..."), self)
+        self.openAct = QtGui.QAction(QtGui.QIcon(":/images/open.svg"),
+                                     self.tr("&Open..."), self)
         self.openAct.setShortcut(QtGui.QKeySequence.StandardKey.Open)
         self.openAct.setStatusTip(self.tr("Open an existing file"))
         self.openAct.triggered.connect(app.dialogOpen)
 
         # ----------------------------------------------------------------------------------
-        self.saveAsAct = QtGui.QAction(QtGui.QIcon(":/images/save-as.svg"), self.tr("Save &As..."), self)
+        self.saveAsAct = QtGui.QAction(QtGui.QIcon(":/images/save-as.svg"),
+                                       self.tr("Save &As..."), self)
         self.saveAsAct.setStatusTip(self.tr("Save the document under a new name"))
         self.saveAsAct.triggered.connect(self.saveAs)
 
         # ----------------------------------------------------------------------------------
-        self.exportSVGAct = QtGui.QAction(QtGui.QIcon(":/images/export.svg"), self.tr("Export as SVG..."), self)
+        self.exportSVGAct = QtGui.QAction(QtGui.QIcon(":/images/export.svg"),
+                                          self.tr("Export as SVG..."), self)
         self.exportSVGAct.setStatusTip(self.tr("Export the map to SVG"))
         self.exportSVGAct.triggered.connect(self.exportSVG)
 
-        self.exportLinkedSVGsAct = QtGui.QAction(QtGui.QIcon(":/images/export.svg"), self.tr("Export linked as SVG..."), self)
+        self.exportLinkedSVGsAct = QtGui.QAction(QtGui.QIcon(":/images/export.svg"),
+                                                 self.tr("Export linked as SVG..."), self)
         self.exportLinkedSVGsAct.setStatusTip(self.tr("Recursively export all linked maps as SVG"))
         self.exportLinkedSVGsAct.triggered.connect(self.exportLinkedSVGs)
 
-        self.exportTextAct = QtGui.QAction(QtGui.QIcon(":/images/export.svg"), self.tr("Export text..."), self)
+        self.exportTextAct = QtGui.QAction(QtGui.QIcon(":/images/export.svg"),
+                                           self.tr("Export text..."), self)
         self.exportTextAct.setStatusTip(self.tr("Export text as outline"))
         self.exportTextAct.triggered.connect(self.exportText)
 
         # ----------------------------------------------------------------------------------
-        self.printMapAct = QtGui.QAction(QtGui.QIcon(":/images/print.svg"),self.tr("&Print Map"), self)
+        self.printMapAct = QtGui.QAction(QtGui.QIcon(":/images/print.svg"),
+                                         self.tr("&Print Map"), self)
         self.printMapAct.setShortcut(QtGui.QKeySequence.StandardKey.Print)
         self.printMapAct.setStatusTip(self.tr("Print whole map"))
         self.printMapAct.triggered.connect(self.printMapSlot)
 
-        self.printViewsAct = QtGui.QAction(QtGui.QIcon(":/images/print.svg"),self.tr("&Print Views"), self)
+        self.printViewsAct = QtGui.QAction(QtGui.QIcon(":/images/print.svg"),
+                                           self.tr("&Print Views"), self)
         self.printViewsAct.setStatusTip(self.tr("Print Views"))
         self.printViewsAct.triggered.connect(self.printViewsSlot)
         # ----------------------------------------------------------------------------------
@@ -1439,26 +1453,28 @@ class MainWindow(QtWidgets.QMainWindow):
         self.exitAct.setMenuRole(QtGui.QAction.MenuRole.QuitRole)
         self.exitAct.setShortcut(self.tr("Ctrl+Q"))
         self.exitAct.setStatusTip(self.tr("Quit the application"))
-        #self.exitAct.triggered.connect(QtWidgets.qApp.closeAllWindows)
+        # self.exitAct.triggered.connect(QtWidgets.qApp.closeAllWindows)
         self.exitAct.triggered.connect(QtWidgets.QApplication.instance().closeAllWindows)
 
         # ----------------------------------------------------------------------------------
-        self.cutAct = QtGui.QAction(QtGui.QIcon(":/images/edit-cut.svg"),self.tr("Cu&t"), self)
+        self.cutAct = QtGui.QAction(QtGui.QIcon(":/images/edit-cut.svg"),
+                                    self.tr("Cu&t"), self)
         self.cutAct.setShortcut(QtGui.QKeySequence.StandardKey.Cut)
         self.cutAct.setStatusTip(self.tr("Cut the current selection's "
                                          "contents to the clipboard"))
         self.cutAct.triggered.connect(self.scene.cut)
 
         # ----------------------------------------------------------------------------------
-        self.copyAct = QtGui.QAction(QtGui.QIcon(":/images/edit-copy.svg"),self.tr("&Copy"), self)
+        self.copyAct = QtGui.QAction(QtGui.QIcon(":/images/edit-copy.svg"),
+                                     self.tr("&Copy"), self)
         self.copyAct.setShortcut(QtGui.QKeySequence.StandardKey.Copy)
         self.copyAct.setStatusTip(self.tr("Copy the current selection's "
                                           "contents to the clipboard"))
         self.copyAct.triggered.connect(self.scene.copy)
 
         # ----------------------------------------------------------------------------------
-        self.copyStemLinkAct = QtGui.QAction(QtGui.QIcon(":/images/edit-copy.svg"),self.tr("&Copy Links"),
-                                     self)
+        self.copyStemLinkAct = QtGui.QAction(QtGui.QIcon(":/images/edit-copy.svg"),
+                                             self.tr("&Copy Links"), self)
         self.copyStemLinkAct.setShortcut("Shift+Ctrl+C")
         self.copyStemLinkAct.setStatusTip(self.tr("Copy the current selection links"
                                           "to the clipboard"))
@@ -1480,7 +1496,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.deleteAct.triggered.connect(self.scene.delete)
 
         # ----------------------------------------------------------------------------------
-        self.undoAct = QtGui.QAction(QtGui.QIcon(":/images/undo.svg"), self.tr("Undo"), self)
+        self.undoAct = QtGui.QAction(QtGui.QIcon(":/images/undo.svg"),
+                                     self.tr("Undo"), self)
         self.undoAct.setShortcut(QtGui.QKeySequence.StandardKey.Undo)
         self.undoAct.setStatusTip(self.tr("Undo last change"))
         self.undoAct.triggered.connect(self.undo)
@@ -1499,13 +1516,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # ----------------------------------------------------------------------------------
         self.increaseScaleAct = QtGui.QAction(self.tr("Increase Scale"), self)
         self.increaseScaleAct.setStatusTip(self.tr("Increase scale of selected"))
-        self.increaseScaleAct.setShortcuts(["+","="])
+        self.increaseScaleAct.setShortcuts(["+", "="])
         self.increaseScaleAct.triggered.connect(self.sceneSelectedIncreaseScale)
 
         # ----------------------------------------------------------------------------------
         self.decreaseScaleAct = QtGui.QAction(self.tr("Decrease Scale"), self)
         self.decreaseScaleAct.setStatusTip(self.tr("Decrease scale of selected"))
-        self.decreaseScaleAct.setShortcuts(["-","_"])
+        self.decreaseScaleAct.setShortcuts(["-", "_"])
         self.decreaseScaleAct.triggered.connect(self.sceneSelectedDecreaseScale)
 
         # ----------------------------------------------------------------------------------
@@ -1527,9 +1544,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.selectSiblingsAct.triggered.connect(self.sceneSelectSiblings)
 
         # ----------------------------------------------------------------------------------
-        #self.clearStyleAct = QtGui.QAction(self.tr("Clear Style"), self)
-        #self.clearStyleAct.setStatusTip(self.tr("Clear the style setting for selected"))
-        #self.clearStyleAct.triggered.connect(self.sceneSelectedClearStyle)
+        # self.clearStyleAct = QtGui.QAction(self.tr("Clear Style"), self)
+        # self.clearStyleAct.setStatusTip(self.tr("Clear the style setting for selected"))
+        # self.clearStyleAct.triggered.connect(self.sceneSelectedClearStyle)
 
         # ----------------------------------------------------------------------------------
         self.hideAct = QtGui.QAction(self.tr("Hide"), self)
@@ -1561,49 +1578,58 @@ class MainWindow(QtWidgets.QMainWindow):
         self.aboutAct.triggered.connect(self.about)
 
         # ----------------------------------------------------------------------------------
-        self.zoomInAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-in.svg"), self.tr("Zoom In"), self)
+        self.zoomInAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-in.svg"),
+                                       self.tr("Zoom In"), self)
         self.zoomInAct.setShortcut(QtGui.QKeySequence.StandardKey.ZoomIn)
         self.zoomInAct.setStatusTip(self.tr("Zoom in"))
         self.zoomInAct.triggered.connect(self.view.zoomIn)
 
         # ----------------------------------------------------------------------------------
-        self.zoomOutAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-out.svg"), self.tr("Zoom Out"), self)
+        self.zoomOutAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-out.svg"),
+                                        self.tr("Zoom Out"), self)
         self.zoomOutAct.setShortcut(QtGui.QKeySequence.StandardKey.ZoomOut)
         self.zoomOutAct.setStatusTip(self.tr("Zoom out"))
         self.zoomOutAct.triggered.connect(self.view.zoomOut)
 
         # ----------------------------------------------------------------------------------
-        self.zoomSelectionAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-select.svg"), self.tr("Zoom to Selection"), self)
+        self.zoomSelectionAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-select.svg"),
+                                              self.tr("Zoom to Selection"), self)
         self.zoomSelectionAct.setShortcut("Z")
         self.zoomSelectionAct.setStatusTip(self.tr("Zoom to Selection"))
         self.zoomSelectionAct.triggered.connect(self.view.zoomSelection)
 
         # ----------------------------------------------------------------------------------
-        self.zoomOriginalAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-one.svg"), self.tr("Reset Zoom"), self)
+        self.zoomOriginalAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-one.svg"),
+                                             self.tr("Reset Zoom"), self)
         self.zoomOriginalAct.setStatusTip(self.tr("Reset Zoom"))
         self.zoomOriginalAct.triggered.connect(self.view.zoomOriginal)
 
         # ----------------------------------------------------------------------------------
-        self.filterRunAct = QtGui.QAction(QtGui.QIcon(":/images/filter.svg"), self.tr("Run filter"), self)
+        self.filterRunAct = QtGui.QAction(QtGui.QIcon(":/images/filter.svg"),
+                                          self.tr("Run filter"), self)
         self.filterRunAct.setStatusTip(self.tr("Filter map"))
         # ----------------------------------------------------------------------------------
-        self.filterClearAct = QtGui.QAction(QtGui.QIcon(":/images/filter-clear.svg"), self.tr("Clear filter"), self)
+        self.filterClearAct = QtGui.QAction(QtGui.QIcon(":/images/filter-clear.svg"),
+                                            self.tr("Clear filter"), self)
         self.filterClearAct.setStatusTip(self.tr("Clear filters"))
 
         # ----------------------------------------------------------------------------------
         # Modes
         #
-        self.editModeAct = QtGui.QAction(QtGui.QIcon(":/images/grab-mode.svg"), self.tr("Edit Mode"), self)
+        self.editModeAct = QtGui.QAction(QtGui.QIcon(":/images/grab-mode.svg"),
+                                         self.tr("Edit Mode"), self)
         self.editModeAct.setShortcut(self.tr("Ctrl+E"))
         self.editModeAct.setCheckable(True)
         self.editModeAct.triggered.connect(self.setMode)
 
-        self.presentationModeAct = QtGui.QAction(QtGui.QIcon(":/images/view-presentation.svg"), self.tr("Presentation Mode"), self)
+        self.presentationModeAct = QtGui.QAction(QtGui.QIcon(":/images/view-presentation.svg"),
+                                                 self.tr("Presentation Mode"), self)
         self.presentationModeAct.setShortcut(self.tr("Ctrl+T"))
         self.presentationModeAct.setCheckable(True)
         self.presentationModeAct.triggered.connect(self.setMode)
 
-        self.recordModeAct = QtGui.QAction(QtGui.QIcon(":/images/microphone.svg"), self.tr("Record Mode"), self)
+        self.recordModeAct = QtGui.QAction(QtGui.QIcon(":/images/microphone.svg"),
+                                           self.tr("Record Mode"), self)
         self.recordModeAct.setShortcut(self.tr("Ctrl+R"))
         self.recordModeAct.setCheckable(True)
         self.recordModeAct.triggered.connect(self.setMode)
@@ -1619,16 +1645,19 @@ class MainWindow(QtWidgets.QMainWindow):
         # ----------------------------------------------------------------------------------
         # Recording
         #
-        self.recStartAct = QtGui.QAction(QtGui.QIcon(":/images/record.svg"), self.tr("Start Recording"), self)
+        self.recStartAct = QtGui.QAction(QtGui.QIcon(":/images/record.svg"),
+                                         self.tr("Start Recording"), self)
         self.recStartAct.setCheckable(True)
         self.recStartAct.triggered.connect(self.recordStart)
 
-        self.recPauseAct = QtGui.QAction(QtGui.QIcon(":/images/pause.svg"), self.tr("Pause Recording"), self)
+        self.recPauseAct = QtGui.QAction(QtGui.QIcon(":/images/pause.svg"),
+                                         self.tr("Pause Recording"), self)
         self.recPauseAct.setCheckable(True)
         self.recPauseAct.triggered.connect(self.recordPause)
         self.recPauseAct.setShortcut("Esc")
 
-        self.recEndAct = QtGui.QAction(QtGui.QIcon(":/images/stop.svg"), self.tr("End Recording"), self)
+        self.recEndAct = QtGui.QAction(QtGui.QIcon(":/images/stop.svg"),
+                                       self.tr("End Recording"), self)
         self.recEndAct.setCheckable(True)
         self.recEndAct.triggered.connect(self.recordEnd)
 
@@ -1641,34 +1670,38 @@ class MainWindow(QtWidgets.QMainWindow):
         # ----------------------------------------------------------------------------------
         self.viewsAct.setIcon(QtGui.QIcon(":/images/view-index.svg"))
         self.viewsAct.setShortcut("Ctrl+I")
-        #self.viewsAct.setDisabled(True)
+        # self.viewsAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
-        self.viewsNextAct = QtGui.QAction(QtGui.QIcon(":/images/view-forward.svg"),self.tr("Forward"), self)
+        self.viewsNextAct = QtGui.QAction(QtGui.QIcon(":/images/view-forward.svg"),
+                                          self.tr("Forward"), self)
         self.viewsNextAct.triggered.connect(self.viewsNext)
-        #self.viewsNextAct.setDisabled(True)
+        # self.viewsNextAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
-        self.viewsPreviousAct = QtGui.QAction(QtGui.QIcon(":/images/view-back.svg"),self.tr("Back"), self)
+        self.viewsPreviousAct = QtGui.QAction(QtGui.QIcon(":/images/view-back.svg"),
+                                              self.tr("Back"), self)
         self.viewsPreviousAct.triggered.connect(self.viewsPrevious)
-        #self.viewsPreviousAct.setDisabled(True)
+        # self.viewsPreviousAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
-        self.viewsHomeAct = QtGui.QAction(QtGui.QIcon(":/images/view-home.svg"),self.tr("Home"), self)
+        self.viewsHomeAct = QtGui.QAction(QtGui.QIcon(":/images/view-home.svg"),
+                                          self.tr("Home"), self)
         self.viewsHomeAct.triggered.connect(self.viewsHome)
-        #self.viewsHomeAct.setDisabled(True)
+        # self.viewsHomeAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
-        self.viewsFirstAct = QtGui.QAction(QtGui.QIcon(":/images/view-first.svg"),self.tr("First"), self)
+        self.viewsFirstAct = QtGui.QAction(QtGui.QIcon(":/images/view-first.svg"),
+                                           self.tr("First"), self)
         self.viewsFirstAct.triggered.connect(self.viewsFirst)
-        #self.viewsFirstAct.setDisabled(True)
+        # self.viewsFirstAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
         self.viewsFramesAct = QtGui.QAction(self.tr("Show Frames"), self)
         self.viewsFramesAct.triggered.connect(self.viewsFrames)
         self.viewsFramesAct.setCheckable(True)
         self.viewsFramesAct.setChecked(False)
-        #self.viewsFramesAct.setDisabled(True)
+        # self.viewsFramesAct.setDisabled(True)
 
         # ----------------------------------------------------------------------------------
         self.viewRotateAct = QtGui.QAction(self.tr("Allow Rotations"), self)
@@ -1698,7 +1731,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.runStreamingServerAct.triggered.connect(app.toggleStreaminServer)
         self.runStreamingServerAct.setCheckable(True)
         self.runStreamingServerAct.setChecked(app.streaming)
-
 
     def createMenus(self):
 
@@ -1740,7 +1772,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editMenu.addAction(self.scaleByAct)
         self.editMenu.addAction(self.increaseScaleAct)
         self.editMenu.addAction(self.decreaseScaleAct)
-        #self.editMenu.addAction(self.clearStyleAct)
+        # self.editMenu.addAction(self.clearStyleAct)
         self.editMenu.addAction(self.hideAct)
         self.editMenu.addAction(self.setOpacityAct)
         self.editMenu.addAction(self.toggleIconifyAct)
@@ -1802,16 +1834,16 @@ class MainWindow(QtWidgets.QMainWindow):
         for ii in range(numRecentFiles, self.MaxRecentFiles):
             self.recentFileActs[ii].setVisible(False)
 
-
-
     def createToolBars(self):
         self.fileToolBar = self.addToolBar(self.tr("File"))
-        self.fileToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
+        self.fileToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],
+                                                  CONFIG['icon_size']))
         self.fileToolBar.addAction(self.newAct)
         self.fileToolBar.addAction(self.openAct)
 
         self.editToolBar = self.addToolBar(self.tr("Edit"))
-        self.editToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
+        self.editToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],
+                                                  CONFIG['icon_size']))
         self.editToolBar.addAction(self.undoAct)
         self.editToolBar.addAction(self.cutAct)
         self.editToolBar.addAction(self.copyAct)
@@ -1819,7 +1851,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editToolBar.addAction(self.deleteAct)
 
         self.viewToolBar = self.addToolBar(self.tr("View"))
-        self.viewToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
+        self.viewToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],
+                                                  CONFIG['icon_size']))
         self.viewToolBar.addAction(self.zoomInAct)
         self.viewToolBar.addAction(self.zoomOutAct)
         self.viewToolBar.addAction(self.zoomSelectionAct)
@@ -1835,24 +1868,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.modeToolBar.addAction(self.recordModeAct)
 
         self.recToolBar = self.addToolBar(self.tr("Record"))
-        self.recToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
+        self.recToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],
+                                                 CONFIG['icon_size']))
         self.recToolBar.addAction(self.recStartAct)
         self.recToolBar.addAction(self.recPauseAct)
         self.recToolBar.addAction(self.recEndAct)
         self.recSourceCombo = QtWidgets.QComboBox()
         self.recToolBar.addWidget(self.recSourceCombo)
 
-
         self.filterEdit = FilterEdit()
         self.filterToolBar = self.addToolBar(self.tr("Filter"))
         self.filterToolBar.addWidget(self.filterEdit)
         self.filterToolBar.addAction(self.filterClearAct)
         self.filterToolBar.addAction(self.filterRunAct)
-        self.filterToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
+        self.filterToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],
+                                                    CONFIG['icon_size']))
         self.filterEdit.runfilter.connect(self.sceneFilterStems)
         self.filterRunAct.triggered.connect(self.filterEdit.editingFinished2)
         self.filterClearAct.triggered.connect(self.filterEdit.clear)
-
 
     def createStatusBar(self):
         self.showMessage("Ready")
@@ -1877,13 +1910,13 @@ class MainWindow(QtWidgets.QMainWindow):
         changeditems = self.scene.graph.undo()
         # first pass - refresh the whole lot
         # TODO more efficient undo by looking at changeditems
-        changedtypes = [t for t,uid in changeditems]
+        changedtypes = [t for t, uid in changeditems]
         if '+' in changedtypes:
             # Refresh the whole lot as we don't know where it was removed from
             self.scene.root().renew()
             return
 
-        changeduids = [uid for t,uid in changeditems]
+        changeduids = [uid for t, uid in changeditems]
 
         allchidren = []
         parents = []
@@ -1903,7 +1936,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # TODO sometimes no parents?!
         # TODO happens when reversing a hide as the stems are no longer in scene!
-        if len(parents)==0:
+        if len(parents) == 0:
             self.scene.root().renew()
 
     def loadOrConvertMap(self, filename):
@@ -1915,7 +1948,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         try:
             g = nexusgraph.NexusGraph(filename)
-            g.stats # this will throw an Exception if it fails
+            g.stats  # this will throw an Exception if it fails
         except apsw.NotADBError:
             self.showMessage("{} is not a graphydb, converting...".format(filename))
             g = convert_xml_to_graph(filename)
@@ -1927,7 +1960,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if version < 0.9:
             self.showMessage("{} version < 0.9, converting...".format(filename))
             g = convert_to_partial_tree(g)
-
 
         return g
 
@@ -1953,7 +1985,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 root = graphics.StemItem(node=n, scene=scene)
                 root.renew(reload=False)
 
-
         except ValueError as e:
             error = 'Failed to open file "%s": %s' % (filename, e)
             raise Exception(error)
@@ -1973,7 +2004,8 @@ class MainWindow(QtWidgets.QMainWindow):
         scenebrush = self.scene.backgroundBrush()
         self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
 
-        targetRect = QtCore.QRectF(0, 0, painter.device().width(), painter.device().height())
+        targetRect = QtCore.QRectF(0, 0, painter.device().width(),
+                                   painter.device().height())
 
         sourceRect = QtCore.QRectF()
         for item in self.scene.allChildStems():
@@ -1982,7 +2014,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Add a small marking so doesn't get clipped
         margin = 10
-        sourceRect = QtCore.QRectF(sourceRect.x()-margin, sourceRect.y()-margin, sourceRect.width()+2*margin,sourceRect.height()+2*margin)
+        sourceRect = QtCore.QRectF(sourceRect.x()-margin,
+                                   sourceRect.y()-margin,
+                                   sourceRect.width()+2*margin,
+                                   sourceRect.height()+2*margin)
         # this is how scene.render() works out the scaling ratio for KeepAspectRatio
         xratio = targetRect.width() / sourceRect.width()
         yratio = targetRect.height() / sourceRect.height()
@@ -1997,16 +2032,15 @@ class MainWindow(QtWidgets.QMainWindow):
         painter.translate(dx, dy)
 
         # top and left justified:
-        #painter.translate(0, 0)
+        # painter.translate(0, 0)
 
         # top and centred:
-        #painter.translate(dx, 0)
+        # painter.translate(dx, 0)
 
         self.scene.render(painter, targetRect, sourceRect)
 
         painter.end()
         self.scene.setBackgroundBrush(scenebrush)
-
 
     def printViews(self, printer):
 
@@ -2023,14 +2057,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
 
         # targetRect = QtCore.QRectF(0, 0, painter.device().width(), painter.device().height())
-        targetRect = QtCore.QRectF(0, 0, painter.device().width(), painter.device().height())
+        targetRect = QtCore.QRectF(0, 0, painter.device().width(),
+                                   painter.device().height())
 
         # keep a record of the visible stems, will hide stems not in view to save space.
         visibleStems = []
         for stem in self.scene.allChildStems():
             if stem.isVisible():
                 visibleStems.append(stem)
-
 
         W = painter.device().width()
         H = painter.device().height()
@@ -2047,8 +2081,7 @@ class MainWindow(QtWidgets.QMainWindow):
             rect.setBottom(int(rect.bottom()-dh/2))
 
             self.highResRender(painter, viewitem, rect, targetRect, visibleStems)
-            #self.lowResRender(painter, rect, targetRect)
-
+            # self.lowResRender(painter, rect, targetRect)
 
             # TODO hide any view rects
 
@@ -2081,7 +2114,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # The following prints at full resolution (vector graphics?)
         # Printout can get to ~100Mb though
         #
-        self.view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+        self.view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |
+                                 QtGui.QPainter.RenderHint.TextAntialiasing |
+                                 QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         self.view.render(painter, targetRect, rect)
 
         # show items previously visible (or collidingItems won't register them for next view)
@@ -2096,14 +2131,17 @@ class MainWindow(QtWidgets.QMainWindow):
         #
         # Create a intermediate image to control the resolution
         #
-        image = QtGui.QImage(W*factor, H*factor, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
+        image = QtGui.QImage(W*factor, H*factor,
+                             QtGui.QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(QtCore.Qt.GlobalColor.transparent)
         painteri = QtGui.QPainter(image)
-        self.view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+        self.view.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |
+                                 QtGui.QPainter.RenderHint.TextAntialiasing |
+                                 QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         self.view.render(painteri, QtCore.QRectF(image.rect()), rect)
         painteri.end()
 
-        painter.drawImage(targetRect,image,QtCore.QRectF(0, 0, W*factor,H*factor))
+        painter.drawImage(targetRect, image, QtCore.QRectF(0, 0, W*factor, H*factor))
 
     def printIt(self, views=False):
 
@@ -2143,13 +2181,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if views:
             # Used for print preview:
-            #dialog.paintRequested.connect(self.printViews)
+            # dialog.paintRequested.connect(self.printViews)
 
             if dialog.exec():
                 self.printViews(self.printer)
         else:
             # Used for print preview:
-            #dialog.paintRequested.connect(self.printMap)
+            # dialog.paintRequested.connect(self.printMap)
 
             if dialog.exec():
                 self.printMap(self.printer)
@@ -2174,11 +2212,12 @@ class MainWindow(QtWidgets.QMainWindow):
     def sceneDialogScaleBy(self):
         selected = self.scene.selectedItems()
 
-        if len(selected)==0:
-            QtWidgets.QMessageBox.information(None,"Warning", "No stems selected.")
+        if len(selected) == 0:
+            QtWidgets.QMessageBox.information(None, "Warning", "No stems selected.")
             return
 
-        scale, ok = QtWidgets.QInputDialog.getDouble(None, "Scale selected", "Scale by:",
+        scale, ok = QtWidgets.QInputDialog.getDouble(None, "Scale selected",
+                                                     "Scale by:",
                     value=1.0, min=0.01, max=10, decimals=2)
 
         if ok:
@@ -2187,7 +2226,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def sceneSelectedScaleBy(self, scale):
         batch = graphydb.generateUUID()
         for item in self.scene.selectedItems():
-            item.node['scale']=item.node.get('scale',1.0)*scale
+            item.node['scale'] = item.node.get('scale', 1.0)*scale
             item.node.save(batch=batch, setchange=True)
             item.renew(reload=False, children=False, recurse=False, position=False)
 
@@ -2199,19 +2238,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def sceneDialogSetScale(self):
         selected = self.scene.selectedItems()
-        if len(selected)==0:
+        if len(selected) == 0:
             return
 
         # is there a common scale in selected items?
-        scales = [float(stem.node.get('scale', 1.0)) for stem in selected ]
+        scales = [float(stem.node.get('scale', 1.0)) for stem in selected]
 
-        if min(scales)==max(scales):
+        if min(scales) == max(scales):
             initialscale = scales[0]
         else:
             initialscale = 1.0
 
-        if len(selected)==0:
-            QtWidgets.QMessageBox.information(None,"Warning", "No stems selected.")
+        if len(selected) == 0:
+            QtWidgets.QMessageBox.information(None, "Warning", "No stems selected.")
             return
 
         scale, ok = QtWidgets.QInputDialog.getDouble(None, "Set scale", "Set scale to:",
@@ -2244,10 +2283,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def sceneDialogOpacity(self):
         selected = self.scene.selectedItems()
-        if len(selected)==0:
+        if len(selected) == 0:
             return
 
-        opacity, ok = QtWidgets.QInputDialog.getDouble(None, "Set opacity", "Set opacity:",
+        opacity, ok = QtWidgets.QInputDialog.getDouble(None, "Set opacity",
+                                                       "Set opacity:",
                     value=1.0, min=0.01, max=1, decimals=2)
 
         if ok:
@@ -2260,10 +2300,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 item.node.save(batch=batch, setchange=True)
                 item.renew(reload=False, children=False, position=False)
 
-
     def sceneToggleIconify(self):
         selected = self.scene.selectedItems()
-        if len(selected)==0:
+        if len(selected) == 0:
             return
 
         batch = graphydb.generateUUID()
@@ -2286,11 +2325,11 @@ class MainWindow(QtWidgets.QMainWindow):
         Toggle selection of all non root stems
         '''
         selected = [stem.isSelected() for stem in self.scene.allChildStems(includeroot=False)]
-        if len(selected)==0:
+        if len(selected) == 0:
             return
 
         # Are they all selected?
-        allselected = reduce(lambda x,y: x and y, selected)
+        allselected = reduce(lambda x, y: x and y, selected)
 
         for stem in self.scene.allChildStems(includeroot=False):
             stem.setSelected(not allselected)
@@ -2298,7 +2337,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def sceneSelectChildren(self):
         selected = self.scene.selectedItems()
         for selectedstem in selected:
-            toselect=selectedstem.allChildStems()
+            toselect = selectedstem.allChildStems()
             for stem in toselect:
                 stem.setSelected(True)
 
@@ -2319,7 +2358,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def strippedName(self, fullFileName):
         return QtCore.QFileInfo(fullFileName).fileName()
 
-
     def linkClicked(self, url):
         logging.debug('link clicked: %s', url)
 
@@ -2334,16 +2372,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 mappath = os.path.dirname(str(self.scene.graph.path))
                 if mappath == '':
                     mappath = os.path.dirname(urlbits.path)
-                path = os.path.join(mappath,urlbits.path)
+                path = os.path.join(mappath, urlbits.path)
             else:
                 path = urlbits.path
 
             if not os.path.exists(path):
-                self.showMessage("file does not exist: %s"%str(path))
+                self.showMessage("file does not exist: %s" % str(path))
                 return
 
             # handle nexus files ourselves
-            if len(path)>3 and path[-4:]=='.nex':
+            if len(path) > 3 and path[-4:] == '.nex':
                 app = QtWidgets.QApplication.instance()
                 existing = app.raiseOrOpen(path)
 
@@ -2353,16 +2391,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
             else:
                 # let the OS handle opening the file
-                QtGui.QDesktopServices.openUrl(QtCore.QUrl(urllib.parse.urljoin('file:',path)))
+                QtGui.QDesktopServices.openUrl(QtCore.QUrl(urllib.parse.urljoin('file:', path)))
 
         else:
             # pass URL to OS to open ..
-            self.showMessage("Opening %s"%str(url))
+            self.showMessage("Opening %s" % str(url))
             QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
 
-
     def jumpToView(self,  viewitem):
-
         if viewitem is None:
             return
 
@@ -2397,15 +2433,15 @@ class MainWindow(QtWidgets.QMainWindow):
         w1 = width1
 
         # we are moving along a 2D line from 0 to u1
-        u1 = sqrt( (c1.x()-c0.x())**2 + (c1.y()-c0.y())**2 )
+        u1 = sqrt((c1.x()-c0.x())**2 + (c1.y()-c0.y())**2)
 
         # unit vector in direction of motion
         uvector = (c1-c0)/u1
 
         # s is the distance (?) along the path [0 -> S]
         try:
-            b0 = (w1**2 - w0**2 + rho**4 * u1**2 )/(2*w0*u1*rho**2 )
-            b1 = (w1**2 - w0**2 - rho**4 * u1**2 )/(2*w1*u1*rho**2 )
+            b0 = (w1**2 - w0**2 + rho**4 * u1**2)/(2*w0*u1*rho**2)
+            b1 = (w1**2 - w0**2 - rho**4 * u1**2)/(2*w1*u1*rho**2)
         except ZeroDivisionError:
             b0 = b1 = 0
         r0 = log(-b0+sqrt(b0**2+1))
@@ -2419,11 +2455,11 @@ class MainWindow(QtWidgets.QMainWindow):
         dt = 33
 
         totalsteps = int(round(tottime/dt))
-        logging.debug("Transition: tot time: %f,  steps:%d",tottime, totalsteps)
+        logging.debug("Transition: tot time: %f,  steps:%d", tottime, totalsteps)
 
         if totalsteps > 0:
             angle1 = rot1-rot0
-            if angle1>=0:
+            if angle1 >= 0:
                 angle2 = -(2*pi-angle1)
             else:
                 angle2 = (2*pi+angle1)
@@ -2431,32 +2467,33 @@ class MainWindow(QtWidgets.QMainWindow):
                 angle = angle1
             else:
                 angle = angle2
-            drot=angle/float(totalsteps)
+            drot = angle/float(totalsteps)
         else:
             drot = 0
 
         # Do all the calculations initially and cache the results
         self.viewsteps = []
-        for ii in range(1,totalsteps):
+        for ii in range(1, totalsteps):
             s = ii/float(totalsteps)*S
             us = w0*cosh(r0)*tanh(rho*s+r0)/rho**2 - w0*sinh(r0)/rho**2
             ws = w0*cosh(r0)/cosh(rho*s+r0)
-            theta =  ii*drot+rot0
-            dw = QtCore.QPointF(cos(theta)/2.0,-sin(theta)/2.0)*ws
+            theta = ii*drot+rot0
+            dw = QtCore.QPointF(cos(theta)/2.0, -sin(theta)/2.0)*ws
 
             tmpcentre = c0+uvector*us
             tmplp = tmpcentre-dw
             tmprp = tmpcentre+dw
 
-            self.viewsteps.append({'left':(tmplp.x(),tmplp.y()), 'right':(tmprp.x(),tmprp.y())})
+            self.viewsteps.append({'left': (tmplp.x(), tmplp.y()),
+                                   'right': (tmprp.x(), tmprp.y())})
 
-        self.viewsteps.append({'left':(lp1.x(),lp1.y()), 'right':(rp1.x(),rp1.y())})
+        self.viewsteps.append({'left': (lp1.x(), lp1.y()),
+                               'right': (rp1.x(), rp1.y())})
         self.viewcurrentstep = 0
 
         self.viewtimer = QtCore.QTimer()
         self.viewtimer.timeout.connect(self.timedView)
         self.viewtimer.start(dt)
-
 
         self.views.viewsListView.clearSelection()
         # TODO fix selection
@@ -2470,7 +2507,6 @@ class MainWindow(QtWidgets.QMainWindow):
             sides = self.viewsteps[self.viewcurrentstep]
             self.view.setViewSides(sides)
             self.viewcurrentstep += 1
-
 
     def setMode(self):
 
@@ -2499,10 +2535,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # TODO Need to store geometry of window on first use
         # show Normal seems too abrupt after full screen
         # Seems to not store maximised state on a mac?
-        
+
         self.setWindowFlags(self._windowflags)
         self.showNormal()
-        #self.showMaximized()
+        # self.showMaximized()
 
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
@@ -2523,8 +2559,8 @@ class MainWindow(QtWidgets.QMainWindow):
             child.show()
         self.presentationhiddenstems = []
 
-        #self.view.centerOn(center)
-        self.hidePointerAct.setChecked(True) # force toggle off
+        # self.view.centerOn(center)
+        self.hidePointerAct.setChecked(True)  # force toggle off
         self.hidePointerAct.trigger()
         self.hidePointerAct.setEnabled(False)
         QtWidgets.QApplication.instance().restoreOverrideCursor()
@@ -2582,15 +2618,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
         self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
 
-        self.editModeAct.setShortcuts(["Ctrl+E","Esc"])
+        self.editModeAct.setShortcuts(["Ctrl+E", "Esc"])
 
     def keyPressEvent(self, event):
         super().keyPressEvent(event)
-        if self.scene.mode=="presentation" and event.text().lower() in ["q"]:
+        if self.scene.mode == "presentation" and event.text().lower() in ["q"]:
             print("Q key press")
             self.editModeAct.trigger()
-            #self.showNormal()
-        
+            # self.showNormal()
+
     def setRecordingMode(self):
 
         self.scene.mode = "record"
@@ -2619,7 +2655,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.showMaximized()
 
         self.hidePointerAct.setEnabled(True)
-        self.hidePointerAct.setChecked(True) # force toggle on
+        self.hidePointerAct.setChecked(True)  # force toggle on
         self.hidePointerAct.trigger()
 
         # (Use shift to actually move canvas)
@@ -2629,14 +2665,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
         self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
 
-
         #
         # Recording setup
         #
-
         devices = QMediaDevices()
         inputs = devices.audioInputs()
-        self.audio_inputs = { a.description():a for a in inputs}
+        self.audio_inputs = {a.description(): a for a in inputs}
         default_input = devices.defaultAudioInput()
         # Put the default input at position 0
         inputs.remove(default_input)
@@ -2644,7 +2678,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.recSourceCombo.clear()
         self.recSourceCombo.addItems([i.description() for i in inputs])
-        #self.recSourceCombo.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
+        # self.recSourceCombo.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToMinimumContentsLength)
 
         self.recorder = QMediaRecorder(self)
         self.recorder.setQuality(QMediaRecorder.Quality.HighQuality)
@@ -2661,16 +2695,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recPauseAct.setEnabled(False)
         self.recEndAct.setEnabled(False)
 
-
-
     def storeRecordingEvent(self, event):
         self.event_stream.append(event)
 
     def audioRecorderStateChange(self):
 
-        if self.recorder.recorderState()==QMediaRecorder.RecorderState.RecordingState:
+        if self.recorder.recorderState() == QMediaRecorder.RecorderState.RecordingState:
             logging.debug("Recording")
-        elif self.recorder.recorderState()==QMediaRecorder.RecorderState.PausedState:
+        elif self.recorder.recorderState() == QMediaRecorder.RecorderState.PausedState:
             logging.debug("Paused")
         else:
             logging.debug("Stopped")
@@ -2685,7 +2717,8 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.updateRecordTimerCount()
             size = self.size()
-            self.timerLabel.move(int(size.width()/2), int(size.height()/2-self.timerLabel.size().height()/2))
+            self.timerLabel.move(int(size.width()/2),
+                                 int(size.height()/2-self.timerLabel.size().height()/2))
             self.timerLabel.show()
 
             self.preRecordTimer = QtCore.QTimer(self)
@@ -2719,7 +2752,7 @@ class MainWindow(QtWidgets.QMainWindow):
         '''
 
         print(f'STATE {self.recorder.recorderState()}')
-        if self.recorder.recorderState()==QMediaRecorder.RecorderState.StoppedState:
+        if self.recorder.recorderState() == QMediaRecorder.RecorderState.StoppedState:
             # This is the initial state of the recorder
 
             self.audiosession = QMediaCaptureSession(self)
@@ -2731,7 +2764,8 @@ class MainWindow(QtWidgets.QMainWindow):
             audio_input.setDevice(audio_device)
             audio_input.setVolume(1.0)
             self.audiosession.setAudioInput(audio_input)
-            logging.info("Recording audio from '%s'", str(self.audiosession.audioInput().device().description()))
+            logging.info("Recording audio from '%s'",
+                         str(self.audiosession.audioInput().device().description()))
 
             # create a temporary directory to store files for movie
             # TODO fix: having Path.cwd() leads to a segfault when app is constructed with pyinstaller
@@ -2746,7 +2780,6 @@ class MainWindow(QtWidgets.QMainWindow):
             # initialise stream
             self.event_stream = []
 
-
         self.startRecordTimer()
 
     def recordRealStart(self):
@@ -2760,8 +2793,9 @@ class MainWindow(QtWidgets.QMainWindow):
         t = time.time()
         sides = self.view.getViewSides()
 
-        self.event_stream.append({'t':t,'cmd':'start'})
-        self.event_stream.append({'t':t,'cmd':'view', 'left':sides['left'], 'right':sides['right']})
+        self.event_stream.append({'t': t, 'cmd': 'start'})
+        self.event_stream.append({'t': t, 'cmd': 'view',
+                                  'left': sides['left'], 'right': sides['right']})
 
         self.recStartAct.setChecked(True)
         self.recPauseAct.setChecked(False)
@@ -2770,12 +2804,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recPauseAct.setEnabled(True)
         self.recEndAct.setEnabled(True)
 
-
     def recordPause(self):
         self.recorder.pause()
-        self.event_stream.append({'t':time.time(),'cmd':'pause'})
+        self.event_stream.append({'t': time.time(), 'cmd': 'pause'})
         self.view.recordStateEvent.disconnect(self.storeRecordingEvent)
-
 
         self.recStartAct.setChecked(False)
         self.recPauseAct.setChecked(True)
@@ -2786,7 +2818,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def recordEnd(self):
         self.recorder.stop()
-        self.event_stream.append({'t':time.time(),'cmd':'end'})
+        self.event_stream.append({'t': time.time(), 'cmd': 'end'})
         try:
             self.view.recordStateEvent.disconnect(self.storeRecordingEvent)
         except TypeError:
@@ -2801,9 +2833,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recPauseAct.setEnabled(False)
         self.recEndAct.setEnabled(False)
 
-
         # Sort event_stream just to be safe
-        self.event_stream.sort(key = lambda x:x['t'])
+        self.event_stream.sort(key=lambda x: x['t'])
 
         # Generate frames
         fp = (self.tmprecdir/"timing.txt").open("w")
@@ -2814,44 +2845,46 @@ class MainWindow(QtWidgets.QMainWindow):
         # Extra time accumulated on skipping frames:
         skipped = 0
 
-        progress = QtWidgets.QProgressDialog("Making frames","Cancel",0,120, self)
+        progress = QtWidgets.QProgressDialog("Making frames", "Cancel", 0, 120, self)
         progress.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
 
         for i in range(N):
-            if i%1==0:
+            if i % 1 == 0:
                 logging.debug('Writing frames: {:.0f}%'.format(i/N*100))
                 progress.setValue(int(i/N*100))
             e = self.event_stream[i]
             cmd = e['cmd']
-            if cmd in ['start','end']:
+            if cmd in ['start', 'end']:
                 continue
             # The following will throw exeption if end frame so skip those above
             dt = self.event_stream[i+1]['t']-e['t']
 
             if cmd == 'view':
-                currentview = {'left':e['left'], 'right':e['right']}
-            elif cmd=='pen-clear':
+                currentview = {'left': e['left'], 'right': e['right']}
+            elif cmd == 'pen-clear':
                 currentpen = [[]]
-            elif cmd=='pen-up':
+            elif cmd == 'pen-up':
                 currentpen.append([])
-            elif cmd=='pen-point':
-                currentpen[-1].append(QtCore.QPointF(e['x'],e['y']))
-                if dt+skipped < 0.0167 and self.event_stream[i+1]['cmd']!='pen-up':
+            elif cmd == 'pen-point':
+                currentpen[-1].append(QtCore.QPointF(e['x'], e['y']))
+                if dt+skipped < 0.0167 and self.event_stream[i+1]['cmd'] != 'pen-up':
                     # Frame faster than 1/60 fps so skip making this one
-                    skipped+=dt
+                    skipped += dt
                     continue
-            elif cmd=='pause':
+            elif cmd == 'pause':
                 currentpen = [[]]
 
             # Draw frame
-            if cmd in ['view','pen-clear', 'pen-up', 'pen-point']:
+            if cmd in ['view', 'pen-clear', 'pen-up', 'pen-point']:
                 framename = 'frame_{:04d}.png'.format(F)
-                fp.write('file {}\nduration {}\n'.format(framename,dt+skipped))
+                fp.write('file {}\nduration {}\n'.format(framename, dt+skipped))
 
-                image = self.generateFrame(left=currentview['left'], right=currentview['right'], penpoints=currentpen)
+                image = self.generateFrame(left=currentview['left'],
+                                           right=currentview['right'],
+                                           penpoints=currentpen)
                 image.save((self.tmprecdir/framename).as_posix())
 
-                F+=1
+                F += 1
                 skipped = 0
 
         # Last frame must be written again or ffmped ignores the duration
@@ -2865,9 +2898,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.showMessage("Generating video from frames")
         subprocess.run(['ffmpeg', '-f', 'concat',
                         '-i', 'timing.txt',
-                        '-vf', 'fps=60', # 60fps
-                        '-pix_fmt', 'yuv420p', # so quicktime can play it
-                        'video.mp4' ], cwd=self.tmprecdir)
+                        '-vf', 'fps=60',  # 60fps
+                        '-pix_fmt', 'yuv420p',  # so quicktime can play it
+                        'video.mp4'], cwd=self.tmprecdir)
 
         progress.setLabelText("Combining with audio")
         progress.setValue(110)
@@ -2875,16 +2908,17 @@ class MainWindow(QtWidgets.QMainWindow):
         # Combine audio and video
         self.showMessage("Combining video and audio")
         subprocess.run(['ffmpeg', '-i', 'video.mp4',
-                        #'-itsoffset', '0.5', # delay the audio slightly
+                        # '-itsoffset', '0.5', # delay the audio slightly
                         '-i', 'audio.m4a',
                         '-c:v', 'copy',
                         '-c:a', 'aac',
-                        'complete.mp4' ], cwd=self.tmprecdir)
+                        'complete.mp4'], cwd=self.tmprecdir)
 
         progress.setValue(120)
 
-        filename = QtWidgets.QFileDialog.getSaveFileName(self, "Save Movie File", "output.mp4", "*.mp4")
-        if len(filename[0])>0:
+        filename = QtWidgets.QFileDialog.getSaveFileName(self, "Save Movie File",
+                                                         "output.mp4", "*.mp4")
+        if len(filename[0]) > 0:
             videopath = filename[0]
             vid = self.tmprecdir/"complete.mp4"
             vid.rename(videopath)
@@ -2893,7 +2927,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Remove all the temporary files
         shutil.rmtree(self.tmprecdir)
-        
+
         # TODO cleanup temporary directory unless user indicates not to
         # TODO needs better feedback
         # TODO probably should be moved to separate thread (except need to generate views)
@@ -2904,21 +2938,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def generateFrame(self, left, right, penpoints):
 
-        self.view.setViewSides({'left':left, 'right':right})
+        self.view.setViewSides({'left': left, 'right': right})
 
         s = self.view.transform().m11()
 
         # Remove pointer trail if present (e.g. stop button pressed quickly)
         if self.view.pointertrailitem is not None:
-            self.scene.removeItem(self.view.pointertrailitem )
+            self.scene.removeItem(self.view.pointertrailitem)
             self.view.pointertrailitem = None
         if self.view.pointertrailitem2 is not None:
-            self.scene.removeItem(self.view.pointertrailitem2 )
+            self.scene.removeItem(self.view.pointertrailitem2)
             self.view.pointertrailitem2 = None
 
         # This is a mirror of code in graphics but with different scaling
         # I know, I know, don't duplicate, abstract
-        
+
         # Outer color
         pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
         pen.setWidthF(CONFIG['trail_outer_width']/s)
@@ -2942,7 +2976,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         path = QtGui.QPainterPath()
         for stroke in penpoints:
-            if len(stroke)==0:
+            if len(stroke) == 0:
                 continue
             path.addPolygon(QtGui.QPolygonF(stroke))
 
@@ -2957,9 +2991,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         image = createViewImage(self.view, W, H)
 
-        self.scene.removeItem(pointertrailitem )
+        self.scene.removeItem(pointertrailitem)
         pointertrailitem = None
-        self.scene.removeItem(pointertrailitem2 )
+        self.scene.removeItem(pointertrailitem2)
         pointertrailitem2 = None
 
         return image
@@ -2973,12 +3007,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.hidePointerAct.isChecked():
             QtWidgets.QApplication.instance().restoreOverrideCursor()
             QtWidgets.QApplication.instance().setOverrideCursor(QtCore.Qt.CursorShape.BlankCursor)
-            #self.view.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter)
+            # self.view.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter)
         else:
-            QtWidgets.QApplication.instance().restoreOverrideCursor() # restore first so default in in the stack
-            s=int(CONFIG['trail_outer_width']*CONFIG['trail_pointer_factor'])
+            QtWidgets.QApplication.instance().restoreOverrideCursor()  # restore first so default in in the stack
+            s = int(CONFIG['trail_outer_width']*CONFIG['trail_pointer_factor'])
             pix = QtGui.QPixmap(s, s)
-            rg = QtGui.QRadialGradient(s/2,s/2,s/2, s/2, s/2, CONFIG['trail_inner_width']/2)
+            rg = QtGui.QRadialGradient(s/2, s/2, s/2, s/2, s/2, CONFIG['trail_inner_width']/2)
             rg.setColorAt(0, QtGui.QColor(CONFIG['trail_inner_color']))
             rg.setColorAt(1, QtGui.QColor(CONFIG['trail_outer_color']))
             pix.fill(QtCore.Qt.GlobalColor.transparent)
@@ -2988,8 +3022,7 @@ class MainWindow(QtWidgets.QMainWindow):
             painter.drawEllipse(0,0,s,s)
             painter.end()
             QtWidgets.QApplication.instance().setOverrideCursor(QtGui.QCursor(pix, -int(s/2),-int(s/2)))
-            #self.view.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-
+            # self.view.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
     def viewsNext(self):
         """
@@ -3057,7 +3090,6 @@ class FilterEdit(QtWidgets.QLineEdit):
         self.editingFinished.connect(self.editingFinished2)
         self.setToolTip("all() / find(title=re,tag=re) / selected() / tagged(re)")
 
-
     def editingFinished2(self):
         '''
         This is a second pathway to the function so we can pass the text
@@ -3075,9 +3107,10 @@ class PreferencesDialog(QtWidgets.QDialog):
     # TODO default branch parameters
     pass
 
+
 class ViewsModel(QtCore.QAbstractListModel):
     current = 0
-    home = 0 # home is the first view by default
+    home = 0  # home is the first view by default
     athome = None  # the location of the previous view will be stored here on switch
 
     def __init__(self):
@@ -3095,11 +3128,12 @@ class ViewsModel(QtCore.QAbstractListModel):
         return len(self.views)
 
     def addRow(self, item, after=-1):
-        if after==-1:
+        if after == -1:
             self.views.append(item)
         else:
             self.views.insert(after+1, item)
         self.layoutChanged.emit()
+
     def removeItem(self, node):
         self.views.remove(node)
         self.layoutChanged.emit()
@@ -3182,7 +3216,7 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
     '''
 
     # fired off when view rect is changed
-    viewRectangleChanged = QtCore.pyqtSignal(str,int,int,int,int)
+    viewRectangleChanged = QtCore.pyqtSignal(str, int, int, int, int)
 
     # Nominal Full HD width
     WIDTH = 1920
@@ -3198,16 +3232,16 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
 
         path = QtGui.QPainterPath()
         path.setFillRule(QtCore.Qt.FillRule.WindingFill)
-        #rect = QtCore.QRectF(-self.VIEWW/2.0,-self.VIEWH/2.0,self.VIEWW,self.VIEWH)
-        #rect = QtCore.QRectF(-self.WIDTH/2.0,-self.HEIGHT/2.0,self.WIDTH,self.HEIGHT)
-        rect = QtCore.QRectF(-self.WIDTH/2.0,-self.HEIGHT/2.0,self.WIDTH,self.HEIGHT)
+        # rect = QtCore.QRectF(-self.VIEWW/2.0,-self.VIEWH/2.0,self.VIEWW,self.VIEWH)
+        # rect = QtCore.QRectF(-self.WIDTH/2.0,-self.HEIGHT/2.0,self.WIDTH,self.HEIGHT)
+        rect = QtCore.QRectF(-self.WIDTH/2.0, -self.HEIGHT/2.0, self.WIDTH, self.HEIGHT)
 
-        #path.addRect(rect2)
+        # path.addRect(rect2)
         path.addRect(rect)
-        path.moveTo(-self.WIDTH/2.0,-self.HEIGHT2/2.0)
-        path.lineTo(self.WIDTH/2.0,-self.HEIGHT2/2.0)
-        path.moveTo(-self.WIDTH/2.0,self.HEIGHT2/2.0)
-        path.lineTo(self.WIDTH/2.0,self.HEIGHT2/2.0)
+        path.moveTo(-self.WIDTH/2.0, -self.HEIGHT2/2.0)
+        path.lineTo(self.WIDTH/2.0, -self.HEIGHT2/2.0)
+        path.moveTo(-self.WIDTH/2.0, self.HEIGHT2/2.0)
+        path.lineTo(self.WIDTH/2.0, self.HEIGHT2/2.0)
 
         s = 5
         path.moveTo(0, -40*s)
@@ -3219,15 +3253,14 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
         path.lineTo(-40*s, 0)
         path.lineTo(0, -40*s)
 
-
         super().__init__(path)
 
-        #self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.darkRed, 5))
-        #self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.darkRed, 5))
-        self.setBrush(QtGui.QBrush(QtGui.QColor(100,100,100,60)))
+        # self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.darkRed, 5))
+        # self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.darkRed, 5))
+        self.setBrush(QtGui.QBrush(QtGui.QColor(100, 100, 100, 60)))
         self.setFlag(self.GraphicsItemFlag.ItemIsMovable, True)
         self.setCursor(QtCore.Qt.CursorShape.SizeAllCursor)
-        #self.setFlag(self.ItemIsSelectable, True)
+        # self.setFlag(self.ItemIsSelectable, True)
 
         ViewRectangleHandle("tNE", self)
         ViewRectangleHandle("tSE", self)
@@ -3239,9 +3272,8 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
     def mousePressEvent(self, event):
 
         QtWidgets.QGraphicsItem.mousePressEvent(self, event)
-        if not hasattr(event,"source"):
+        if not hasattr(event, "source"):
             return
-
 
         for item in self.scene().selectedItems():
             item.setSelected(False)
@@ -3251,29 +3283,28 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
 
         rect = self.boundingRect()
         if event.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier:
-            self.pivot = QtCore.QPointF(0,0)
+            self.pivot = QtCore.QPointF(0, 0)
 
         elif event.source == "tNE":
-            self.pivot = QtCore.QPointF(-self.WIDTH/2.0,self.HEIGHT/2.0)
+            self.pivot = QtCore.QPointF(-self.WIDTH/2.0, self.HEIGHT/2.0)
 
         elif event.source == "tNW":
-            self.pivot = QtCore.QPointF(self.WIDTH/2.0,self.HEIGHT/2.0)
+            self.pivot = QtCore.QPointF(self.WIDTH/2.0, self.HEIGHT/2.0)
 
         elif event.source == "tSW":
-            self.pivot = QtCore.QPointF(self.WIDTH/2.0,-self.HEIGHT/2.0)
+            self.pivot = QtCore.QPointF(self.WIDTH/2.0, -self.HEIGHT/2.0)
 
         elif event.source == "tSE":
-            self.pivot = QtCore.QPointF(-self.WIDTH/2.0,-self.HEIGHT/2.0)
+            self.pivot = QtCore.QPointF(-self.WIDTH/2.0, -self.HEIGHT/2.0)
 
         else:
-            self.pivot = QtCore.QPointF(0,0)
-
+            self.pivot = QtCore.QPointF(0, 0)
 
         QtWidgets.QGraphicsItem.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):
 
-        if not hasattr(event,"sourceId"):
+        if not hasattr(event, "sourceId"):
             # this is for plain moves
             super().mouseMoveEvent(event)
             return
@@ -3294,11 +3325,11 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
         else:
             ky = (p1.y()-pv.y())/(p0.y()-pv.y())
 
-        k = min(kx,ky)
+        k = min(kx, ky)
 
-        transform.translate(pv.x(),pv.y())
-        transform.scale(k,k)
-        transform.translate(-pv.x(),-pv.y())
+        transform.translate(pv.x(), pv.y())
+        transform.scale(k, k)
+        transform.translate(-pv.x(), -pv.y())
         self.setTransform(transform)
 
         event.accept()
@@ -3306,10 +3337,11 @@ class ViewRectangle(QtWidgets.QGraphicsPathItem ):
     def mouseReleaseEvent(self, event):
 
         QtWidgets.QGraphicsItem.mouseReleaseEvent(self, event)
-        left = self.mapToScene(QtCore.QPointF(-self.WIDTH/2,0))
-        right = self.mapToScene(QtCore.QPointF(self.WIDTH/2,0))
+        left = self.mapToScene(QtCore.QPointF(-self.WIDTH/2, 0))
+        right = self.mapToScene(QtCore.QPointF(self.WIDTH/2, 0))
 
-        d = {'uid':self.nodeuid, 'left':(left.x(),left.y()), 'right':(right.x(),right.y())}
+        d = {'uid': self.nodeuid, 'left': (left.x(), left.y()),
+             'right': (right.x(), right.y())}
         self.rectangleChanged.emit(d)
 
 
@@ -3326,14 +3358,14 @@ class ViewRectangleHandle(QtWidgets.QGraphicsRectItem):
         self.id = id
         W = (parent.HEIGHT-parent.HEIGHT2)/2
 
-        if id=='tNE':
-            X,Y = parent.WIDTH/2.0-W, -parent.HEIGHT/2.0
-        elif id=='tSE':
-            X,Y = parent.WIDTH/2.0-W, parent.HEIGHT/2.0-W
-        elif id=='tSW':
-            X,Y = -parent.WIDTH/2.0, parent.HEIGHT/2.0-W
+        if id == 'tNE':
+            X, Y = parent.WIDTH/2.0-W, -parent.HEIGHT/2.0
+        elif id == 'tSE':
+            X, Y = parent.WIDTH/2.0-W, parent.HEIGHT/2.0-W
+        elif id == 'tSW':
+            X, Y = -parent.WIDTH/2.0, parent.HEIGHT/2.0-W
         else:
-            X,Y = -parent.WIDTH/2.0, -parent.HEIGHT/2.0
+            X, Y = -parent.WIDTH/2.0, -parent.HEIGHT/2.0
 
         super().__init__(X, Y, W, W, parent)
 
@@ -3368,9 +3400,9 @@ class ViewsListView(QtWidgets.QListView):
         self.setWrapping(False)
         self.setFlow(QtWidgets.QListView.Flow.TopToBottom)
         self.setMovement(self.Movement.Snap)
-        self.setResizeMode( self.ResizeMode.Adjust )
-        self.setSelectionRectVisible( True )
-        self.setSelectionMode( self.SelectionMode.ExtendedSelection )
+        self.setResizeMode(self.ResizeMode.Adjust)
+        self.setSelectionRectVisible(True)
+        self.setSelectionMode(self.SelectionMode.ExtendedSelection)
         self.setSpacing(0)
         self.setVerticalScrollMode(self.ScrollMode.ScrollPerPixel)
         self.setHorizontalScrollMode(self.ScrollMode.ScrollPerPixel)
@@ -3378,14 +3410,12 @@ class ViewsListView(QtWidgets.QListView):
         # NOTE: the dragDropMode must be set AFTER the viewMode!!!
         self.setAcceptDrops(True)
         self.setDragEnabled(True)
-        self.setDragDropMode( self.DragDropMode.InternalMove )
+        self.setDragDropMode(self.DragDropMode.InternalMove)
 
         # TODO implement re-ordering:
         # https://stackoverflow.com/a/66867145
 
-
     def resizeEvent(self, event):
-
         super(ViewsListView, self).resizeEvent(event)
         self.setViewIconSize()
 
@@ -3398,11 +3428,10 @@ class ViewsListView(QtWidgets.QListView):
             # size = self.size().height()
             height = self.size().height()
             width = int(height*380/270)
-        #self.setIconSize(QtCore.QSize(size-12,size-12))
-        self.setIconSize(QtCore.QSize(width-2,height-2))
+        # self.setIconSize(QtCore.QSize(size-12,size-12))
+        self.setIconSize(QtCore.QSize(width-2, height-2))
 
     def resetOrientation(self):
-
         if self.orientation == self.Vertical:
             self.setFlow(self.TopToBottom)
         else:
@@ -3428,7 +3457,6 @@ class ViewsWidget(QtWidgets.QWidget):
         self.scene = parent.scene
         self.viewsModel = ViewsModel()
 
-
         self.toolbar = toolbar
 
         # create main layout
@@ -3440,26 +3468,30 @@ class ViewsWidget(QtWidgets.QWidget):
         self.viewsListView = ViewsListView()
         self.viewsListView.setModel(self.viewsModel)
         self.viewsListView.doubleClicked.connect(self.doubleClicked)
-        #self.viewsModel.reordered.connect(self.relinkViews)
-        #self.views.viewsListView.selectionChange.connect(self.viewsFrames)
+        # self.viewsModel.reordered.connect(self.relinkViews)
+        # self.views.viewsListView.selectionChange.connect(self.viewsFrames)
         # self.viewsListView.selectionChange.connect(self.selectionChanged)
         layout.addWidget(self.viewsListView)
 
         # create actions
-        self.resetViewAct = QtGui.QAction(QtGui.QIcon(":/images/view-reset.svg"), self.tr("&Reset View"), self)
+        self.resetViewAct = QtGui.QAction(QtGui.QIcon(":/images/view-reset.svg"),
+                                          self.tr("&Reset View"), self)
         self.resetViewAct.setStatusTip(self.tr("Reset item to current view"))
         self.resetViewAct.triggered.connect(self.resetView)
 
-        self.addViewAct = QtGui.QAction(QtGui.QIcon(":/images/view-add.svg"), self.tr("&Add View"), self)
+        self.addViewAct = QtGui.QAction(QtGui.QIcon(":/images/view-add.svg"),
+                                        self.tr("&Add View"), self)
         self.addViewAct.setStatusTip(self.tr("Add new View"))
         self.addViewAct.triggered.connect(self.addCurrentView)
 
-        self.deleteViewAct = QtGui.QAction(QtGui.QIcon(":/images/view-remove.svg"), self.tr("&Delete View"), self)
+        self.deleteViewAct = QtGui.QAction(QtGui.QIcon(":/images/view-remove.svg"),
+                                           self.tr("&Delete View"), self)
         self.deleteViewAct.setStatusTip(self.tr("Delete selected View"))
         self.deleteViewAct.triggered.connect(self.deleteView)
 
         # create toolbar
-        self.toolbar.setIconSize(QtCore.QSize(CONFIG['icon_size'],CONFIG['icon_size']))
+        self.toolbar.setIconSize(QtCore.QSize(CONFIG['icon_size'],
+                                              CONFIG['icon_size']))
         self.toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonIconOnly)
 
         self.toolbar.addAction(self.addViewAct)
@@ -3500,7 +3532,6 @@ class ViewsWidget(QtWidgets.QWidget):
                 logging.warn("Found view not in chain, deleting.")
                 viewnode.delete(setchange=False)
 
-
         # DEPRECATED[v0.86]
         for viewnode in viewnodes:
             # no longer use transform but left and right points
@@ -3514,8 +3545,8 @@ class ViewsWidget(QtWidgets.QWidget):
                 HEIGHT = 1440
                 left = T.map(QtCore.QPointF(-WIDTH/2,0))
                 right = T.map(QtCore.QPointF(WIDTH/2,0))
-                viewnode['left'] = (left.x(),left.y())
-                viewnode['right'] = (right.x(),right.y())
+                viewnode['left'] = (left.x(), left.y())
+                viewnode['right'] = (right.x(), right.y())
                 # del viewnode['transform']
                 viewnode.save(setchange=False)
 
@@ -3530,18 +3561,18 @@ class ViewsWidget(QtWidgets.QWidget):
 
         if loc in [QtCore.Qt.DockWidgetArea.NoDockWidgetArea]:
             pass
-        elif loc in [QtCore.Qt.DockWidgetArea.TopDockWidgetArea, QtCore.Qt.DockWidgetArea.BottomDockWidgetArea]:
+        elif loc in [QtCore.Qt.DockWidgetArea.TopDockWidgetArea,
+                     QtCore.Qt.DockWidgetArea.BottomDockWidgetArea]:
             self.viewsListView.orientation = self.viewsListView.Horizontal
         else:
             self.viewsListView.orientation = self.viewsListView.Vertical
 
         self.viewsListView.resetOrientation()
 
-
-    def doubleClicked(self,  itemindex):
+    def doubleClicked(self, itemindex):
         node = self.viewsModel.itemFromIndex(itemindex)
 
-        self.view.setViewSides({k: node[k] for k in ('left','right')})
+        self.view.setViewSides({k: node[k] for k in ('left', 'right')})
 
         self.viewsModel.athome = False
         self.viewsModel.current = itemindex.row()
@@ -3574,7 +3605,7 @@ class ViewsWidget(QtWidgets.QWidget):
 
                 icon = self.createPreview(d)
                 node['_icon'] = icon
-                index = self.viewsModel.createIndex(0,0)
+                index = self.viewsModel.createIndex(0, 0)
                 self.viewsModel.dataChanged.emit(index, index)
 
     def addView(self, node):
@@ -3588,7 +3619,7 @@ class ViewsWidget(QtWidgets.QWidget):
 
         L = node['left']
         R = node['right']
-        matrix = self._getRectTransform(L,R)
+        matrix = self._getRectTransform(L, R)
         rectitem.setTransform(matrix)
         rectitem.setVisible(False)
 
@@ -3598,7 +3629,7 @@ class ViewsWidget(QtWidgets.QWidget):
         #
         # Add an icon for the view
         #
-        icon = self.createPreview({k: node[k] for k in ('left','right')})
+        icon = self.createPreview({k: node[k] for k in ('left', 'right')})
         node['_icon'] = icon
 
         #
@@ -3608,7 +3639,7 @@ class ViewsWidget(QtWidgets.QWidget):
         if len(selected) == 0:
             self.viewsModel.addRow(node)
         else:
-            row=0
+            row = 0
             for itemindex in selected:
                 row = max(row, itemindex.row())
 
@@ -3617,14 +3648,14 @@ class ViewsWidget(QtWidgets.QWidget):
         # TODO update selection in nicer way
         self.viewsListView.clearSelection()
 
-    def _getRectTransform(self,L,R):
+    def _getRectTransform(self, L, R):
 
         cx = (L[0]+R[0])/2
         cy = (L[1]+R[1])/2
         s = ViewRectangle.WIDTH/sqrt((R[0]-L[0])**2+(R[1]-L[1])**2)
         r = atan2(-(R[1]-L[1]), R[0]-L[0])
 
-        matrix = graphics.Transform().setTRS(cx,cy,r,1/s)
+        matrix = graphics.Transform().setTRS(cx, cy, r, 1/s)
         return matrix
 
     def createPreview(self, node):
@@ -3683,7 +3714,7 @@ class ViewsWidget(QtWidgets.QWidget):
         # There should be no incomming edges
         node = self.viewsModel.item(0)
         in_edges = node.inE('e.kind="Transition"')
-        if len(in_edges)>0:
+        if len(in_edges) > 0:
             print(in_edges)
             logging.error('First view has incomming edge, reloading all views from graph.')
             self.resetViewsFromGraph()
@@ -3692,7 +3723,7 @@ class ViewsWidget(QtWidgets.QWidget):
         # There should be no outgoing edges
         node = self.viewsModel.item(rows-1)
         out_edges = node.outE('e.kind="Transition"')
-        if len(out_edges)>0:
+        if len(out_edges) > 0:
             print(out_edges)
             logging.error('Last view has outgoing edge, reloading all views from graph.')
             self.resetViewsFromGraph()
@@ -3703,16 +3734,16 @@ class ViewsWidget(QtWidgets.QWidget):
             node = self.viewsModel.item(row)
             nextnode = self.viewsModel.item(row+1)
             es = node.outE('e.kind="Transition"')
-            if len(es)!=1 or es[0]!=nextnode:
+            if len(es) != 1 or es[0] != nextnode:
                 # NB python will run 2nd clause only if fist is False
                 # could also be = not (len(es)==1 and es[0]==nextnode)
                 self.scene.graph.Edge(node, "Transition", nextnode).save(setchange=False)
                 # this will delete all edges in set es
                 es.delete(setchange=False)
 
-
         # TODO update only the actually changed views?
-        self.viewsModel.dataChanged.emit(self.viewsModel.createIndex(0,0), self.viewsModel.createIndex(rows,0))
+        self.viewsModel.dataChanged.emit(self.viewsModel.createIndex(0, 0),
+                                         self.viewsModel.createIndex(rows, 0))
 
     def resetView(self):
         '''
@@ -3725,13 +3756,13 @@ class ViewsWidget(QtWidgets.QWidget):
         sides = self.view.getViewSides()
         node['left'] = sides['left']
         node['right'] = sides['right']
-        icon = self.createPreview({k: sides[k] for k in ('left','right')})
+        icon = self.createPreview({k: sides[k] for k in ('left', 'right')})
         node['_icon'] = icon
         node.save(setchange=True)
 
         # reset the rectangle
         rectitem = node['_rect']
-        matrix = self._getRectTransform(node['left'],node['right'])
+        matrix = self._getRectTransform(node['left'], node['right'])
         rectitem.setTransform(matrix)
 
         self.viewsModel.dataChanged.emit(itemindex, itemindex)
@@ -3739,27 +3770,26 @@ class ViewsWidget(QtWidgets.QWidget):
     def deleteView(self):
 
         itemstodelete = []
-        indexes =  self.viewsListView.selectedIndexes()
-        rows = [ ii.row() for ii in indexes ]
+        indexes = self.viewsListView.selectedIndexes()
+        rows = [ii.row() for ii in indexes]
         rows.sort()
 
         for itemindex in indexes:
-            itemstodelete.append(self.viewsModel.itemFromIndex(itemindex) )
+            itemstodelete.append(self.viewsModel.itemFromIndex(itemindex))
             minindex = max
 
         for item in itemstodelete:
-
             item.delete(disconnect=True, setchange=False)
             self.scene.removeItem(item['_rect'])
             self.viewsModel.removeItem(item)
 
         self.relinkViews()
 
-        if len(rows)>0:
+        if len(rows) > 0:
             # make sure row before frst deleted one is shown
             row = rows[0]-1
             if row >= 0:
-                index = self.viewsModel.createIndex(row,0)
+                index = self.viewsModel.createIndex(row, 0)
                 self.viewsListView.scrollTo(index)
                 self.viewsListView.setCurrentIndex(index)
 
@@ -3770,7 +3800,6 @@ class EditWidget(QtWidgets.QWidget):
 
     def __init__(self, parent):
         super().__init__(parent)
-
 
     def editStem(self, node):
         pass
