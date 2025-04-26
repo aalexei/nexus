@@ -66,7 +66,7 @@ def indentxml(elem, level=0):
 
 def convert_xml_to_graph(filename):
 
-    zf=zipfile.ZipFile(str(filename), 'r')
+    zf = zipfile.ZipFile(str(filename), 'r')
     dat = zf.read('map.xml').decode('utf-8')
     nmap = io.StringIO(initial_value=dat)
     zf.close()
@@ -86,9 +86,9 @@ def convert_xml_to_graph(filename):
         # Before version 0.32 the stroke width was abritrarily set to 1 even though the
         # value used was 1.3, this is now set and saved so correct here
         for elem in root.iter('text'):
-            elem.set('width','1.3')
+            elem.set('width', '1.3')
 
-    if version in [0.47,0.48]:
+    if version in [0.47, 0.48]:
         # This version stored text with unicode-escape (and tended to have a cariage return at the begining)
         for elem in root.getiterator():
             if elem.tag == 'text':
@@ -109,9 +109,10 @@ def convert_xml_to_graph(filename):
     #
     # Create graphydb in memory first
     #
-    g=nexusgraph.NexusGraph()
+    g = nexusgraph.NexusGraph()
 
     tags = {}
+
     def addstem(stemxml, parent, z=1, parentdir=1):
         stem = g.Node('Stem')
         if 'iconified' in stemxml.keys():
@@ -166,7 +167,7 @@ def convert_xml_to_graph(filename):
             # so undo only stores unchanged items
             elif itemxml.tag == 'text':
                 # add to stem content
-                v = {'kind':'Text'}
+                v = {'kind': 'Text'}
                 v['maxwidth'] = float(itemxml.get('maxwidth'))
                 v['source'] = itemxml.text
                 v['frame'] = graphics.Transform.fromxml(itemxml.get('transform')).tolist()
@@ -189,7 +190,7 @@ def convert_xml_to_graph(filename):
 
                 se = g.Edge(stem, 'Attached', im).save(setchange=False)
 
-                v = {'kind':'Image'}
+                v = {'kind': 'Image'}
                 # images are linked by the sha1 of the content
                 v['datasha1'] = im['sha1']
                 v['frame'] = graphics.Transform.fromxml(itemxml.get('transform')).tolist()
@@ -199,7 +200,7 @@ def convert_xml_to_graph(filename):
                 itemz += 1
 
             elif itemxml.tag == 'stroke':
-                v = {'kind':'Stroke'}
+                v = {'kind': 'Stroke'}
                 v['color'] = itemxml.get('color', '#000000')
                 # opacity = alpha
                 v['opacity'] = float(itemxml.get('alpha', '1.0'))
@@ -246,7 +247,7 @@ def convert_xml_to_graph(filename):
     path.rename(oldformat)
 
     if path.exists():
-        raise Exception("Something went wrong in renaming file, '%s' still exists"%path)
+        raise Exception("Something went wrong in renaming file, '%s' still exists" % path)
 
     # Create graph file under original name and copy contents across
     logging.info("Saving graph-based file")
@@ -259,6 +260,7 @@ def convert_xml_to_graph(filename):
 
     return g2
 
+
 def convert_to_full_tree(g):
     '''
     Convert <0.8 to 0.8 style where everything is a node in the graph
@@ -270,14 +272,14 @@ def convert_to_full_tree(g):
 
     oldformat = path.with_suffix(".nex_pre08")
     if oldformat.exists():
-        logging.exception("Can't convert, '%s' already exists!",oldformat)
-        raise Exception("Can't convert, '%s' already exists!"%oldformat)
+        logging.exception("Can't convert, '%s' already exists!", oldformat)
+        raise Exception("Can't convert, '%s' already exists!" % oldformat)
 
     shutil.copy2(path, oldformat)
 
     if not oldformat.exists():
-        logging.exeption("Something went wrong in copying '%s' to '%s'",path,oldformat)
-        raise Exception("Something went wrong in copying '%s' to '%s'"%(path,oldformat))
+        logging.exeption("Something went wrong in copying '%s' to '%s'", path, oldformat)
+        raise Exception("Something went wrong in copying '%s' to '%s'" % (path, oldformat))
 
     g2 = g
     # Clear the undo stack as it may not make sense after changes
@@ -331,10 +333,10 @@ def convert_to_full_tree(g):
             e = g2.Edge(s, 'In', v)
             e.save(setchange=False)
 
-            if v['kind']=='Image':
+            if v['kind'] == 'Image':
                 # change datasha1 key to sha1
                 v['sha1'] = v['datasha1']
-                del(v['datasha1'])
+                del (v['datasha1'])
                 v.save(setchange=False)
                 # Find the image data by sha1
                 imdata = imageshas[v['sha1']]
@@ -346,6 +348,7 @@ def convert_to_full_tree(g):
 
     g2.savesetting('version', graphics.VERSION)
     return g2
+
 
 def convert_to_partial_tree(g):
     '''
@@ -359,14 +362,14 @@ def convert_to_partial_tree(g):
 
     oldformat = path.with_suffix(".nex_pre09")
     if oldformat.exists():
-        logging.exception("Can't convert, '%s' already exists!",oldformat)
-        raise Exception("Can't convert, '%s' already exists!"%oldformat)
+        logging.exception("Can't convert, '%s' already exists!", oldformat)
+        raise Exception("Can't convert, '%s' already exists!" % oldformat)
 
     shutil.copy2(path, oldformat)
 
     if not oldformat.exists():
-        logging.exeption("Something went wrong in copying '%s' to '%s'",path,oldformat)
-        raise Exception("Something went wrong in copying '%s' to '%s'"%(path,oldformat))
+        logging.exeption("Something went wrong in copying '%s' to '%s'", path, oldformat)
+        raise Exception("Something went wrong in copying '%s' to '%s'" % (path, oldformat))
 
     # Change graph in place
     # Clear undo chnages as they may not make sense anymore
@@ -384,7 +387,7 @@ def convert_to_partial_tree(g):
             if end['kind'] == 'Image':
                 # Relink image data from stem itself and delete this edge
                 edata = end.outE('e.kind="With"').one
-                g.Edge(s,'With', edata.end).save(setchange=False)
+                g.Edge(s, 'With', edata.end).save(setchange=False)
                 edata.delete(setchange=False)
             uid = end['uid']
             # Clean up the data, only using structure once so modify directly
@@ -429,12 +432,14 @@ def createViewImage(view, width, height, removebackground=False):
 
     if removebackground:
         # Make the scene background transparent
-        oldbrush =  view.scene().backgroundBrush()
+        oldbrush = view.scene().backgroundBrush()
         brush = QtGui.QBrush(QtCore.Qt.GlobalColor.transparent)
         view.scene().setBackgroundBrush(brush)
 
     painter = QtGui.QPainter(image)
-    painter.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+    painter.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |
+                           QtGui.QPainter.RenderHint.TextAntialiasing |
+                           QtGui.QPainter.RenderHint.SmoothPixmapTransform)
     view.render(painter, QtCore.QRectF(image.rect()), rect)
     painter.end()
 
@@ -443,7 +448,6 @@ def createViewImage(view, width, height, removebackground=False):
         view.scene().setBackgroundBrush(oldbrush)
 
     return image
-
 
 #----------------------------------------------------------------------
 class NewOrOpenDialog(QtWidgets.QDialog):
@@ -492,7 +496,6 @@ class NewOrOpenDialog(QtWidgets.QDialog):
         button.clicked.connect(self.openmap)
         button.setDefault(True)
         hlayout.addWidget(button)
-
 
     def recentFileOpen(self, item):
         path = self.maps[item.text()]
@@ -560,7 +563,6 @@ class NexusApplication(QtWidgets.QApplication):
             act.triggered.connect(window.activateWindowViaMenu)
             self.windowMenu.addAction(act)
 
-
     def windowList(self):
         mainwindows = []
         for widget in self.topLevelWidgets():
@@ -574,7 +576,7 @@ class NexusApplication(QtWidgets.QApplication):
         Either raise the window or open a new file
         '''
         logging.debug("raise or open: '%s'", fileName)
-        if len(fileName)==0:
+        if len(fileName) == 0:
             return None
         for window in self.windowList():
             if window.scene.graph.path == fileName:
@@ -623,12 +625,12 @@ class NexusApplication(QtWidgets.QApplication):
         # Create basic Root node
         stem = g.Node(
             kind='Stem',
-            scale = 1.0,
-            z = 10,
-            flip = 1,
-            pos = [0,0],
-            content = {
-                cuid:{
+            scale=1.0,
+            z=10,
+            flip=1,
+            pos=[0, 0],
+            content={
+                cuid: {
                     'kind': 'Text',
                     'source': P.stem.title(),
                     'frame': [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
@@ -642,10 +644,9 @@ class NexusApplication(QtWidgets.QApplication):
 
         return self.raiseOrOpen(str(P))
 
-
     def event(self, event):
         if event.type() == QtCore.QEvent.Type.FileOpen:
-            f =  event.file()
+            f = event.file()
 
             logging.debug("Received FileOpen event for %s", f)
 
@@ -663,7 +664,6 @@ class NexusApplication(QtWidgets.QApplication):
             self.streaming = True
             self.view_image = QtGui.QImage()
 
-
             self.streaming_thread = QtCore.QThread(parent=self)
             self.streaming_daemon = StreamingDaemon(self)
             self.streaming_daemon.moveToThread(self.streaming_thread)
@@ -676,7 +676,6 @@ class NexusApplication(QtWidgets.QApplication):
             dialog.setDetailedText(f"Nexus now streaming on\nhttp://{HOST}:{PORT}")
             dialog.exec()
 
-            
         else:
             logging.info('Stopping streaming server...')
             # This will stop any current streaming
@@ -708,12 +707,14 @@ class NexusApplication(QtWidgets.QApplication):
         image.fill(QtCore.Qt.GlobalColor.transparent)
         painter = QtGui.QPainter(image)
 
-        oldbrush =  view.scene().backgroundBrush()
+        oldbrush = view.scene().backgroundBrush()
         brush = QtGui.QBrush(QtCore.Qt.GlobalColor.transparent)
         view.scene().setBackgroundBrush(brush)
 
         # Render the graphicsview onto the image and save it out.
-        painter.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |QtGui.QPainter.RenderHint.TextAntialiasing | QtGui.QPainter.RenderHint.SmoothPixmapTransform)
+        painter.setRenderHints(QtGui.QPainter.RenderHint.Antialiasing |
+                               QtGui.QPainter.RenderHint.TextAntialiasing |
+                               QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         view.render(painter, QtCore.QRectF(image.rect()), rect)
 
         # Return previous background
@@ -731,11 +732,11 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/":
             self.send_response(200)
-            self.send_header('Content-type','text/html')
+            self.send_header('Content-type', 'text/html')
             self.end_headers()
-            self.wfile.write(bytes('<html><head></head><body style="background-color: rgba(0,0,0,0)!important;">','utf-8'))
-            self.wfile.write(bytes(f'<img src="http://{HOST}:{PORT}/stream.mjpg"/>','utf-8'))
-            self.wfile.write(bytes('</body></html>','utf-8'))
+            self.wfile.write(bytes('<html><head></head><body style="background-color: rgba(0,0,0,0)!important;">', 'utf-8'))
+            self.wfile.write(bytes(f'<img src="http://{HOST}:{PORT}/stream.mjpg"/>', 'utf-8'))
+            self.wfile.write(bytes('</body></html>', 'utf-8'))
             return
 
         elif self.path == "/stream.mjpg":
@@ -750,8 +751,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             while self.server.app.streaming:
                 if self.served_image_timestamp + interval < time.time() \
                    and self.served_image_timestamp < self.server.app.streaming_ready_time + 3*interval:
-                    self.wfile.write(bytes("--frame",'utf-8'))
-                    self.send_header('Content-type','image/png')
+                    self.wfile.write(bytes("--frame", 'utf-8'))
+                    self.send_header('Content-type', 'image/png')
                     view_bytes = self.getImageBytes()
                     self.send_header('Content-length', str(len(view_bytes)))
                     self.end_headers()
@@ -778,7 +779,6 @@ class RequestHandler(BaseHTTPRequestHandler):
         toc = time.time()
 
         return view_bytes
-
 
 
 class StreamingDaemon(QtCore.QObject):
@@ -856,12 +856,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.view.update()
         self.raise_()
 
-        self.setWindowTitle("{}".format(Path(self.scene.graph.path).name) )
+        self.setWindowTitle("{}".format(Path(self.scene.graph.path).name))
         self.showMessage("Nexus Map loaded")
 
         rect = QtCore.QRectF()
         for item in self.scene.allChildStems():
-            rect=rect.united(item.sceneBoundingRect())
+            rect = rect.united(item.sceneBoundingRect())
 
         self.view.fitInView(rect, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
@@ -883,9 +883,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         QtWidgets.QApplication.restoreOverrideCursor()
 
-
         self.timerLabel = QtWidgets.QLabel(self)
-        self.timerLabel.move(200,200)
+        self.timerLabel.move(200, 200)
         self.timerLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.timerLabel.setStyleSheet("color:rgba(155,0,0,100); font: 300pt")
         self.timerLabel.hide()
@@ -957,7 +956,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # force the scale
         settings.setValue("new/stemscale", 0.6)
 
-
         setifunset(settings, "input/pen1/color", "#000080")
         setifunset(settings, "input/pen2/color", "#000000")
         setifunset(settings, "input/pen3/color", "#006000")
@@ -1012,7 +1010,7 @@ class MainWindow(QtWidgets.QMainWindow):
             path = Path(path).with_suffix(".nex")
 
             # Create graph file under original name and copy contents across
-            self.showMessage("Copying %s -> %s"%(str(curpath), str(path)))
+            self.showMessage("Copying %s -> %s" % (str(curpath), str(path)))
             g2 = nexusgraph.NexusGraph(str(path))
             with g2.connection.backup("main", graph.connection, "main") as b:
                 while not b.done:
@@ -1021,7 +1019,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
             app = QtWidgets.QApplication.instance()
             app.raiseOrOpen(str(path))
-
 
     def exportLinkedSVGs(self):
         '''
@@ -1044,8 +1041,8 @@ class MainWindow(QtWidgets.QMainWindow):
             for stem in stems:
                 if 'tags' in stem and 'hide' in stem['tags']:
                     continue
-                for k,v in stem.items():
-                    if k.startswith('item') and v['kind']=="Text":
+                for k, v in stem.items():
+                    if k.startswith('item') and v['kind'] == "Text":
                         # find any links
                         try:
                             objs = et.fromstring(v['source'])
@@ -1058,7 +1055,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                     path = mappath.joinpath(href)
                                     path = path.resolve()
                                 except FileNotFoundError:
-                                    self.showMessage("Couldn't find '%s'"%path)
+                                    self.showMessage("Couldn't find '%s'" % path)
                                     continue
                                 links.add(path.relative_to(basepath))
             return links
@@ -1075,7 +1072,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         app = QtWidgets.QApplication.instance()
 
-        while len(links)>0:
+        while len(links) > 0:
             app.processEvents()
             # pick a file and load it
             link = links.pop()
@@ -1091,10 +1088,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     links.add(l)
 
         progress.setMaximum(len(maps))
-        progress.setLabelText("Converting %d maps..."%len(maps))
+        progress.setLabelText("Converting %d maps..." % len(maps))
 
         # Maps now contain a set of linked maps with relative paths (to this one)
-        for i,m in enumerate(maps):
+        for i, m in enumerate(maps):
             app.processEvents()
 
             # Copy entire graph to memory to modify so we don't mess up undo etc
@@ -1118,25 +1115,25 @@ class MainWindow(QtWidgets.QMainWindow):
             self.exportSVG(scene, str(svgtarget))
 
             progress.setValue(i+1)
-            progress.setLabelText("Converting %d maps..."%(len(maps)-i-1))
+            progress.setLabelText("Converting %d maps..." % (len(maps)-i-1))
             if progress.wasCanceled():
                 break
 
         progress.close()
-        self.showMessage("Exported %d svg files."%len(maps))
+        self.showMessage("Exported %d svg files." % len(maps))
 
     def exportText(self):
 
         filename, dummy = QtWidgets.QFileDialog.getSaveFileName(self, self.tr("Export Text"), filter="Text files (*.txt) ;; All files (*)")
         if len(filename)==0:
             return False
-        path,ext = os.path.splitext(str(filename))
+        path, ext = os.path.splitext(str(filename))
         path += '.txt'
 
         fp = open(path, "w")
 
         root = self.scene.root()
-        fp.write( ' '.join(root.titles()) + '\n' )
+        fp.write(' '.join(root.titles()) + '\n')
 
         for child in root.allChildStems():
             if 'hide' not in child.getTags() and child.isVisible():
@@ -1148,21 +1145,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def exportSVG(self, scene=None, path=None):
 
-        if scene is None or scene==False:
+        if scene is None or scene == False:
             # TODO the False is a hack to catch slot call from action
             scene = self.scene
 
         if path is None:
-            pa,ext=os.path.splitext(str(self.scene.graph.path))
+            pa,ext = os.path.splitext(str(self.scene.graph. path))
 
             fileName, dummy = QtWidgets.QFileDialog.getSaveFileName(self, self.tr("Export SVG"), pa+'.svg', filter="SVG files (*.svg) ;; All files (*)")
-            if len(fileName)==0:
+            if len(fileName) == 0:
                 return False
-            path,ext = os.path.splitext(str(fileName))
+            path, ext = os.path.splitext(str(fileName))
             path += '.svg'
 
-        self.showMessage("Exporting SVG to %s"%path)
-        logging.info("Exporting SVG to %s"%path)
+        self.showMessage("Exporting SVG to %s" % path)
+        logging.info("Exporting SVG to %s" % path)
 
         # Remove background so it doesn't appear in svg
         backgroundbrush = scene.backgroundBrush()
@@ -1184,13 +1181,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 child.hide()
                 hiddenstems.append(child)
             else:
-                R=R.united(child.boundingRect())
+                R = R.united(child.boundingRect())
 
 
         # Links are broken in SVGgenerator ... work around this
         links = {}
         textitems = []
-        linknumber=0
+        linknumber = 0
         shortlinknumber = 0
         for stem in scene.allChildStems():
             for textitem in stem.leaf.childItems():
@@ -1210,9 +1207,9 @@ class MainWindow(QtWidgets.QMainWindow):
                             # change all if url text is smaller
 
                             L = 5
-                            if len(text)>=L:
-                                randkey = text[:-L]+"%03d"%linknumber
-                                linknumber +=1
+                            if len(text) >= L:
+                                randkey = text[:-L] + "%03d" % linknumber
+                                linknumber += 1
                             else:
                                 randkey = "%02d" % shortlinknumber
                                 shortlinknumber += 1
@@ -1327,17 +1324,21 @@ class MainWindow(QtWidgets.QMainWindow):
             onlypath = True
             onlytext = True
             for c in g:
-                if c.tag not in ['{http://www.w3.org/2000/svg}path', '{http://www.w3.org/2000/svg}image']:
+                if c.tag not in ['{http://www.w3.org/2000/svg}path',
+                                 '{http://www.w3.org/2000/svg}image']:
                     onlypath = False
                 elif c.tag not in ['{http://www.w3.org/2000/svg}text']:
                     onlytext = False
             if onlypath:
-                for a in ['font-family', 'font-size', 'font-weight', 'font-style']:
+                for a in ['font-family', 'font-size', 'font-weight',
+                          'font-style']:
                     if a in g.attrib:
                         del g.attrib[a]
             if onlytext:
-                for a in ['fill', 'stroke', 'stroke-linecap', 'stroke-linejoin','stroke-opacity','stroke-width',
-                          'font-family', 'font-size', 'font-style', 'font-weight']:
+                for a in ['fill', 'stroke', 'stroke-linecap', 'stroke-linejoin',
+                          'stroke-opacity', 'stroke-width',
+                          'font-family', 'font-size', 'font-style',
+                          'font-weight']:
                     if a in g.attrib:
                         del g.attrib[a]
 
@@ -1354,9 +1355,8 @@ class MainWindow(QtWidgets.QMainWindow):
             p.set('d', d2)
 
             # remove default values
-            if p.get('vector-effect','')=='none':
+            if p.get('vector-effect', '') == 'none':
                 del p.attrib['vector-effect']
-
 
         script = et.Element('script')
         script.text = NAVJS
@@ -1390,7 +1390,7 @@ class MainWindow(QtWidgets.QMainWindow):
         app = QtWidgets.QApplication.instance()
 
         # ----------------------------------------------------------------------------------
-        self.newAct = QtGui.QAction(QtGui.QIcon(":/images/new.svg"),self.tr("&New"), self)
+        self.newAct = QtGui.QAction(QtGui.QIcon(":/images/new.svg"), self.tr("&New"), self)
         self.newAct.setShortcut(QtGui.QKeySequence.StandardKey.New)
         self.newAct.setStatusTip(self.tr("Create a new file"))
         self.newAct.triggered.connect(self.newFile)

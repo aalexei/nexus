@@ -5485,7 +5485,6 @@ class StemItem(QtWidgets.QGraphicsItem):
             # logging.debug('[*] End - Change Selection')
             pass
 
-
         # if self.scene().presentation:
         #     t=time.time()
         #     if self.presstime !=0 and (t-self.presstime) > 1:
@@ -5571,7 +5570,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         ## make direction the same as parent
         direction = sign((p-self.tip()).x())
-        R=(self.rootwidth if self.depth==0 else self.stemwidth)
+        R = (self.rootwidth if self.depth == 0 else self.stemwidth)
         path = self.createTailPath(self.tip(), p, p+direction*QtCore.QPointF(30, 0), direction, R)
         self.newstemtail.setPath(path)
 
