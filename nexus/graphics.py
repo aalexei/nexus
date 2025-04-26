@@ -2241,23 +2241,23 @@ class InkView(QtWidgets.QGraphicsView):
         p2 = scenePos
         pen = QtGui.QPen(scene.pen)
         pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
-        point = [p2.x(),p2.y(),pressure,t]
+        point = [p2.x(), p2.y(), pressure, t]
         scene.strokecoords.append(point)
         scene._tmppath.append(point)
 
         # only draw the stroke segment every few calls
         # otherwise mac can't cope and rate goes down, poor thing.
-        if len(scene._tmppath)>4:
-            x0,y0,z0,t0 = scene._tmppath[0]
-            for x1,y1,z1,t1 in scene._tmppath[1:]:
+        if len(scene._tmppath) > 4:
+            x0, y0, z0, t0 = scene._tmppath[0]
+            for x1, y1, z1, t1 in scene._tmppath[1:]:
                 pen.setWidthF(scene.pen.widthF()*z1)
-                line = scene.addLine(x0,y0,x1,y1,pen)
-                line.setFlag(line.GraphicsItemFlag.ItemIsSelectable,False)
+                line = scene.addLine(x0, y0, x1, y1, pen)
+                line.setFlag(line.GraphicsItemFlag.ItemIsSelectable, False)
                 line.setEnabled(False)
                 scene.tmpgroup.addToGroup(line)
-                x0,y0,z0,t0 = x1,y1,z1,t1
+                x0, y0, z0, t0 = x1, y1, z1, t1
 
-            scene._tmppath = [[x1,y1,z1,t1]]
+            scene._tmppath = [[x1, y1, z1, t1]]
 
         scene._lastScenePos = p2
         self.viewChangeStream.emit(self)
@@ -2265,7 +2265,7 @@ class InkView(QtWidgets.QGraphicsView):
     def penReleaseEvent(self, event):
 
         scene = self.scene()
-        scene.maxZ +=1
+        scene.maxZ += 1
         coords = smoothInkPath(scene.strokecoords)
 
         color = scene.pen.color()
@@ -2277,27 +2277,27 @@ class InkView(QtWidgets.QGraphicsView):
             'z': scene.maxZ,
         }
 
-        XYZ = len(coords[0])>2
+        XYZ = len(coords[0]) > 2
         data['type'] = 'XYZ' if XYZ else 'XY'
 
         p0 = coords[0]
         out = []
         for p in coords:
             if XYZ:
-                out.append([p[0]-p0[0], p[1]-p0[1],p[2]])
+                out.append([p[0]-p0[0], p[1]-p0[1], p[2]])
             else:
                 out.append([p[0]-p0[0], p[1]-p0[1]])
         data['stroke'] = out
 
         # make copy of transform otherwise default one instantiated on definition
         # accumulates translations
-        T=Transform()
+        T = Transform()
         T.translate(p0[0], p0[1])
         data['frame'] = T.tolist()
 
         #stemnode = scene.stem.node
         uid = graphydb.generateUUID()
-        scene.stem.node['content'][uid]=data
+        scene.stem.node['content'][uid] = data
         #stemnode['content'].append(data)
         scene.stem.node.keyChanged('content')
         # print('content', stemnode['data']['content'])
@@ -2400,7 +2400,7 @@ class InkView(QtWidgets.QGraphicsView):
             self._v0 = v1
             self._s0 = self.mapToScene(self._v0)
             self._sticky = True
-            return  True
+            return True
 
         elif pinch.state() == QtCore.Qt.GestureState.GestureFinished:
             if self._eventstate != Gesture:
@@ -2419,7 +2419,7 @@ class InkView(QtWidgets.QGraphicsView):
         dv = v1-self._v0
 
         # TODO Following not working on mac?
-        dist = sqrt(dv.x()**2+dv.y()**2)
+        dist = sqrt(dv.x()**2 + dv.y()**2)
         # logging.debug('Pinch dist %f', dist)
 
         # base movement stickiness on view coordinates (finger motion)
@@ -2429,19 +2429,19 @@ class InkView(QtWidgets.QGraphicsView):
 
         if not self._sticky:
             if self.allowrotationwidget.isChecked():
-                matrix3 = Transform().scale(Stot,Stot).rotate(Rtot)
+                matrix3 = Transform().scale(Stot, Stot).rotate(Rtot)
             else:
-                matrix3 = Transform().scale(Stot,Stot)
+                matrix3 = Transform().scale(Stot, Stot)
             M = Transform(matrix3*self._g_transform)
             Minv, dummy = M.inverted()
 
             sp = QtCore.QPointF(self.horizontalScrollBar().value(),
                                 self.verticalScrollBar().value())
-            Tc = Transform.fromTranslate(sp.x(),sp.y())
+            Tc = Transform.fromTranslate(sp.x(), sp.y())
 
             D = QtCore.QPointF(v1)*Tc*Minv-self._s0
 
-            M.translate(D.x(),D.y())
+            M.translate(D.x(), D.y())
             self.setTransform(M, False)
 
         self.setTransformationAnchor(anchor)
@@ -2471,7 +2471,7 @@ class InkView(QtWidgets.QGraphicsView):
     def zoomFitAll(self):
         rect = self.scene().itemsBoundingRect()
         #self.fitInView(rect)
-        self.fitInView(rect,QtCore.Qt.KeepAspectRatio)
+        self.fitInView(rect, QtCore.Qt.KeepAspectRatio)
 
 
     def wheelEvent(self, event):
@@ -2481,7 +2481,7 @@ class InkView(QtWidgets.QGraphicsView):
             self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.NoAnchor)
             matrix = self.transform()
             p = self.mapToScene(self.mapFromGlobal(QtGui.QCursor.pos()))
-            matrix.translate(p.x(),p.y())
+            matrix.translate(p.x(), p.y())
 
             dS = pow(2.0, event.angleDelta().y() / 100.0)
             factor = matrix.scale(dS, dS).mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
@@ -2490,9 +2490,9 @@ class InkView(QtWidgets.QGraphicsView):
 
             matrix.scale(dS, dS)
 
-            matrix.translate(-p.x(),-p.y())
+            matrix.translate(-p.x(), -p.y())
 
-            self.setTransform(matrix,False)
+            self.setTransform(matrix, False)
 
             self.setTransformationAnchor(anchor)
 
@@ -2537,10 +2537,10 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
         # default mode for new dialogs (will remember last one chosen)
         self.dialogstate = {
-            'mode':TextMode,
+            'mode': TextMode,
             'geometry': None,
-            'scale':1.0,
-            'rotation':0.0,
+            'scale': 1.0,
+            'rotation': 0.0,
         }
 
         self.backgroundDialog = BackgroundDialog(self, self.parent())
@@ -2548,7 +2548,6 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
         brush = QtGui.QBrush(QtGui.QColor("White"), QtCore.Qt.BrushStyle.SolidPattern)
         self.setBackgroundBrush(brush)
-
 
     def dragEnterEvent(self, event):
 
@@ -2562,7 +2561,6 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
     dragMoveEvent = dragEnterEvent
 
-
     def dropEvent(self, event):
         mimedata = event.mimeData()
 
@@ -2575,7 +2573,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
             QtWidgets.QMessageBox.information(None, "Warning", "No copy data")
             return
 
-        view=self.views()[0]
+        view = self.views()[0]
         cp = view.mapFromGlobal(QtGui.QCursor.pos())
         targetpos = QtCore.QPointF(view.mapToScene(cp))
 
@@ -2594,7 +2592,6 @@ class NexusScene(QtWidgets.QGraphicsScene):
             self.recursivePaste(closest.node, data, copydata.images, batch)
 
         closest.renew(create=False)
-
 
     def delete(self, *param, stem=None):
         '''
@@ -2622,14 +2619,14 @@ class NexusScene(QtWidgets.QGraphicsScene):
         for parent in parents:
             parent.renew()
 
-    def cut(self, *param,stem=None):
+    def cut(self, *param, stem=None):
         '''
         Cut selected items
         '''
         self.copy(stem=stem)
         self.delete(stem=stem)
 
-    def copyStemLink(self, *param,stem=None):
+    def copyStemLink(self, *param, stem=None):
         urls = []
 
         if stem is None:
@@ -2642,7 +2639,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
                 link=item.node.graph.getNodeLink(item.node)
                 urls.append(QtCore.QUrl(link))
 
-        if len(urls)==0:
+        if len(urls) == 0:
             urls = [QtCore.QUrl(self.graph.getNodeLink())]
 
         clipboard = QtWidgets.QApplication.clipboard()
@@ -2690,9 +2687,9 @@ class NexusScene(QtWidgets.QGraphicsScene):
         content = {}
         for item in node['content']:
             content[graphydb.generateUUID()] = item
-        node.data['content']=content
+        node.data['content'] = content
         if 'pos' not in node:
-            node['pos'] = [10,10]
+            node['pos'] = [10, 10]
         if 'flip' not in node:
             node['flip'] = 1
         node.save(batch=batch)
@@ -2700,7 +2697,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         edge.save(setchange=True, batch=batch)
 
         for item in node['content'].values():
-            if item['kind']=='Image':
+            if item['kind'] == 'Image':
                 sha = item['sha1']
                 img = g.findImageData(sha)
                 if img is None:
@@ -2711,7 +2708,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
                     imagedata = g.Node('ImageData')
                     imagedata.update(imageshas[sha])
                     imagedata.save(batch=batch)
-                    e=g.Edge(node, "With", imagedata)
+                    e = g.Edge(node, "With", imagedata)
                     e.save(batch=batch)
                 else:
                     logging.debug("Found image already in map")
@@ -2733,8 +2730,8 @@ class NexusScene(QtWidgets.QGraphicsScene):
         else:
             selected = {stem}
 
-        if len(selected)==0:
-            QtWidgets.QMessageBox.information(None,"Warning", "No stems selected.")
+        if len(selected) == 0:
+            QtWidgets.QMessageBox.information(None, "Warning", "No stems selected.")
             return
 
         clipboard = QtWidgets.QApplication.clipboard()
@@ -2742,8 +2739,8 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
         g = self.graph
         copydata = g.mimedataToCopydata(mimedata)
-        if len(copydata.nodes)==0:
-            QtWidgets.QMessageBox.information(None,"Warning", "Nothing to paste")
+        if len(copydata.nodes) == 0:
+            QtWidgets.QMessageBox.information(None, "Warning", "Nothing to paste")
             return
 
 
@@ -2820,7 +2817,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
     viewChangeStream = QtCore.pyqtSignal(QtWidgets.QGraphicsView)
 
-    def __init__(self, scene, parent = None):
+    def __init__(self, scene, parent=None):
 
         super().__init__(scene, parent)
 
@@ -2878,13 +2875,11 @@ class NexusView(QtWidgets.QGraphicsView):
             matrix.scale(scaleFactor, scaleFactor)
 
         else:
-            matrix.translate(-point.x(),-point.y())
+            matrix.translate(-point.x(), -point.y())
             matrix.scale(scaleFactor, scaleFactor)
-            matrix.translate(point.x(),point.y())
+            matrix.translate(point.x(), point.y())
 
-        self.setTransform(matrix,False)
-
-
+        self.setTransform(matrix, False)
 
     def zoomIn(self):
         self.scaleView(1.15)
@@ -2900,13 +2895,13 @@ class NexusView(QtWidgets.QGraphicsView):
 
         selected = self.scene().selectedItems()
         rect = QtCore.QRectF()
-        if len(selected)>0:
+        if len(selected) > 0:
             for item in selected:
-                rect=rect.united(item.sceneBoundingRect())
+                rect = rect.united(item.sceneBoundingRect())
 
         else:
             for item in self.scene().allChildStems():
-                rect=rect.united(item.sceneBoundingRect())
+                rect = rect.united(item.sceneBoundingRect())
 
         self.fitInView(rect, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
@@ -2916,7 +2911,7 @@ class NexusView(QtWidgets.QGraphicsView):
         '''
         vrect = self.viewport().rect()
 
-        vleft = QtCore.QPoint(vrect.left(),int(vrect.top()+vrect.height()/2.0))
+        vleft = QtCore.QPoint(vrect.left(), int(vrect.top()+vrect.height()/2.0))
         # According to docs for historical reasons rect.right = rect.left+rect.width-1 so do it ourselves
         vright = QtCore.QPoint(vrect.left()+vrect.width(), int(vrect.top()+vrect.height()/2.0))
 
@@ -2924,9 +2919,9 @@ class NexusView(QtWidgets.QGraphicsView):
         sright = self.mapToScene(vright)
 
         left = (sleft.x(), sleft.y())
-        right = (sright.x(),sright.y())
+        right = (sright.x(), sright.y())
 
-        return {'left':left, 'right':right}
+        return {'left': left, 'right': right}
 
 
     def setViewSides(self, sides):
@@ -2942,12 +2937,12 @@ class NexusView(QtWidgets.QGraphicsView):
         s = vrect.width()/sqrt((R[0]-L[0])**2+(R[1]-L[1])**2)
         r = atan2(-(R[1]-L[1]), R[0]-L[0])
 
-        matrix = Transform().setTRS(0,0,r,s)
+        matrix = Transform().setTRS(0, 0, r, s)
         self.setTransform(matrix)
         self.centerOn(cx, cy)
 
         # when recording, these events will be caught otherwise ignored
-        self.recordStateEvent.emit({'t':time.time(),'cmd':'view', 'left':sides['left'], 'right':sides['right']})
+        self.recordStateEvent.emit({'t': time.time(), 'cmd': 'view', 'left': sides['left'], 'right': sides['right']})
 
         # when streaming
         self.viewChangeStream.emit(self)
@@ -2964,7 +2959,7 @@ class NexusView(QtWidgets.QGraphicsView):
             self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.NoAnchor)
             matrix = self.transform()
             p = self.mapToScene(self.mapFromGlobal(QtGui.QCursor.pos()))
-            matrix.translate(p.x(),p.y())
+            matrix.translate(p.x(), p.y())
 
             dS = pow(2.0, event.angleDelta().y() / 100.0 * self._scrollwheelfactor)
             factor = matrix.scale(dS, dS).mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
@@ -2973,9 +2968,9 @@ class NexusView(QtWidgets.QGraphicsView):
 
             matrix.scale(dS, dS)
 
-            matrix.translate(-p.x(),-p.y())
+            matrix.translate(-p.x(), -p.y())
 
-            self.setTransform(matrix,False)
+            self.setTransform(matrix, False)
 
             self.setTransformationAnchor(anchor)
         else:
@@ -2988,15 +2983,13 @@ class NexusView(QtWidgets.QGraphicsView):
             degreesx = 2*8*event.angleDelta().x() * self._scrollwheelfactor
             distancex = -int(degreesx/30.0)
 
-            sb=self.horizontalScrollBar()
+            sb = self.horizontalScrollBar()
             sb.setValue(sb.value()+distancex)
-            sb=self.verticalScrollBar()
+            sb = self.verticalScrollBar()
             sb.setValue(sb.value()+distancey)
 
         event.accept()
         self.viewChangeStream.emit(self)
-
-
 
     def mousePressEvent(self, event):
 
@@ -3034,11 +3027,11 @@ class NexusView(QtWidgets.QGraphicsView):
 
         # logging.debug('N mouseMoveEvent')
         if self._dragmode == self.PREDRAGPAN:
-            self._dragmode=self.DRAGPAN
+            self._dragmode = self.DRAGPAN
 
         if self._dragmode == self.DRAGZOOM:
             dy = event.pos().y() - self._dragy
-            scale = max(min(-dy/400.0 + 1,1.5),0.5)
+            scale = max(min(-dy/400.0 + 1, 1.5), 0.5)
 
             self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter)
             self.scaleView(scale)
@@ -3053,8 +3046,8 @@ class NexusView(QtWidgets.QGraphicsView):
             s = self.transform().m11()
             self._trailTimer.stop()
             ps = self.mapToScene(event.pos())
-            self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-point','x':ps.x(), 'y':ps.y()})
-            if len(self.pointertrail)==0:
+            self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-point', 'x':ps.x(), 'y':ps.y()})
+            if len(self.pointertrail) == 0:
                 # if there's nothing in the queue add the point within a stroke list
                 self.pointertrail.append([ps])
             else:
@@ -3090,7 +3083,7 @@ class NexusView(QtWidgets.QGraphicsView):
             path = QtGui.QPainterPath()
             path2 = QtGui.QPainterPath()
             for stroke in reversed(self.pointertrail):
-                if len(stroke)==0:
+                if len(stroke) == 0:
                     continue
                 path.moveTo(stroke[-1])
                 path2.moveTo(stroke[-1])
@@ -3101,7 +3094,6 @@ class NexusView(QtWidgets.QGraphicsView):
             self.pointertrailitem2.setPath(path)
 
             self.viewChangeStream.emit(self)
-
 
         elif self._dragmode == self.DRAGPAN:
             hbar = self.horizontalScrollBar()
@@ -3126,8 +3118,6 @@ class NexusView(QtWidgets.QGraphicsView):
             self.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
 
-
-
     def mouseReleaseEvent(self, event):
 
         #if abs(self.pinchtime - time.time())<self._ignoremousetime:
@@ -3145,13 +3135,12 @@ class NexusView(QtWidgets.QGraphicsView):
         self.pointertrail.append([])
         self._trailTimer.start()
 
-
         if not self.scene().mode in ["presentation", "record"]:
             self.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
             QtWidgets.QGraphicsView.mouseReleaseEvent(self, event)
 
         if self.scene().mode == "record":
-            self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-up'})
+            self.recordStateEvent.emit({'t': time.time(), 'cmd': 'pen-up'})
 
         self.viewChangeStream.emit(self)
 
@@ -3159,7 +3148,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
         if self.scene().mode in ["presentation", "record"]:
             item = self.itemAt(event.pos())
-            if isinstance( item, OpenCloseWidget):
+            if isinstance(item, OpenCloseWidget):
                 # pass through event for open-close widget as a single click
                 item.mousePressEvent(event)
             else:
@@ -3168,9 +3157,9 @@ class NexusView(QtWidgets.QGraphicsView):
                 stem = None
                 try:
                     parent = item.parentItem()
-                    if isinstance( parent, StemItem ):
+                    if isinstance(parent, StemItem):
                         stem = parent
-                    elif isinstance( parent, Leaf ):
+                    elif isinstance(parent, Leaf):
                         stem = parent.parentItem()
                 except:
                     pass
@@ -3290,31 +3279,29 @@ class NexusView(QtWidgets.QGraphicsView):
         #logging.debug('Pinch dist %f', dist)
 
         # base movement stickiness on view coordinates (finger motion)
-        if not ( CONFIG['pinch_no_scale_threshold'][0]<Stot<CONFIG['pinch_no_scale_threshold'][1] \
+        if not (CONFIG['pinch_no_scale_threshold'][0]<Stot<CONFIG['pinch_no_scale_threshold'][1] \
                  and abs(Rtot)<CONFIG['pinch_no_rotate_threshold']): 
             self._sticky = False
 
         if not self._sticky:
-            matrix3 = Transform().scale(Stot,Stot).rotate(Rtot)
+            matrix3 = Transform().scale(Stot, Stot).rotate(Rtot)
             M = Transform(matrix3*self._g_transform)
             Minv, dummy = M.inverted()
 
             sp = QtCore.QPointF(self.horizontalScrollBar().value(),
                                 self.verticalScrollBar().value())
-            Tc = Transform.fromTranslate(sp.x(),sp.y())
+            Tc = Transform.fromTranslate(sp.x(), sp.y())
 
             D = QtCore.QPointF(v1)*Tc*Minv-self._s0
 
             # TODO Limit total scale?
 
-            M.translate(D.x(),D.y())
+            M.translate(D.x(), D.y())
             self.setTransform(M, False)
 
             self.viewChangeStream.emit(self)
 
-
         self.setTransformationAnchor(anchor)
-
 
     def focusInEvent(self, event):
         super().focusInEvent(event)
@@ -3339,7 +3326,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         baselayout = QtWidgets.QGridLayout()
         self.setLayout(baselayout)
 
-        baselayout.addWidget(QtWidgets.QLabel("Remove background:") ,0, 0)
+        baselayout.addWidget(QtWidgets.QLabel("Remove background:"), 0, 0)
         button = QtWidgets.QPushButton()
         button.setText("Clear All")
         button.clicked.connect(self.clearBack)
@@ -3351,17 +3338,17 @@ class BackgroundDialog(QtWidgets.QDialog):
         baselayout.addWidget(page, 1, 0, 1, 2)
         layout = QtWidgets.QGridLayout()
         page.setLayout(layout)
-        page.clicked.connect(lambda x: self.styleSwitch(1,x))
+        page.clicked.connect(lambda x: self.styleSwitch(1, x))
         self.page1 = page
 
-        layout.addWidget(QtWidgets.QLabel("Color:") ,0, 0)
+        layout.addWidget(QtWidgets.QLabel("Color:"), 0, 0)
         if brush.style() == QtCore.Qt.BrushStyle.SolidPattern:
             color = brush.color()
             page.setChecked(True)
         else:
             color = QtGui.QColor(QtCore.Qt.GlobalColor.white)
             page.setChecked(False)
-        pix = QtGui.QPixmap(16,16)
+        pix = QtGui.QPixmap(16, 16)
         pix.fill(color)
         colorswatch = QtGui.QIcon(pix)
         button = QtWidgets.QToolButton()
@@ -3376,7 +3363,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         baselayout.addWidget(page, 2, 0, 1, 2)
         layout = QtWidgets.QGridLayout()
         page.setLayout(layout)
-        page.clicked.connect(lambda x: self.styleSwitch(2,x))
+        page.clicked.connect(lambda x: self.styleSwitch(2, x))
         self.page2 = page
         if brush.style() == QtCore.Qt.BrushStyle.TexturePattern:
             page.setChecked(True)
@@ -3388,16 +3375,16 @@ class BackgroundDialog(QtWidgets.QDialog):
         button = QtWidgets.QPushButton()
         button.setText("Image")
         button.clicked.connect(self.setImage)
-        layout.addWidget(button,0,1)
+        layout.addWidget(button, 0, 1)
 
 
         # -------------------------------------------------
-        page  = QtWidgets.QGroupBox("Radial Gradient")
+        page = QtWidgets.QGroupBox("Radial Gradient")
         page.setCheckable(True)
         baselayout.addWidget(page, 3, 0, 1, 2)
         layout = QtWidgets.QGridLayout()
         page.setLayout(layout)
-        page.clicked.connect(lambda x: self.styleSwitch(3,x))
+        page.clicked.connect(lambda x: self.styleSwitch(3, x))
         self.page3 = page
         if brush.style() == QtCore.Qt.BrushStyle.RadialGradientPattern:
             page.setChecked(True)
@@ -3408,7 +3395,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         layout.addWidget(QtWidgets.QLabel("Radius:"), 1, 0)
 
         col = QtGui.QColor(QtCore.Qt.GlobalColor.gray)
-        pix = QtGui.QPixmap(16,16)
+        pix = QtGui.QPixmap(16, 16)
         pix.fill(col)
         colorswatch = QtGui.QIcon(pix)
         button = QtWidgets.QToolButton()
@@ -3419,7 +3406,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         self.color1 = col
 
         col = QtGui.QColor(QtCore.Qt.GlobalColor.white)
-        pix = QtGui.QPixmap(16,16)
+        pix = QtGui.QPixmap(16, 16)
         pix.fill(col)
         colorswatch = QtGui.QIcon(pix)
         button = QtWidgets.QToolButton()
@@ -3430,29 +3417,27 @@ class BackgroundDialog(QtWidgets.QDialog):
         self.color2 = col
 
         self.radius = QtWidgets.QSpinBox()
-        self.radius.setRange(1,2000)
+        self.radius.setRange(1, 2000)
         self.radius.setValue(200)
         self.radius.setSingleStep(10)
         layout.addWidget(self.radius, 1, 1)
         self.radius.valueChanged.connect(self.setRadialBrush)
 
         # -------------------------------------------------
-        page  = QtWidgets.QGroupBox("General Properties")
+        page = QtWidgets.QGroupBox("General Properties")
         baselayout.addWidget(page, 4, 0, 1, 2)
         layout = QtWidgets.QGridLayout()
         page.setLayout(layout)
 
-
-        layout.addWidget(QtWidgets.QLabel("Scale:"),0,0)
+        layout.addWidget(QtWidgets.QLabel("Scale:"), 0, 0)
         scale = QtWidgets.QDoubleSpinBox()
-        scale.setRange(0.1,10)
+        scale.setRange(0.1, 10)
         scale.setValue(1)
         scale.setSingleStep(0.1)
-        layout.addWidget(scale,0,1)
+        layout.addWidget(scale, 0, 1)
         scale.valueChanged.connect(self.setScale)
 
         self.show()
-
 
     def setColor(self):
 
@@ -3460,15 +3445,13 @@ class BackgroundDialog(QtWidgets.QDialog):
         col = QtWidgets.QColorDialog.getColor(brush.color(), options=QtWidgets.QColorDialog.ColorDialogOption.ShowAlphaChannel )
         if col.isValid():
 
-            pix = QtGui.QPixmap(16,16)
+            pix = QtGui.QPixmap(16, 16)
             pix.fill(col)
             colorswatch = QtGui.QIcon(pix)
             self.colorswatchbutton.setIcon(colorswatch)
 
             brush = QtGui.QBrush(col, QtCore.Qt.BrushStyle.SolidPattern)
             self.scene.setBackgroundBrush(brush)
-
-
 
     def setBrushPattern(self, item):
         v = self.backgroundStyleCombo.itemData(item)
@@ -3502,7 +3485,7 @@ class BackgroundDialog(QtWidgets.QDialog):
 
         col = QtWidgets.QColorDialog.getColor(self.color1)
         if col.isValid():
-            pix = QtGui.QPixmap(16,16)
+            pix = QtGui.QPixmap(16, 16)
             pix.fill(col)
             colorswatch = QtGui.QIcon(pix)
             self.color1button.setIcon(colorswatch)
@@ -3514,7 +3497,7 @@ class BackgroundDialog(QtWidgets.QDialog):
 
         col = QtWidgets.QColorDialog.getColor(self.color2)
         if col.isValid():
-            pix = QtGui.QPixmap(16,16)
+            pix = QtGui.QPixmap(16, 16)
             pix.fill(col)
             colorswatch = QtGui.QIcon(pix)
             self.color2button.setIcon(colorswatch)
@@ -3524,10 +3507,10 @@ class BackgroundDialog(QtWidgets.QDialog):
 
     def setRadialBrush(self):
 
-        gradient = QtGui.QRadialGradient(0,0,self.radius.value(),0,0)
+        gradient = QtGui.QRadialGradient(0, 0, self.radius.value(), 0, 0)
         gradient.setColorAt(0, self.color1)
         gradient.setColorAt(1, self.color2)
-        brush=QtGui.QBrush(gradient)
+        brush = QtGui.QBrush(gradient)
 
         self.scene.setBackgroundBrush(brush)
 
@@ -3558,13 +3541,13 @@ def dot(v1,v2):
     '''
     return the dot product between v1 and v2
     '''
-
-    ans=0
-    for a in map(lambda x,y:x*y, v1,v2):
-        ans+=a
+    ans = 0
+    for a in map(lambda x, y: x*y, v1, v2):
+        ans += a
     return ans
+
 # ----------------------------------------------------------------------
-def distanceToLine(P,A,B):
+def distanceToLine(P, A, B):
     '''
     Calculate Euclidean distance from P to line A-B in any number of dimensions
     '''
@@ -3573,12 +3556,12 @@ def distanceToLine(P,A,B):
     A = tuple(A)
     B = tuple(B)
 
-    AP = [v for v in map(lambda x,y:x-y, A,P)]
-    AB = [v for v in map(lambda x,y:x-y, A,B)]
+    AP = [v for v in map(lambda x, y: x-y, A, P)]
+    AB = [v for v in map(lambda x, y: x-y, A, B)]
 
-    ABAP = dot(AB,AP)
-    ABAB = dot(AB,AB)
-    APAP = dot(AP,AP)
+    ABAP = dot(AB, AP)
+    ABAB = dot(AB, AB)
+    APAP = dot(AP, AP)
 
     d = sqrt(abs(APAP-ABAP**2/ABAB))
 
@@ -3631,21 +3614,21 @@ def simplifyLowes(curve, i,f, simplified, tol=.1):
 
     maxd = 0
     maxi = 0
-    for ii in range(i+1,f):
+    for ii in range(i+1, f):
         p = curve[ii]
-        d = distanceToLine(p,pl1,pl2)
+        d = distanceToLine(p, pl1, pl2)
         if d > maxd:
             maxd = d
             maxi = ii
 
     if maxd > tol:
 
-        if maxi==f-1:
+        if maxi == f-1:
             simplified.add(curve[maxi][0])
         else:
             simplified = simplifyLowes(curve, maxi, f, simplified, tol=tol)
 
-        if maxi==i+1:
+        if maxi == i+1:
             simplified.add(curve[maxi][0])
         else:
             simplified = simplifyLowes(curve, i, maxi, simplified, tol=tol)
@@ -3655,7 +3638,7 @@ def simplifyLowes(curve, i,f, simplified, tol=.1):
 
 def smoothInkPath(P):
 
-    if len(P)==0:
+    if len(P) == 0:
         logging.warning("zero stroke path length")
         return []
 
@@ -3672,9 +3655,9 @@ def smoothInkPath(P):
     raw = []
     # add indices to the points
     for pp in range(len(Ps)):
-        pt=list(Ps[pp])
+        pt = list(Ps[pp])
         pt[2] *= 10
-        pt.insert(0,pp)
+        pt.insert(0, pp)
         raw.append(pt)
 
     simplified = simplifyLowes(raw, 0, len(raw)-1, set(),
@@ -3683,7 +3666,7 @@ def smoothInkPath(P):
     simplified = list(simplified)
     simplified.sort()
 
-    S=[]
+    S = []
     for ii in simplified:
         S.append(Ps[ii])
 
@@ -3703,12 +3686,12 @@ def hsv_to_rgb(h, s, v):
     p = v * (1 - s)
     q = v * (1 - f*s)
     t = v * (1 - (1 - f) * s)
-    if h_i==0: r, g, b = v, t, p
-    if h_i==1: r, g, b = q, v, p
-    if h_i==2: r, g, b = p, v, t
-    if h_i==3: r, g, b = p, q, v
-    if h_i==4: r, g, b = t, p, v
-    if h_i==5: r, g, b = v, p, q
+    if h_i == 0: r, g, b = v, t, p
+    if h_i == 1: r, g, b = q, v, p
+    if h_i == 2: r, g, b = p, v, t
+    if h_i == 3: r, g, b = p, q, v
+    if h_i == 4: r, g, b = t, p, v
+    if h_i == 5: r, g, b = v, p, q
     return '#%X%X%X'%(round(r*255),round(g*255),round(b*255))
 
 #----------------------------------------------------------------------
@@ -3719,17 +3702,21 @@ class ContentItem:
     """
     def __getitem__(self, key):
         return self.stem.node['content'][self.uid][key]
+    
     def __setitem__(self, key, value):
         self.stem.node['content'][self.uid][key] = value
         self.stem.node.keyChanged('content')
+        
     def __delitem__(self, key):
         if self.uid in self.stem.node['content']:
             del self.stem.node['content'][self.uid][key]
             self.stem.node.keyChanged('content')
+            
     def deldata(self):
         if self.uid in self.stem.node['content']:
             del self.stem.node['content'][self.uid]
             self.stem.node.keyChanged('content')
+            
     def get(self, key, default=None):
         if key in self.stem.node['content'][self.uid]:
             return self.stem.node['content'][self.uid][key]
