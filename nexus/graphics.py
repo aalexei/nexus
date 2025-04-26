@@ -3756,8 +3756,8 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
         # self.width = stem.getcontent(self.uid,'width')
         # self.width = self.data['width']
         self.width = self['width']
-        self.color = QtGui.QColor(self.get('color','#000000'))
-        self.color.setAlphaF(self.get('opacity',1.0))
+        self.color = QtGui.QColor(self.get('color', '#000000'))
+        self.color.setAlphaF(self.get('opacity', 1.0))
 
         self.setinkpath(self['stroke'])
         self.setTransform(Transform(*self['frame']))
@@ -3806,14 +3806,14 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
 
     def setinkpath(self, S):
 
-        path=QtGui.QPainterPath(QtCore.QPointF(S[0][0],S[0][1]))
+        path = QtGui.QPainterPath(QtCore.QPointF(S[0][0], S[0][1]))
 
         b1 = None
-        for ii in range(1,len(S)):
-            b0 = QtCore.QPointF(S[ii-1][0],S[ii-1][1])
-            b1 = QtCore.QPointF(S[ii][0],S[ii][1])
+        for ii in range(1, len(S)):
+            b0 = QtCore.QPointF(S[ii-1][0], S[ii-1][1])
+            b1 = QtCore.QPointF(S[ii][0], S[ii][1])
 
-            if len(S[ii])>2:
+            if len(S[ii]) > 2:
                 # Last number is a width
                 width0 = self.width*S[ii-1][2]
                 width1 = self.width*S[ii][2]
@@ -3823,10 +3823,10 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
                 width1 = self.width
 
             d = b1-b0
-            length =  sqrt(d.x()**2+d.y()**2)
+            length =  sqrt(d.x()**2+d. y()**2)
             d = d/length
             # rotate by 90 deg
-            p = QtCore.QPointF(-d.y(),d.x())
+            p = QtCore.QPointF(-d.y(), d.x())
 
             p0 = b0-p*width0/2.0
             p1 = b1-p*width1/2.0
@@ -3834,13 +3834,12 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
             p3 = b0+p*width0/2.0
             path.moveTo(p0)
             path.lineTo(p1)
-            theta = degrees(atan2(-d.y(),d.x()))
-            path.arcTo(b1.x()-width1/2.0,b1.y()-width1/2.0,width1,width1,theta+90,-180)
+            theta = degrees(atan2(-d.y(), d.x()))
+            path.arcTo(b1.x()-width1/2.0, b1.y()-width1/2.0, width1, width1, theta+90, -180)
             path.lineTo(p3)
-            path.arcTo(b0.x()-width0/2.0,b0.y()-width0/2.0,width0,width0,theta-90,-180)
+            path.arcTo(b0.x()-width0/2.0, b0.y()-width0/2.0, width0, width0, theta-90, -180)
 
             path.closeSubpath()
-
 
         path.setFillRule(QtCore.Qt.FillRule.WindingFill)
         self.setPath(path)
@@ -3933,7 +3932,7 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
         # create box handle for changing width
         r = QtCore.QRectF(width-0.5, 0.5, 8, 8)
 
-        path=QtGui.QPainterPath()
+        path = QtGui.QPainterPath()
         path.addRect(r)
 
         self.setPath(path)
@@ -3950,7 +3949,6 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
         self.parentItem().setSelected(True)
         self.parentItem().setFocus()
         self.setSelected(False)
-
 
     def pointerMoveEvent(self, event):
         p = self.parentItem()
@@ -4013,7 +4011,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
-        self.setZValue(self.get('z',0))
+        self.setZValue(self.get('z', 0))
 
         self.setTabChangesFocus(True)
 
@@ -4032,7 +4030,6 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         # used to track moves, scales, etc
         self._changed = False
-
 
     def getSrc(self):
 
@@ -4084,7 +4081,6 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             self.setEditMode()
         else:
             self.setStaticMode()
-
 
     def setStaticMode(self):
         '''
@@ -4322,7 +4318,6 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         else:
             QtWidgets.QGraphicsTextItem.mousePressEvent(self, event)
 
-
         self.positionChanged.emit(self.textCursor())
 
     # def mouseMoveEvent(self, event):
@@ -4355,7 +4350,6 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         logging.warn('accessing setPos()')
         return QtWidgets.QGraphicsTextItem.setPos(self, *args)
 
-
     def keyPressEvent(self, event):
 
         # if event.key()==QtCore.Qt.Key.Key_Return and event.modifiers()==QtCore.Qt.KeyboardModifier.NoModifier:
@@ -4371,8 +4365,8 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
                 cursor = self.textCursor()
                 fmt = cursor.charFormat()
                 fmt.setFontWeight(QtGui.QFont.Weight.Normal \
-                                if fmt.fontWeight() > QtGui.QFont.Weight.Normal \
-                                else QtGui.QFont.Weight.Bold)
+                                  if fmt.fontWeight() > QtGui.QFont.Weight.Normal \
+                                  else QtGui.QFont.Weight.Bold)
                 cursor.mergeCharFormat(fmt)
 
             elif event.key() == QtCore.Qt.Key.Key_I:
@@ -4392,7 +4386,6 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             else:
                 QtWidgets.QGraphicsTextItem.keyPressEvent(self, event)
 
-
         elif self.mode in [self.EditMode, self.EditSourceMode]:
             QtWidgets.QGraphicsTextItem.keyPressEvent(self, event)
             self.positionChanged.emit(self.textCursor())
@@ -4401,7 +4394,6 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             for item in self.scene().selectedItems():
                 if item.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable:
                     item.handleKeyPressEvent(event)
-
 
     def handleKeyPressEvent(self, event):
 
@@ -4462,8 +4454,8 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         # if editing source put a light gray background to make it easier
         # to see ... chances are the source view will overlap other items
         if self.mode == self.EditSourceMode:
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(240,240,240)))
-            painter.setPen(QtGui.QPen(QtGui.QColor(0,0,0,0)))
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(240, 240, 240)))
+            painter.setPen(QtGui.QPen(QtGui.QColor(0, 0, 0, 0)))
             painter.drawRect(self.boundingRect())
         QtWidgets.QGraphicsTextItem.paint(self, painter, option, widget)
 
@@ -4489,7 +4481,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
             super().__init__(parent=parent)
 
         self.setAcceptHoverEvents(True)
-        self.setZValue(self.get('z',0))
+        self.setZValue(self.get('z', 0))
         #self.setZValue(z)
         self.setTransform(Transform(*self['frame']))
 
@@ -4505,7 +4497,6 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
 
         # used to track moves, scales, etc
         self._changed = False
-
 
     def deleteNodeItem(self, batch=None):
         '''
@@ -4606,7 +4597,7 @@ class Leaf(QtWidgets.QGraphicsItem):
 
     pad = 3
     tagitem = None
-    boundingrect = QtCore.QRectF() 
+    boundingrect = QtCore.QRectF()
 
     def __init__(self, stem):
         super().__init__(parent=stem)
@@ -4620,7 +4611,7 @@ class Leaf(QtWidgets.QGraphicsItem):
             self.leaf = QtWidgets.QGraphicsPixmapItem(QtGui.QPixmap(":/images/iconified.svg"), parent=self)
 
         else:
-            for u,k in stem.node['content'].items():
+            for u, k in stem.node['content'].items():
                 if k['kind'] == 'Stroke':
                     item = InkItem(uid=u, stem=self.stem, parent=self)
                 elif k['kind'] == 'Text':
@@ -4634,16 +4625,18 @@ class Leaf(QtWidgets.QGraphicsItem):
         # this is the size of the leaf before adding tags etc
         pad = self.pad
 
-        self.titlerect = self.childrenBoundingRect().adjusted(-pad,-pad,pad,pad)
+        self.titlerect = self.childrenBoundingRect().adjusted(-pad, -pad, pad, pad)
 
-        self.tags = stem.node.get('tags',set())
+        self.tags = stem.node.get('tags', set())
 
         self.setBoundingRect()
 
     def e(self):
         return self.titlerect.bottomRight()
+    
     def w(self):
         return self.titlerect.bottomLeft()
+    
     def c(self):
         return self.titlerect.center()
 
@@ -4681,8 +4674,11 @@ class OpenCloseWidget(QtWidgets.QGraphicsPathItem):
         self.stem = stem
         self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
 
-        self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1 , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
-        self.setBrush(QtGui.QBrush(QtGui.QColor(230,230,230)))
+        self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1,
+                               QtCore.Qt.PenStyle.SolidLine,
+                               QtCore.Qt.PenCapStyle.RoundCap,
+                               QtCore.Qt.PenJoinStyle.RoundJoin))
+        self.setBrush(QtGui.QBrush(QtGui.QColor(230, 230, 230)))
 
         self.open = True
         self.setBoundingRegionGranularity(1)
@@ -4693,7 +4689,7 @@ class OpenCloseWidget(QtWidgets.QGraphicsPathItem):
         childstems = self.stem.childStems2
 
         ## if no children .. don't show widget
-        if len(childnodes)==0:
+        if len(childnodes) == 0:
             self.hide()
             return
         else:
@@ -4742,13 +4738,13 @@ class OpenCloseWidget(QtWidgets.QGraphicsPathItem):
         batch = graphydb.generateUUID()
         if self.open:
             for child in childnodes:
-                if dohide and 'hide' in child.get('tags',set()):
+                if dohide and 'hide' in child.get('tags', set()):
                     continue
                 child['hide'] = True
                 child.save(batch=batch, setchange=True)
         else:
             for child in childnodes:
-                if dohide and 'hide' in child.get('tags',set()):
+                if dohide and 'hide' in child.get('tags', set()):
                     continue
                 child.discard('hide')
                 child.save(batch=batch, setchange=True)
@@ -4761,6 +4757,7 @@ class OpenCloseWidget(QtWidgets.QGraphicsPathItem):
 
         event.accept()
 
+
 class ActionWidget(QtWidgets.QGraphicsPathItem):
 
     def __init__(self, stem):
@@ -4768,8 +4765,11 @@ class ActionWidget(QtWidgets.QGraphicsPathItem):
         self.stem = stem
         self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
 
-        self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1 , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
-        self.setBrush(QtGui.QBrush(QtGui.QColor(230,230,230)))
+        self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1,
+                               QtCore.Qt.PenStyle.SolidLine,
+                               QtCore.Qt.PenCapStyle.RoundCap,
+                               QtCore.Qt.PenJoinStyle.RoundJoin))
+        self.setBrush(QtGui.QBrush(QtGui.QColor(230, 230, 230)))
 
         W = 12
         brush = self.brush()
@@ -4795,6 +4795,7 @@ class ActionWidget(QtWidgets.QGraphicsPathItem):
 
         event.accept()
 
+
 class ChildWidget(QtWidgets.QGraphicsPathItem):
 
     def __init__(self, stem):
@@ -4802,8 +4803,11 @@ class ChildWidget(QtWidgets.QGraphicsPathItem):
         self.stem = stem
         self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
 
-        self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1 , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
-        self.setBrush(QtGui.QBrush(QtGui.QColor(230,230,230)))
+        self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1,
+                               QtCore.Qt.PenStyle.SolidLine,
+                               QtCore.Qt.PenCapStyle.RoundCap,
+                               QtCore.Qt.PenJoinStyle.RoundJoin))
+        self.setBrush(QtGui.QBrush(QtGui.QColor(230, 230, 230)))
 
         D = 6
         d = 2
@@ -4837,7 +4841,7 @@ class ChildWidget(QtWidgets.QGraphicsPathItem):
     def mousePressEvent(self, event):
         self.stem.drawBud(self.mapToParent(event.pos()))
         event.accept()
-        
+
     def mouseMoveEvent(self, event):
         self.stem.drawBud(self.mapToParent(event.pos()))
         event.accept()
@@ -4863,7 +4867,7 @@ class StemItem(QtWidgets.QGraphicsItem):
     #_move_threshold = CONFIG['no_move_threshold']
     # _move_threshold = 0
 
-    def __init__(self, node, override={}, parent = None, scene = None):
+    def __init__(self, node, override={}, parent=None, scene=None):
 
         # TODO is this still necessary?
         if parent is None:
@@ -4895,14 +4899,16 @@ class StemItem(QtWidgets.QGraphicsItem):
         ## widget to show stem as selected
         ##
         self.selectpath = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(), self)
-        self.selectpath.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1, QtCore.Qt.PenStyle.DashLine))
+        self.selectpath.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black,
+                                          1, QtCore.Qt.PenStyle.DashLine))
         self.selectpath.hide()
 
         ##
         ## widget to show stem as being edited
         ##
         self.editedpath = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(), self)
-        self.editedpath.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.red, 2, QtCore.Qt.PenStyle.SolidLine))
+        self.editedpath.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.red,
+                                          2, QtCore.Qt.PenStyle.SolidLine))
         self.editedpath.hide()
 
         ##
@@ -4955,13 +4961,13 @@ class StemItem(QtWidgets.QGraphicsItem):
         ##
         ## setup a basic starting point for flags etc
         ##
-        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable,True)
-        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable,True)
-        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity,True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity, True)
         self.setSelected(False)
         self.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
 
-        self.path = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(),self)
+        self.path = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(), self)
 
         self.newstemtail = None
 
@@ -5033,7 +5039,6 @@ class StemItem(QtWidgets.QGraphicsItem):
             ## Use temporary variable so original value is recursed
             tmpposition = True
 
-
         if position or tmpposition:
             self.positionLeaf()
 
@@ -5052,7 +5057,7 @@ class StemItem(QtWidgets.QGraphicsItem):
                     self.childStems2.remove(qc)
 
             ## welcome new children
-            currentchilduids = [ q.node['uid'] for q in self.childStems2]
+            currentchilduids = [q.node['uid'] for q in self.childStems2]
             for n in childNodes:
                 if n['uid'] not in currentchilduids:
                     child = StemItem(node=n, scene=self.scene(), parent=self)
@@ -5064,7 +5069,9 @@ class StemItem(QtWidgets.QGraphicsItem):
         if recurse:
             ## renew children
             for child in list(self.childStems2):
-                child.renew(reload=reload, create=create, position=position, children=children, recurse=recurse)
+                child.renew(reload=reload, create=create,
+                            position=position, children=children,
+                            recurse=recurse)
 
         self.reindexChildren()
 
@@ -5088,7 +5095,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         ##
         ## create stem index text to show order
         ##
-        if self.depth==0:
+        if self.depth == 0:
             ## no stem index on root
             self.indexText = None
             self.indexBack = None
@@ -5099,7 +5106,10 @@ class StemItem(QtWidgets.QGraphicsItem):
 
             indexBack = QtWidgets.QGraphicsPathItem(path, self)
             indexBack.setBrush(QtGui.QBrush(QtGui.QColor(self.style('branchcolor')).lighter()))
-            indexBack.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.gray, 0.1 , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
+            indexBack.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.gray, 0.1,
+                                        QtCore.Qt.PenStyle.SolidLine,
+                                        QtCore.Qt.PenCapStyle.RoundCap,
+                                        QtCore.Qt.PenJoinStyle.RoundJoin))
             indexBack.setZValue(11)
 
             self.indexText = QtWidgets.QGraphicsSimpleTextItem(str(self.index), indexBack)
@@ -5123,11 +5133,14 @@ class StemItem(QtWidgets.QGraphicsItem):
             penwidth = 2
             pad = 10
 
-            tr = self.leaf.mapToParent(self.leaf.boundingRect()).boundingRect().adjusted(-pad,-pad,pad,pad)
+            tr = self.leaf.mapToParent(self.leaf.boundingRect()).boundingRect().adjusted(-pad, -pad, pad, pad)
             path = QtGui.QPainterPath()
             path.addRoundedRect(tr,6,6)
-            self.path.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, penwidth , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
-            self.path.setBrush(QtGui.QBrush(QtGui.QColor(200,200,200)))
+            self.path.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, penwidth,
+                                        QtCore.Qt.PenStyle.SolidLine,
+                                        QtCore.Qt.PenCapStyle.RoundCap,
+                                        QtCore.Qt.PenJoinStyle.RoundJoin))
+            self.path.setBrush(QtGui.QBrush(QtGui.QColor(200, 200, 200)))
             self.path.setPath(path)
 
         else:
@@ -5155,7 +5168,10 @@ class StemItem(QtWidgets.QGraphicsItem):
             path.addRoundedRect(rect, 1, 1)
             back = QtWidgets.QGraphicsPathItem(path, self.tagitems)
             back.setTransform(QtGui.QTransform.fromTranslate(offset, 0), True)
-            back.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.gray, 0 , QtCore.Qt.PenStyle.SolidLine, QtCore.Qt.PenCapStyle.RoundCap, QtCore.Qt.PenJoinStyle.RoundJoin))
+            back.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.gray, 0,
+                                   QtCore.Qt.PenStyle.SolidLine,
+                                   QtCore.Qt.PenCapStyle.RoundCap,
+                                   QtCore.Qt.PenJoinStyle.RoundJoin))
             back.setBrush(QtGui.QBrush(QtGui.QColor('#ffffbb')))
             back.setZValue(-10)
 
@@ -5164,11 +5180,11 @@ class StemItem(QtWidgets.QGraphicsItem):
         T = QtGui.QTransform.fromScale(.4, .4)
         if self.depth > 0:
             if self.direction() > 0:
-                T = T.translate(0,(1+self.stemwidth)/0.4)
+                T = T.translate(0, (1+self.stemwidth)/0.4)
                 self.tagitems.setTransform(T)
             else:
                 w = self.tagitems.childrenBoundingRect().width()
-                T = T.translate(-w,(1+self.stemwidth)/0.4)
+                T = T.translate(-w, (1+self.stemwidth)/0.4)
                 self.tagitems.setTransform(T)
         else:
             # TODO position the tags on central node somewhere visible
@@ -5199,7 +5215,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         ##
         tr = self.leaf.mapToParent(self.leaf.boundingRect()).boundingRect()
         sp = QtGui.QPainterPath()
-        if self.depth==0:
+        if self.depth == 0:
             tr = tr.adjusted(-5, -5, 5, 5)
         sp.addRect(tr)
         self.selectpath.setPath(sp)
@@ -5217,26 +5233,26 @@ class StemItem(QtWidgets.QGraphicsItem):
         ##
         ## Position open-close symbol
         ##
-        if self.depth==0:
-            p = self.boundingRect().bottomRight()-QtCore.QPointF(0,0)
+        if self.depth == 0:
+            p = self.boundingRect().bottomRight()-QtCore.QPointF(0, 0)
         else:
             # TODO why the correction of -2?
-            p = self.tip()+QtCore.QPointF(0,self.stemwidth-2)/2.0
-        self.openclose.setTransform(QtGui.QTransform.fromTranslate(p.x(),p.y()))
+            p = self.tip()+QtCore.QPointF(0, self.stemwidth-2)/2.0
+        self.openclose.setTransform(QtGui.QTransform.fromTranslate(p.x(), p.y()))
 
 
         #self.openclose.setSymbol()
         self.redrawTail()
 
     def redrawTail(self):
-        if self.depth>0:
+        if self.depth > 0:
             Proot = self.mapFromParent(self.parentStem().tip())
-            R=(self.rootwidth if self.depth==1 else self.stemwidth)/float(self.node.get('scale', 1.0))
+            R = (self.rootwidth if self.depth==1 else self.stemwidth)/float(self.node.get('scale', 1.0))
             path = self.createTailPath(Proot, QtCore.QPointF(0, 0), self.tip(), self.direction(), R)
             self.path.setPath(path)
 
     def __getattr__(self, name):
-        if name[0]=='c' and isinstance( int(name[1:]), int ) and int(name[1:]) >=0:
+        if name[0] == 'c' and isinstance(int(name[1:]), int) and int(name[1:]) >= 0:
             return self.child(int(name[1:]))
         else:
             raise AttributeError
@@ -5250,7 +5266,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
     def reindexChildren(self):
         self.childStems2.sort(key=lambda x: x.posangle())
-        for i,child in enumerate(self.childStems2):
+        for i, child in enumerate(self.childStems2):
             child.index = i
             child.indexText.setText(str(i))
 
@@ -5263,14 +5279,13 @@ class StemItem(QtWidgets.QGraphicsItem):
             value = self.parentStem().style(key)
         else:
             defaults = {
-                'branchcolor':'#999999',
-                'scale':CONFIG['child_scale'],
-                'opacity':1.0,
+                'branchcolor': '#999999',
+                'scale': CONFIG['child_scale'],
+                'opacity': 1.0,
             }
             value = defaults[key]
 
         return value
-
 
     def createTailPath(self, Proot, Pbase, Ptip, direction, R):
         '''
@@ -5286,7 +5301,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         '''
 
         ## H is a relative vector
-        H=QtCore.QPointF(0, self.stemwidth)
+        H = QtCore.QPointF(0, self.stemwidth)
 
         L = sqrt((Pbase.x()-Proot.x())**2+(Pbase.y()-Proot.y())**2)
         control = QtCore.QPointF(-0.4*L*direction, 0)
@@ -5307,7 +5322,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         path.lineTo(Ptip)
         path.lineTo(Pbase)
         path.quadTo(Pbase+control, ppt)
-        if direction >0:
+        if direction > 0:
             start = 180-180*theta/pi
             sweep = 180
         else:
@@ -5503,37 +5518,35 @@ class StemItem(QtWidgets.QGraphicsItem):
     #         # logging.debug('Timer triggered not in MPRESS')
     #         pass
 
-
     def contextMenu(self, global_pos=None):
         cmenu = QtWidgets.QMenu()
-        edit_action=cmenu.addAction("Edit")
+        edit_action = cmenu.addAction("Edit")
         cmenu.addSeparator()
-        copy_action=cmenu.addAction("Copy")
-        cut_action=cmenu.addAction("Cut")
-        paste_action=cmenu.addAction("Paste")
-        copylink_action=cmenu.addAction("Copy Link")
+        copy_action = cmenu.addAction("Copy")
+        cut_action = cmenu.addAction("Cut")
+        paste_action = cmenu.addAction("Paste")
+        copylink_action = cmenu.addAction("Copy Link")
         cmenu.addSeparator()
-        delete_action=cmenu.addAction("Delete")
+        delete_action = cmenu.addAction("Delete")
         cmenu.addSeparator()
         #presentation_action=cmenu.addAction("Presentation")
 
         action = cmenu.exec(global_pos)
 
-        if action==edit_action:
+        if action == edit_action:
             self.editStem()
-        elif action==delete_action:
+        elif action == delete_action:
             self.scene().delete(stem=self)
-        elif action==cut_action:
+        elif action == cut_action:
             self.scene().cut(stem=self)
-        elif action==copy_action:
+        elif action == copy_action:
             self.scene().copy(stem=self)
-        elif action==paste_action:
+        elif action == paste_action:
             self.scene().paste(stem=self)
-        elif action==copylink_action:
+        elif action == copylink_action:
             self.scene().copyStemLink(stem=self)
         #elif action==presentation_action:
         #    print('presentation')
-
 
     def mouseDoubleClickEvent(self, event):
         self._m_state = MDOUBLE
@@ -5543,10 +5556,10 @@ class StemItem(QtWidgets.QGraphicsItem):
     def drawBud(self, p):
 
         if self.newstemtail is None:
-            self.newstemtail = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(),self)
+            self.newstemtail = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(), self)
             self.newstemtail.setPen(QtGui.QPen(QtCore.Qt.PenStyle.NoPen))
-            if self.depth==0:
-                color=QtGui.QColor(hsv_to_rgb(random.random(), 0.6, 0.85))
+            if self.depth == 0:
+                color = QtGui.QColor(hsv_to_rgb(random.random(), 0.6, 0.85))
             else:
                 color = QtGui.QColor(self.style('branchcolor'))
             color.setAlphaF(0.3)
@@ -5577,12 +5590,12 @@ class StemItem(QtWidgets.QGraphicsItem):
         ## move the selected stems
         for stem in selected:
             parent = stem.parentStem()
-            if  parent is not None:
+            if parent is not None:
                 ## branch
                 ptip = parent.mapToScene(parent.tip())
             else:
                 ## root
-                ptip = QtCore.QPointF(0,0)
+                ptip = QtCore.QPointF(0, 0)
 
             newbase = stem._scenebase + scenedp
 
@@ -5634,37 +5647,37 @@ class StemItem(QtWidgets.QGraphicsItem):
 
 
     def direction(self):
-        if self.depth==0:
+        if self.depth == 0:
             return 1
         else:
             return self.parentStem().direction()*self.node['flip']
 
     def base(self):
         p = self.node['pos'] ## Don't modify p in place!
-        if self.depth==0:
-            return QtCore.QPointF(p[0],p[1])
+        if self.depth == 0:
+            return QtCore.QPointF(p[0], p[1])
         else:
-            if self.direction()<0:
-                return self.parentStem().tip()+QtCore.QPointF(-p[0],p[1])
+            if self.direction() < 0:
+                return self.parentStem().tip()+QtCore.QPointF(-p[0], p[1])
             else:
-                return self.parentStem().tip()+QtCore.QPointF(p[0],p[1])
+                return self.parentStem().tip()+QtCore.QPointF(p[0], p[1])
 
     def tip(self):
         '''
         return location of tip of stem in local item co-ordinates
         '''
         if self.depth == 0:
-            tx,ty = 0.0, 0.0
+            tx, ty = 0.0, 0.0
         else:
             leaf = self.leaf
             if self.direction() < 0:
                 p = leaf.w() - leaf.e()
-                tx,ty = -p.x(), p.y()
+                tx, ty = -p.x(), p.y()
             else:
                 p = leaf.e() - leaf.w()
-                tx,ty = p.x(), p.y()
+                tx, ty = p.x(), p.y()
 
-        return QtCore.QPointF(self.direction()*tx,ty)
+        return QtCore.QPointF(self.direction()*tx, ty)
 
     def getTags(self):
         '''
@@ -5688,17 +5701,16 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         tip = self.tip()
 
-        X = tip.x() +self.direction()*30
+        X = tip.x() + self.direction()*30
 
         ys = [c.mapToParent(c.parentStem().tip()).y() for c in self.childStems2]
 
-        if len(ys)>0:
+        if len(ys) > 0:
             Y = max(ys)+20
         else:
             Y = -20
 
-        return X,Y
-
+        return X, Y
 
     def newStem(self, p=QtCore.QPointF(), fullscreen=False, iconified=False):
 
@@ -5716,12 +5728,12 @@ class StemItem(QtWidgets.QGraphicsItem):
         else:
             scale = self.transform().m11()
 
-        dp=p-self.tip()
+        dp = p-self.tip()
         newnode['scale'] = scale
         newnode['flip'] = sign(dp.x())*self.direction()
         if iconified:
-            newnode['iconified']=True
-        if self.direction()*newnode['flip']<0:
+            newnode['iconified'] = True
+        if self.direction()*newnode['flip'] < 0:
             newnode['pos'] = [-dp.x(), dp.y()]
         else:
             newnode['pos'] = [dp.x(), dp.y()]
@@ -5745,7 +5757,6 @@ class StemItem(QtWidgets.QGraphicsItem):
         '''
         self.scene().showEditDialog.emit(self)
 
-
     def parentStem(self):
         '''
         return parent stem ... here for completeness
@@ -5757,13 +5768,12 @@ class StemItem(QtWidgets.QGraphicsItem):
         '''
         return list of all ancestors
         '''
-        parents= []
+        parents = []
         parent = self.parentStem()
         while parent is not None:
             parents.append(parent)
             parent = parent.parentStem()
         return parents
-
 
     def posangle(self):
         x, y = self.node['pos']
@@ -5771,14 +5781,13 @@ class StemItem(QtWidgets.QGraphicsItem):
         ## y measured down in QT
         y *= -1
         parentdirection = self.direction()*self.node['flip']
-        if self.depth==1:
-            theta=fmod(5*pi/2-atan2(y,x), 2*pi)
+        if self.depth == 1:
+            theta = fmod(5*pi/2-atan2(y, x), 2*pi)
         elif parentdirection > 0:
-            theta=fmod(pi-atan2(y,x), 2*pi)
+            theta = fmod(pi-atan2(y, x), 2*pi)
         else:
-            theta=fmod(2*pi+atan2(y,x), 2*pi)
+            theta = fmod(2*pi+atan2(y, x), 2*pi)
         return theta
-
 
     def allChildStems(self, nottaggedhide=False):
         '''
@@ -5799,13 +5808,13 @@ class StemItem(QtWidgets.QGraphicsItem):
         if self.isSelected():
             self.selectpath.show()
             t = self.tip()
-            dW = 16 # distance from tip (don't obscure the open/close widget)
-            if self.direction()>0:
-                tt = self.selectpath.boundingRect().bottomRight()+QtCore.QPointF(-dW/2,dW)
-                bb = self.selectpath.boundingRect().bottomLeft()+QtCore.QPointF(dW/2,dW)
+            dW = 16  # distance from tip (don't obscure the open/close widget)
+            if self.direction() > 0:
+                tt = self.selectpath.boundingRect().bottomRight()+QtCore.QPointF(-dW/2, dW)
+                bb = self.selectpath.boundingRect().bottomLeft()+QtCore.QPointF(dW/2, dW)
             else:
-                tt = self.selectpath.boundingRect().bottomLeft()+QtCore.QPointF(dW/2,dW)
-                bb = self.selectpath.boundingRect().bottomRight()+QtCore.QPointF(-dW/2,dW)
+                tt = self.selectpath.boundingRect().bottomLeft()+QtCore.QPointF(dW/2, dW)
+                bb = self.selectpath.boundingRect().bottomRight()+QtCore.QPointF(-dW/2, dW)
             self.actionWidget.setPos(bb)
             self.actionWidget.show()
             #self.childWidget.setPos(t.x()+self.direction()*dW, 0)
@@ -5822,11 +5831,10 @@ class StemItem(QtWidgets.QGraphicsItem):
         else:
             self.editedpath.hide()
 
-
     def boundingRect(self):
 
         if hasattr(self, 'selectpath'):
-            return self.selectpath.boundingRect().adjusted(-2,-2,2,2)
+            return self.selectpath.boundingRect().adjusted(-2, -2, 2, 2)
         else:
             return QtCore.QRectF()
 
