@@ -191,7 +191,7 @@ class Collection(set):
     ## actions with set
     ##
 
-    def alpha(self,a=1.0):
+    def alpha(self, a=1.0):
         batch = graphydb.generateUUID()
         for stem in self:
             if a < 1:
@@ -241,7 +241,7 @@ class Collection(set):
         for stem in self:
             transform = stem.transform()
             currentscale = transform.m11()
-            transform.scale(scale/currentscale,scale/currentscale)
+            transform.scale(scale/currentscale, scale/currentscale)
             stem.setTransform(transform)
         for stem in self:
             stem.updateStem()
@@ -272,6 +272,5 @@ Collection._wrap_methods(['__ror__', 'difference_update', '__isub__',
 
 ## for testing purposes ....
 if __name__ == '__main__':
-
 
     import sys

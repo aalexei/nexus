@@ -187,8 +187,8 @@ class InputDialog(QtWidgets.QDialog):
         self.toolbar = QtWidgets.QToolBar()
         self.toolbar.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.toolbar.setIconSize(QtCore.QSize(CONFIG['icon_size'], CONFIG['icon_size']))
-        #self.toolbar.setMovable(True)
-        #self.toolbar.setFloatable(True)
+        # self.toolbar.setMovable(True)
+        # self.toolbar.setFloatable(True)
         layout.addWidget(self.toolbar)
 
         ## tab widget to hold main editing components
@@ -273,8 +273,8 @@ class InputDialog(QtWidgets.QDialog):
         self.sourceAct.setCheckable(True)
 
         editMenu = dialogMenuBar.addMenu(self.tr("&Edit"))
-        #editMenu.addAction(self.undoAct)
-        #editMenu.addSeparator()
+        # editMenu.addAction(self.undoAct)
+        # editMenu.addSeparator()
         editMenu.addAction(self.cutAct)
         editMenu.addAction(self.copyAct)
         editMenu.addAction(self.pasteAct)
@@ -296,7 +296,7 @@ class InputDialog(QtWidgets.QDialog):
         settingslayout.addWidget(branchsettings)
 
         playout = QtWidgets.QFormLayout(branchsettings)
-        #branchsettings.setLayout(branchsettings)
+        # branchsettings.setLayout(branchsettings)
 
         # Iconified checkbox
         self.iconCheck = QtWidgets.QCheckBox()
@@ -401,7 +401,8 @@ class InputDialog(QtWidgets.QDialog):
         tags = self.stem.node.get('tags', set())
         self.tagsEdit.setText(' '.join(tags))
 
-        self.scalewidget.setValue(float(self.stem.node.get('scale', CONFIG['child_scale'])))
+        self.scalewidget.setValue(float(self.stem.node.get('scale',
+                                                           CONFIG['child_scale'])))
 
         pix = QtGui.QPixmap(50, 50)
         if 'branchcolor' in self.stem.node:
@@ -454,7 +455,7 @@ class InputDialog(QtWidgets.QDialog):
 
         # TODO clean up code
         # set the initial mode
-        #if sum(itemnumbers.values()) == 0:
+        # if sum(itemnumbers.values()) == 0:
 
         # if len(items) == 0:
         #     # it's a new blank item, go off the mode
@@ -552,7 +553,8 @@ class InputDialog(QtWidgets.QDialog):
             else:
                 self.stem.node.discard('tags')
             self.stem.node.save(setchange=True)
-            self.stem.renew(reload=False, create=True, children=False, recurse=False, position=False)
+            self.stem.renew(reload=False, create=True, children=False,
+                            recurse=False, position=False)
 
     def iconifiedChanged(self, state):
         # Callback for checkbox
@@ -563,14 +565,16 @@ class InputDialog(QtWidgets.QDialog):
         else:
             self.stem.node.discard('iconified')
         self.stem.node.save(setchange=True)
-        self.stem.renew(reload=False, create=True, children=False, recurse=True, position=False)
+        self.stem.renew(reload=False, create=True, children=False,
+                        recurse=True, position=False)
 
     def scaleWidgetChanged(self, scale):
         # Callback for spinbox
         if 'scale' not in self.stem.node or self.stem.node['scale'] != scale:
             self.stem.node['scale'] = scale
             self.stem.node.save(setchange=True)
-            self.stem.renew(reload=False, children=False, recurse=False, position=False)
+            self.stem.renew(reload=False, children=False,
+                            recurse=False, position=False)
 
     def branchInheritColourChanged(self, state):
         # Callback for checkbox
@@ -580,7 +584,8 @@ class InputDialog(QtWidgets.QDialog):
             if 'branchcolor' in self.stem.node:
                 del self.stem.node['branchcolor']
                 self.stem.node.save(setchange=True)
-                self.stem.renew(reload=False, children=False, recurse=True, position=False)
+                self.stem.renew(reload=False, children=False,
+                                recurse=True, position=False)
         else:
             self.branchcolorbutton.setDisabled(False)
             self.setBranchColour()
@@ -589,7 +594,7 @@ class InputDialog(QtWidgets.QDialog):
         # This is only triggered when inherit unchecked
         d = QtWidgets.QColorDialog()
         color = QtGui.QColor(self.stem.node.get('branchcolor', 'gray'))
-        color = d.getColor(color, self,  self.tr("Choose a Color"))
+        color = d.getColor(color, self, self.tr("Choose a Color"))
 
         if color.isValid():
             pix = QtGui.QPixmap(50, 50)
@@ -764,9 +769,10 @@ class InputDialog(QtWidgets.QDialog):
         self.textColorAct.triggered.connect(self.textColorEvent)
 
         # ----------------------------------------------------------------------------------
-        pix = QtGui.QPixmap(16,16)
+        pix = QtGui.QPixmap(16, 16)
         pix.fill(QtCore.Qt.GlobalColor.yellow)
-        self.textBackColorAct = QtGui.QAction(QtGui.QIcon(pix), self.tr("Background Color"), self)
+        self.textBackColorAct = QtGui.QAction(QtGui.QIcon(pix),
+                                              self.tr("Background Color"), self)
         self.textBackColorAct.setStatusTip(self.tr("Background Color"))
         self.textBackColorAct.setVisible(False)
         self.textBackColorAct.triggered[bool].connect(self.textBackColorEvent)
@@ -806,7 +812,6 @@ class InputDialog(QtWidgets.QDialog):
         return QtGui.QIcon(pix)
 
     def setPropMode(self):
-
         if self.propmode.isChecked():
             self.stackedwidget.setCurrentIndex(1)
 
@@ -814,7 +819,6 @@ class InputDialog(QtWidgets.QDialog):
             self.stackedwidget.setCurrentIndex(0)
 
     def setPenCursor(self):
-
         if not self.ishighlighter:
             # Pen selected
             color = QtGui.QColor(self.scene.graph.getsetting('pencolor', '#FF000000'))
@@ -867,12 +871,12 @@ class InputDialog(QtWidgets.QDialog):
         self.underlineAct.setVisible(True)
         self.textColorAct.setVisible(True)
         self.textBackColorAct.setVisible(True)
-        #self.textFont.setVisible(True)
+        # self.textFont.setVisible(True)
         self.fontAct.setVisible(True)
-        #self.textFontSize.setVisible(True)
+        # self.textFontSize.setVisible(True)
         self.clearFormatAct.setVisible(True)
 
-        #self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
+        # self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
         # self.scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor("White")))
 
         self.view.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
@@ -897,8 +901,8 @@ class InputDialog(QtWidgets.QDialog):
             self.stem.node.save(setchange=True)
             textitem = TextItem(uid, self.stem, scene=self.scene)
             textitem.positionChanged.connect(self.setTextControls)
-            #textitem.setMode(TextMode)
-            #textitem.setFocus()
+            # textitem.setMode(TextMode)
+            # textitem.setFocus()
             items.append(textitem)
 
         # TODO need method for adding additional text items to stem
@@ -1007,11 +1011,11 @@ class InputDialog(QtWidgets.QDialog):
         self.underlineAct.setVisible(False)
         self.textColorAct.setVisible(False)
         self.textBackColorAct.setVisible(False)
-        #self.textFont.setVisible(False)
+        # self.textFont.setVisible(False)
         self.fontAct.setVisible(False)
         self.clearFormatAct.setVisible(False)
 
-        #self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
+        # self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
         # self.scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor("White")))
         self.view.viewport().setCursor(QtCore.Qt.CursorShape.ArrowCursor)
 
@@ -1097,7 +1101,7 @@ class InputDialog(QtWidgets.QDialog):
                     fmt.setFontWeight(QtGui.QFont.Weight.Bold)
                 else:
                     fmt.setFontWeight(QtGui.QFont.Weight.Normal)
-                cursor=item.textCursor()
+                cursor = item.textCursor()
                 cursor.mergeCharFormat(fmt)
                 item.setTextCursor(cursor)
                 break
@@ -1195,7 +1199,7 @@ class InputDialog(QtWidgets.QDialog):
         batch = graphydb.generateUUID()
         for item in selected:
             item.deleteNodeItem(batch)
-            #self.scene.removeItem(item)
+            # self.scene.removeItem(item)
         self.scene.setSelectionWidget()
         self.scene.refreshStem(reload=False)
 
@@ -1443,7 +1447,8 @@ class InkScene(QtWidgets.QGraphicsScene):
         '''
         Refresh the stem on the map
         '''
-        self.stem.renew(reload=reload, create=True, position=False, children=False, recurse=True)
+        self.stem.renew(reload=reload, create=True, position=False,
+                        children=False, recurse=True)
 
     def addItem(self, item):
         QtWidgets.QGraphicsScene.addItem(self, item)
@@ -1570,7 +1575,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
 
         self.overRect = OverRect(self)
 
-        #self.setMode(self.ResizeMode)
+        # self.setMode(self.ResizeMode)
 
     def setSelectedItems(self, selected=[]):
         self.selected = selected
@@ -1612,7 +1617,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
 
     def pointerPressEvent(self, event):
 
-        #QtWidgets.QGraphicsItem.mousePressEvent(self, event)
+        # QtWidgets.QGraphicsItem.mousePressEvent(self, event)
 
         if not hasattr(event, "source"):
             # ignore events if they are not from one of the sub widgets
@@ -1623,8 +1628,8 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
             # this shouldn't normally trigger
             return
 
-        #self.mousePressScreenPos = event.screenPos
-        #self.mousePressTime = time.time()
+        # self.mousePressScreenPos = event.screenPos
+        # self.mousePressTime = time.time()
 
         # find bounding rect of selected items
         rect = QtCore.QRectF()
@@ -1654,7 +1659,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         elif event.source == "tE":
             self.pivot = (rect.bottomLeft()+rect.topLeft())/2.0
 
-        #event.accept()
+        # event.accept()
 
     def pointerMoveEvent(self, event):
 
@@ -1666,7 +1671,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
             self.moveItems(event)
 
     def pointerReleaseEvent(self, event):
-        #QtWidgets.QGraphicsItem.mouseReleaseEvent(self, event)
+        # QtWidgets.QGraphicsItem.mouseReleaseEvent(self, event)
 
         # save any changed items
         batch = graphydb.generateUUID()
@@ -1674,7 +1679,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
             if item._changed:
                 item['frame'] = Transform(item.transform()).tolist()
                 # Trigger a change
-                #item.stemnode.keyChanged('content')
+                # item.stemnode.keyChanged('content')
                 item.stem.node.save(setchange=True, batch=batch)
                 item._changed = False
 
@@ -1911,15 +1916,15 @@ class InkView(QtWidgets.QGraphicsView):
         self.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
         self.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         self.setCacheMode(QtWidgets.QGraphicsView.CacheModeFlag.CacheBackground)
-        #self.setDragMode(QtGui.QGraphicsView.NoDrag)
-        #self.setDragMode(QtGui.QGraphicsView.ScrollHandDrag)
-        #self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
+        # self.setDragMode(QtGui.QGraphicsView.NoDrag)
+        # self.setDragMode(QtGui.QGraphicsView.ScrollHandDrag)
+        # self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
         self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        #self.setResizeAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        #self.setTransformationAnchor(QtGui.QGraphicsView.NoAnchor)
+        # self.setResizeAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        # self.setTransformationAnchor(QtGui.QGraphicsView.NoAnchor)
 
 
-        #self.grabGesture(QtCore.Qt.GestureType.PanGesture)
+        # self.grabGesture(QtCore.Qt.GestureType.PanGesture)
         self.grabGesture(QtCore.Qt.GestureType.PinchGesture)
 
         self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.SmartViewportUpdate)
@@ -2140,7 +2145,8 @@ class InkView(QtWidgets.QGraphicsView):
         '''
         # t = time.time()
         scene = self.scene()
-        itemunder = scene.itemAt(QtCore.QPointF(*[int(x) for x in event.scenePos]), self.transform())
+        itemunder = scene.itemAt(QtCore.QPointF(*[int(x) for x in event.scenePos]),
+                                 self.transform())
         if isinstance(itemunder, (OverRect, TransformationHandle, TextWidthWidget)):
             self._itemUnder = itemunder
             itemunder.pointerPressEvent(event)
@@ -2200,11 +2206,10 @@ class InkView(QtWidgets.QGraphicsView):
 
         self.viewChangeStream.emit(self)
 
-
     #
     # Pen action
     #
-    def penPressEvent(self, scenePos, pressure = 0.5):
+    def penPressEvent(self, scenePos, pressure=0.5):
 
         t = time.time()
         scene = self.scene()
@@ -2223,7 +2228,6 @@ class InkView(QtWidgets.QGraphicsView):
 
         self.viewChangeStream.emit(self)
 
-
     def penMoveEvent(self, scenePos, pressure=0.5):
 
         t = time.time()
@@ -2232,10 +2236,10 @@ class InkView(QtWidgets.QGraphicsView):
         # empasise more the initial changes in pressure
         # tunes to astropad .. alittle heavy for wacom
         # TODO make the pressure curve user adjustable
-        #pressure = 1-exp(-2*pressure)
-        #a= -0.3
-        #b = 4
-        #pressure = a*(1-pow(1-pressure,b))+(1-a)*pressure
+        # pressure = 1-exp(-2*pressure)
+        # a= -0.3
+        # b = 4
+        # pressure = a*(1-pow(1-pressure,b))+(1-a)*pressure
 
         p1 = scene._lastScenePos
         p2 = scenePos
@@ -2295,10 +2299,10 @@ class InkView(QtWidgets.QGraphicsView):
         T.translate(p0[0], p0[1])
         data['frame'] = T.tolist()
 
-        #stemnode = scene.stem.node
+        # stemnode = scene.stem.node
         uid = graphydb.generateUUID()
         scene.stem.node['content'][uid] = data
-        #stemnode['content'].append(data)
+        # stemnode['content'].append(data)
         scene.stem.node.keyChanged('content')
         # print('content', stemnode['data']['content'])
         scene.stem.node.save(setchange=True)
@@ -2379,7 +2383,7 @@ class InkView(QtWidgets.QGraphicsView):
         if platform.system() == 'Darwin':
             # On a mac the centre of the pinch gesture is not useful at the trackpad is relative
             # Need to use the cursor position as the centre:
-            #v1 = self.mapFromGlobal(QtGui.QCursor.pos())
+            # v1 = self.mapFromGlobal(QtGui.QCursor.pos())
             v1 = pinch.centerPoint().toPoint()
         else:
             v1 = self.mapFromGlobal(pinch.centerPoint()).toPoint()
@@ -2423,8 +2427,8 @@ class InkView(QtWidgets.QGraphicsView):
         # logging.debug('Pinch dist %f', dist)
 
         # base movement stickiness on view coordinates (finger motion)
-        if not ( CONFIG['pinch_no_scale_threshold'][0]<Stot<CONFIG['pinch_no_scale_threshold'][1] \
-                 and abs(Rtot)<CONFIG['pinch_no_rotate_threshold']): 
+        if not (CONFIG['pinch_no_scale_threshold'][0] < Stot < CONFIG['pinch_no_scale_threshold'][1] \
+                 and abs(Rtot) < CONFIG['pinch_no_rotate_threshold']): 
             self._sticky = False
 
         if not self._sticky:
@@ -2470,13 +2474,13 @@ class InkView(QtWidgets.QGraphicsView):
 
     def zoomFitAll(self):
         rect = self.scene().itemsBoundingRect()
-        #self.fitInView(rect)
+        # self.fitInView(rect)
         self.fitInView(rect, QtCore.Qt.KeepAspectRatio)
-
 
     def wheelEvent(self, event):
         # logging.debug('Wheel event')
-        if (event.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier) or  (event.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
+        if (event.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier) or \
+           (event.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
             anchor = self.transformationAnchor()
             self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.NoAnchor)
             matrix = self.transform()
@@ -2502,10 +2506,10 @@ class InkView(QtWidgets.QGraphicsView):
             degreesy = 2*8*event.angleDelta().y()
             distancey = -int(degreesy/30.0)
 
-            sb=self.horizontalScrollBar()
+            sb = self.horizontalScrollBar()
             sb.setValue(sb.value()+distancex)
 
-            sb=self.verticalScrollBar()
+            sb = self.verticalScrollBar()
             sb.setValue(sb.value()+distancey)
 
         self.viewChangeStream.emit(self)
@@ -2527,10 +2531,10 @@ class NexusScene(QtWidgets.QGraphicsScene):
     showEditDialog = QtCore.pyqtSignal(object)
 
     # in presentation mode (changes how items react):
-    #presentation = False
+    # presentation = False
     mode = "edit"
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.setSceneRect(-3000, -3000, 6000, 6000)
@@ -2554,7 +2558,8 @@ class NexusScene(QtWidgets.QGraphicsScene):
         mimedata = event.mimeData()
 
         # need to give feedback as to which item is closest
-        if mimedata.hasImage() or mimedata.hasHtml() or mimedata.hasText() or mimedata.hasUrls():
+        if mimedata.hasImage() or mimedata.hasHtml() or \
+           mimedata.hasText() or mimedata.hasUrls():
             event.acceptProposedAction()
         else:
             super(NexusScene, self).dragEnterEvent(event)
@@ -2564,7 +2569,8 @@ class NexusScene(QtWidgets.QGraphicsScene):
     def dropEvent(self, event):
         mimedata = event.mimeData()
 
-        if not (mimedata.hasImage() or mimedata.hasHtml() or mimedata.hasText() or mimedata.hasUrls()):
+        if not (mimedata.hasImage() or mimedata.hasHtml() or \
+                mimedata.hasText() or mimedata.hasUrls()):
             super(NexusScene, self).dragEnterEvent(event)
             return
 
@@ -2636,7 +2642,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
         for item in selected:
             if isinstance(item, StemItem):
-                link=item.node.graph.getNodeLink(item.node)
+                link = item.node.graph.getNodeLink(item.node)
                 urls.append(QtCore.QUrl(link))
 
         if len(urls) == 0:
@@ -2673,7 +2679,6 @@ class NexusScene(QtWidgets.QGraphicsScene):
         mimedata = QtCore.QMimeData()
         data.setMimedata(mimedata)
         clipboard.setMimeData(mimedata)
-
 
     def recursivePaste(self, parentnode, nodedata, imageshas, batch):
         # Create node and populate it with nodedata
@@ -2743,7 +2748,6 @@ class NexusScene(QtWidgets.QGraphicsScene):
             QtWidgets.QMessageBox.information(None, "Warning", "Nothing to paste")
             return
 
-
         batch = graphydb.generateUUID()
         for target in selected:
             for data in copydata.nodes:
@@ -2781,9 +2785,6 @@ class NexusScene(QtWidgets.QGraphicsScene):
     def root(self):
         # TODO this will fail if there are more than one root's
         return self.childStems()[0]
-
-
-
 
 
 
@@ -2836,12 +2837,13 @@ class NexusView(QtWidgets.QGraphicsView):
 
         self.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
 
-        self.setOptimizationFlags(self.OptimizationFlag.DontSavePainterState | self.OptimizationFlag.DontAdjustForAntialiasing)
+        self.setOptimizationFlags(self.OptimizationFlag.DontSavePainterState |
+                                  self.OptimizationFlag.DontAdjustForAntialiasing)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
         self.grabGesture(QtCore.Qt.GestureType.PanGesture)
         self.grabGesture(QtCore.Qt.GestureType.PinchGesture)
-        #self.grabGesture(QtCore.Qt.GestureType.SwipeGesture)
+        # self.grabGesture(QtCore.Qt.GestureType.SwipeGesture)
 
         # some data structures to hold the pointer trail
         # the points are in a list of lists in reverse order
@@ -2856,7 +2858,7 @@ class NexusView(QtWidgets.QGraphicsView):
         # track when pinch events occur
         self.pinchtime = 0
 
-        #Qt6 self._v0 = QtCore.QPoint()
+        # Qt6 self._v0 = QtCore.QPoint()
         self._sticky = True
 
         # Trying to fix touchpad zoom on linux
@@ -2923,7 +2925,6 @@ class NexusView(QtWidgets.QGraphicsView):
 
         return {'left': left, 'right': right}
 
-
     def setViewSides(self, sides):
         '''
         Set the view based on the center x,y, scale and rotation
@@ -2942,16 +2943,17 @@ class NexusView(QtWidgets.QGraphicsView):
         self.centerOn(cx, cy)
 
         # when recording, these events will be caught otherwise ignored
-        self.recordStateEvent.emit({'t': time.time(), 'cmd': 'view', 'left': sides['left'], 'right': sides['right']})
+        self.recordStateEvent.emit({'t': time.time(), 'cmd': 'view',
+                                    'left': sides['left'], 'right': sides['right']})
 
         # when streaming
         self.viewChangeStream.emit(self)
 
-
     def wheelEvent(self, event):
 
         # logging.debug('wheelEvent %s', event)
-        if (event.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier) or (event.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
+        if (event.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier) or \
+           (event.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier):
 
             # logging.debug('wheelEvent (mod)')
 
@@ -3007,7 +3009,8 @@ class NexusView(QtWidgets.QGraphicsView):
             self._dragy = event.pos().y()
             self.viewport().setCursor(QtCore.Qt.CursorShape.SizeVerCursor)
             self._zoompoint = self.mapToScene(event.pos())
-        elif event.button()==QtCore.Qt.MouseButton.LeftButton and (self.itemAt(event.pos()) is None):
+        elif event.button() == QtCore.Qt.MouseButton.LeftButton and \
+             (self.itemAt(event.pos()) is None):
             self._dragmode = self.PREDRAGPAN
             self._dragy = event.pos().y()
             self._dragx = event.pos().x()
@@ -3046,7 +3049,8 @@ class NexusView(QtWidgets.QGraphicsView):
             s = self.transform().m11()
             self._trailTimer.stop()
             ps = self.mapToScene(event.pos())
-            self.recordStateEvent.emit({'t':time.time(), 'cmd':'pen-point', 'x':ps.x(), 'y':ps.y()})
+            self.recordStateEvent.emit({'t': time.time(), 'cmd': 'pen-point',
+                                        'x': ps.x(), 'y': ps.y()})
             if len(self.pointertrail) == 0:
                 # if there's nothing in the queue add the point within a stroke list
                 self.pointertrail.append([ps])
@@ -3058,7 +3062,7 @@ class NexusView(QtWidgets.QGraphicsView):
             if self.pointertrailitem is None:
 
                 self.pointertrailitem = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-                #self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+                # self.pointertrailitem.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
                 pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_outer_color']))
                 pen.setWidthF(CONFIG['trail_outer_width']/s)
                 pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
@@ -3070,7 +3074,7 @@ class NexusView(QtWidgets.QGraphicsView):
             if self.pointertrailitem2 is None:
                 # inner collor
                 self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
-                #self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+                # self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
                 pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
                 pen.setWidthF(CONFIG['trail_inner_width']/s)
                 pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
@@ -3120,7 +3124,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
     def mouseReleaseEvent(self, event):
 
-        #if abs(self.pinchtime - time.time())<self._ignoremousetime:
+        # if abs(self.pinchtime - time.time())<self._ignoremousetime:
         #    event.accept()
         #    return
 
@@ -3182,7 +3186,8 @@ class NexusView(QtWidgets.QGraphicsView):
         self.viewChangeStream.emit(self)
 
     def keyPressEvent(self, event):
-        if self.scene().mode in ["presentation", "record"] and event.key() == QtCore.Qt.Key.Key_Escape:
+        if self.scene().mode in ["presentation", "record"] and \
+           event.key() == QtCore.Qt.Key.Key_Escape:
             self.presentationEscape.emit()
             event.accept()
         else:
@@ -3221,7 +3226,7 @@ class NexusView(QtWidgets.QGraphicsView):
         if platform.system() == 'Darwin':
             # On a mac the centre of the pinch gesture is not useful as the trackpad is relative
             # Need to use the cursor position as the centre:
-            #v1 = self.mapFromGlobal(QtGui.QCursor.pos())
+            # v1 = self.mapFromGlobal(QtGui.QCursor.pos())
             v1 = pinch.centerPoint()
         else:
             v1 = self.mapFromGlobal(pinch.centerPoint())
@@ -3233,17 +3238,17 @@ class NexusView(QtWidgets.QGraphicsView):
 
         if anchor == QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse:
             # this is used in normal mode
-            #v1 = self.mapToScene(self.mapFromGlobal(QtGui.QCursor.pos()))
-            #p = c1
+            # v1 = self.mapToScene(self.mapFromGlobal(QtGui.QCursor.pos()))
+            # p = c1
             pass
         elif anchor == QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter:
             # this is used in presentation mode
             v1 = QtCore.QPointF(self.viewport().rect().center())
         else:
             pass
-            #v1 = QtCore.QPointF(0,0)
+            # v1 = QtCore.QPointF(0,0)
 
-        #print(f'pinch state {pinch.state()}')
+        # print(f'pinch state {pinch.state()}')
         if pinch.state() == QtCore.Qt.GestureState.GestureStarted:
             # gesture begin
             # if self._eventstate == Free:
@@ -3276,10 +3281,10 @@ class NexusView(QtWidgets.QGraphicsView):
 
         # TODO Following not working on mac?
         dist = sqrt(dv.x()**2+dv.y()**2)
-        #logging.debug('Pinch dist %f', dist)
+        # logging.debug('Pinch dist %f', dist)
 
         # base movement stickiness on view coordinates (finger motion)
-        if not (CONFIG['pinch_no_scale_threshold'][0]<Stot<CONFIG['pinch_no_scale_threshold'][1] \
+        if not (CONFIG['pinch_no_scale_threshold'][0] < Stot < CONFIG['pinch_no_scale_threshold'][1] \
                  and abs(Rtot)<CONFIG['pinch_no_rotate_threshold']): 
             self._sticky = False
 
@@ -3333,7 +3338,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         baselayout.addWidget(button, 0, 1)
 
         # -------------------------------------------------
-        page  = QtWidgets.QGroupBox("Solid Color")
+        page = QtWidgets.QGroupBox("Solid Color")
         page.setCheckable(True)
         baselayout.addWidget(page, 1, 0, 1, 2)
         layout = QtWidgets.QGridLayout()
@@ -3358,7 +3363,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         self.colorswatchbutton = button
 
         # -------------------------------------------------
-        page  = QtWidgets.QGroupBox("Tiled Image")
+        page = QtWidgets.QGroupBox("Tiled Image")
         page.setCheckable(True)
         baselayout.addWidget(page, 2, 0, 1, 2)
         layout = QtWidgets.QGridLayout()
@@ -3376,7 +3381,6 @@ class BackgroundDialog(QtWidgets.QDialog):
         button.setText("Image")
         button.clicked.connect(self.setImage)
         layout.addWidget(button, 0, 1)
-
 
         # -------------------------------------------------
         page = QtWidgets.QGroupBox("Radial Gradient")
@@ -3442,7 +3446,8 @@ class BackgroundDialog(QtWidgets.QDialog):
     def setColor(self):
 
         brush = self.scene.backgroundBrush()
-        col = QtWidgets.QColorDialog.getColor(brush.color(), options=QtWidgets.QColorDialog.ColorDialogOption.ShowAlphaChannel )
+        col = QtWidgets.QColorDialog.getColor(brush.color(),
+                                              options=QtWidgets.QColorDialog.ColorDialogOption.ShowAlphaChannel)
         if col.isValid():
 
             pix = QtGui.QPixmap(16, 16)
@@ -3462,7 +3467,9 @@ class BackgroundDialog(QtWidgets.QDialog):
 
     def setImage(self):
 
-        fileName = QtWidgets.QFileDialog.getOpenFileName(None, "Select Image", filter="Images (*.png *.jpg) ;; All files (*)")[0]
+        fileName = QtWidgets.QFileDialog.getOpenFileName(None,
+                                                         "Select Image",
+                                                         filter="Images (*.png *.jpg) ;; All files (*)")[0]
         if len(fileName) > 0:
             brush = self.scene.backgroundBrush()
             brush.setTextureImage(QtGui.QImage(fileName))
@@ -3506,7 +3513,6 @@ class BackgroundDialog(QtWidgets.QDialog):
             self.setRadialBrush()
 
     def setRadialBrush(self):
-
         gradient = QtGui.QRadialGradient(0, 0, self.radius.value(), 0, 0)
         gradient.setColorAt(0, self.color1)
         gradient.setColorAt(1, self.color2)
@@ -3515,7 +3521,6 @@ class BackgroundDialog(QtWidgets.QDialog):
         self.scene.setBackgroundBrush(brush)
 
     def styleSwitch(self, box, checked):
-
         if box == 1:
             if checked:
                 self.page2.setChecked(False)
@@ -3537,7 +3542,7 @@ class BackgroundDialog(QtWidgets.QDialog):
 
 
 # ----------------------------------------------------------------------
-def dot(v1,v2):
+def dot(v1, v2):
     '''
     return the dot product between v1 and v2
     '''
@@ -3545,6 +3550,7 @@ def dot(v1,v2):
     for a in map(lambda x, y: x*y, v1, v2):
         ans += a
     return ans
+
 
 # ----------------------------------------------------------------------
 def distanceToLine(P, A, B):
@@ -3566,6 +3572,7 @@ def distanceToLine(P, A, B):
     d = sqrt(abs(APAP-ABAP**2/ABAB))
 
     return d
+
 
 def gaussianSmoothing(P, factor=0.6, near=7):
     '''
@@ -3591,6 +3598,7 @@ def gaussianSmoothing(P, factor=0.6, near=7):
             # TODO also smooth the width?
 
     return Ps
+
 
 # ----------------------------------------------------------------------
 def simplifyLowes(curve, i,f, simplified, tol=.1):
@@ -3674,8 +3682,9 @@ def smoothInkPath(P):
 
     return S
 
+
 def sign(x):
-    return -2*(x<0)+1
+    return -2*(x < 0)+1
 
 
 # HSV values in [0..1]
@@ -3702,21 +3711,21 @@ class ContentItem:
     """
     def __getitem__(self, key):
         return self.stem.node['content'][self.uid][key]
-    
+
     def __setitem__(self, key, value):
         self.stem.node['content'][self.uid][key] = value
         self.stem.node.keyChanged('content')
-        
+
     def __delitem__(self, key):
         if self.uid in self.stem.node['content']:
             del self.stem.node['content'][self.uid][key]
             self.stem.node.keyChanged('content')
-            
+
     def deldata(self):
         if self.uid in self.stem.node['content']:
             del self.stem.node['content'][self.uid]
             self.stem.node.keyChanged('content')
-            
+
     def get(self, key, default=None):
         if key in self.stem.node['content'][self.uid]:
             return self.stem.node['content'][self.uid][key]
@@ -3750,8 +3759,8 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
         self.setZValue(self['z'])
-        #self.setZValue(stem.getcontent(self.uid,'z'))
-        #self.setZValue(z)
+        # self.setZValue(stem.getcontent(self.uid,'z'))
+        # self.setZValue(z)
 
         # self.width = stem.getcontent(self.uid,'width')
         # self.width = self.data['width']
@@ -3766,13 +3775,11 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
         self._changed = False
 
     def keyPressEvent(self, event):
-
         for item in self.scene().selectedItems():
             if item.flags() & QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable:
                 item.handleKeyPressEvent(event)
 
     def handleKeyPressEvent(self, event):
-
         if event.matches(QtGui.QKeySequence.StandardKey.Delete):
             self.deleteNodeItem()
             self.scene().refreshStem(reload=False)
@@ -3785,7 +3792,7 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
         '''
 
         self.deldata()
-        #del self.stem.delcontent(self.uid)
+        # del self.stem.delcontent(self.uid)
         # self.stem.node.keyChanged('content')
         self.stem.node.save(setchange=True, batch=batch)
         self.scene().removeItem(self)
@@ -3823,7 +3830,7 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
                 width1 = self.width
 
             d = b1-b0
-            length =  sqrt(d.x()**2+d. y()**2)
+            length = sqrt(d.x()**2+d. y()**2)
             d = d/length
             # rotate by 90 deg
             p = QtCore.QPointF(-d.y(), d.x())
@@ -3969,7 +3976,6 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
 
 
 
-
 #----------------------------------------------------------------------
 class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 #------------------`----------------------------------------------------
@@ -4006,7 +4012,8 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
                                        self.get("font_size", CONFIG['text_item_font_size']))
 
         self.setFont(self.DefaultFont)
-        self.setDefaultTextColor(QtGui.QColor(self.get("color", CONFIG['text_item_color'])))
+        self.setDefaultTextColor(QtGui.QColor(self.get("color",
+                                                       CONFIG['text_item_color'])))
 
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
@@ -4193,7 +4200,8 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         cursor = self.textCursor()
         cursor.clearSelection()
-        cursor.movePosition(QtGui.QTextCursor.MoveOperation.End, QtGui.QTextCursor.MoveMode.MoveAnchor)
+        cursor.movePosition(QtGui.QTextCursor.MoveOperation.End,
+                            QtGui.QTextCursor.MoveMode.MoveAnchor)
         self.setTextCursor(cursor)
 
         self.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextEditorInteraction)
@@ -4218,7 +4226,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         self.setCursor(QtCore.Qt.CursorShape.IBeamCursor)
 
-        #font = QtGui.QFont("Optima")
+        # font = QtGui.QFont("Optima")
         font = QtGui.QFont()
         font.setPointSize(9)
         self.setFont(font)
@@ -4232,7 +4240,8 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         cursor = self.textCursor()
         cursor.clearSelection()
-        cursor.movePosition(QtGui.QTextCursor.MoveOperation.End, QtGui.QTextCursor.MoveMode.MoveAnchor)
+        cursor.movePosition(QtGui.QTextCursor.MoveOperation.End,
+                            QtGui.QTextCursor.MoveMode.MoveAnchor)
         self.setTextCursor(cursor)
 
         self.setTextWidth(CONFIG['text_item_width'])
@@ -4407,8 +4416,8 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         Update main view
         '''
         self.deldata()
-        #del self.stem.node['content'][self.uid]
-        #self.stem.node.keyChanged('content')
+        # del self.stem.node['content'][self.uid]
+        # self.stem.node.keyChanged('content')
         self.stem.node.save(setchange=True, batch=batch)
         self.scene().removeItem(self)
 
@@ -4482,7 +4491,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
 
         self.setAcceptHoverEvents(True)
         self.setZValue(self.get('z', 0))
-        #self.setZValue(z)
+        # self.setZValue(z)
         self.setTransform(Transform(*self['frame']))
 
         # Set pixmap from stored data
@@ -4491,7 +4500,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
         if datanode is None:
             logging.debug("Could not find image data! Ignoring.")
             return
-        
+
         imagedata = nexusgraph.DataToImage(datanode['data'])
         self.setPixmap(QtGui.QPixmap.fromImage(imagedata))
 
@@ -4508,8 +4517,8 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
         '''
         sha1 = self['sha1']
         self.deldata()
-        #del self.stem.node['content'][self.uid]
-        #self.stem.node.keyChanged('content')
+        # del self.stem.node['content'][self.uid]
+        # self.stem.node.keyChanged('content')
 
         # deleting an image is always a batch brocess due to the data
         if batch is None:
@@ -4530,7 +4539,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
             dataedge.delete(batch=batch)
 
             # also remove the data if no refenreces to it
-            if datanode.inE('e.kind="With"', COUNT=True)==0:
+            if datanode.inE('e.kind="With"', COUNT=True) == 0:
                 datanode.delete(batch=batch)
 
         self.scene().removeItem(self)
@@ -4633,10 +4642,10 @@ class Leaf(QtWidgets.QGraphicsItem):
 
     def e(self):
         return self.titlerect.bottomRight()
-    
+
     def w(self):
         return self.titlerect.bottomLeft()
-    
+
     def c(self):
         return self.titlerect.center()
 
@@ -4654,16 +4663,16 @@ class Leaf(QtWidgets.QGraphicsItem):
 
     def paint(self, painter, option, widget):
 
-        #painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.red, 0.5))
-        #painter.drawRect(self.boundingRect())
+        # painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.red, 0.5))
+        # painter.drawRect(self.boundingRect())
         pass
 
     def setBoundingRect(self):
-        ## cache the leafs boundingRect
+        # Cache the leafs boundingRect
         self.boundingrect = self.childrenBoundingRect().adjusted(-2, -2, 2, 2)
 
     def boundingRect(self):
-        ## return cached bounding rect
+        # Return cached bounding rect
         return self.boundingrect
 
 
@@ -4688,24 +4697,24 @@ class OpenCloseWidget(QtWidgets.QGraphicsPathItem):
         childnodes = self.stem.node.outN('e.kind="Child"')
         childstems = self.stem.childStems2
 
-        ## if no children .. don't show widget
+        # If no children .. don't show widget
         if len(childnodes) == 0:
             self.hide()
             return
         else:
             self.show()
 
-        ## analyse children visibilities...
-        ## set to open if at least one is hidden
+        # Analyse children visibilities...
+        # Set to open if at least one is hidden
         self.open = True
         for child in childnodes:
             self.open = self.open and 'hide' not in child
 
-        #parent = self.stem.parentStem()
-        #if parent is None:
+        # parent = self.stem.parentStem()
+        # if parent is None:
         #    rect = self.stem.leaf.boundingRect()
         #    loc = rect.center()
-        #else:
+        # else:
         #    # TODO scale
         #    loc = self.stem.tip()+QtCore.QPointF(0, 2.5)
 
@@ -4858,10 +4867,10 @@ class ChildWidget(QtWidgets.QGraphicsPathItem):
 class StemItem(QtWidgets.QGraphicsItem):
 ##----------------------------------------------------------------------
 
-    ## base width of level 1 stems
+    # Base width of level 1 stems
     rootwidth = 20
 
-    ## tip width of stems
+    # Tip width of stems
     stemwidth = 5
 
     #_move_threshold = CONFIG['no_move_threshold']
@@ -4876,11 +4885,11 @@ class StemItem(QtWidgets.QGraphicsItem):
         else:
             super().__init__(parent)
 
-        ## store reference to database node
+        # Store reference to database node
         self.node = node
-        #node['_qt'] = self
+        # node['_qt'] = self
 
-        ## keep refrence to QT child stems
+        # Keep refrence to QT child stems
         self.childStems2 = []
 
         self.index = 0
@@ -5161,7 +5170,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         offset = 0
         pad = 3
         for tag in tags:
-            tagitem=QtWidgets.QGraphicsSimpleTextItem(tag, self.tagitems)
+            tagitem = QtWidgets.QGraphicsSimpleTextItem(tag, self.tagitems)
             tagitem.setTransform(QtGui.QTransform.fromTranslate(offset, 0), True)
             rect = tagitem.boundingRect().adjusted(-1, -1, 1, 1)
             path = QtGui.QPainterPath()
@@ -5199,7 +5208,7 @@ class StemItem(QtWidgets.QGraphicsItem):
             p = leafrect.center()
             lT = self.leaf.transform()
             self.leaf.setTransform(QtGui.QTransform.fromTranslate(-lT.dx()-p.x(), -lT.dy()-p.y()), True)
-            #self.leaf.setTransform(QtGui.QTransform.fromTranslate(-p.x(), -p.y()), True)
+            # self.leaf.setTransform(QtGui.QTransform.fromTranslate(-p.x(), -p.y()), True)
         else:
             if self.direction() > 0:
                 ltip = self.leaf.mapToParent(self.leaf.e())
@@ -5241,7 +5250,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         self.openclose.setTransform(QtGui.QTransform.fromTranslate(p.x(), p.y()))
 
 
-        #self.openclose.setSymbol()
+        # self.openclose.setSymbol()
         self.redrawTail()
 
     def redrawTail(self):
@@ -5334,7 +5343,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         return path
 
     def mousePressEvent(self, event):
-        #logging.debug("StemPressEvent")
+        # logging.debug("StemPressEvent")
 
         # TODO refactor as _m_press_timer
         # self._pressTimer.start()
@@ -5343,7 +5352,8 @@ class StemItem(QtWidgets.QGraphicsItem):
         self._m_state = MPRESS
         # logging.debug('[*] Press event ->[1]')
 
-        if (event.button() == QtCore.Qt.MouseButton.LeftButton and event.modifiers() == QtCore.Qt.KeyboardModifier.ControlModifier) or \
+        if (event.button() == QtCore.Qt.MouseButton.LeftButton and \
+            event.modifiers() == QtCore.Qt.KeyboardModifier.ControlModifier) or \
            (event.button() in [QtCore.Qt.MouseButton.RightButton, QtCore.Qt.MouseButton.MiddleButton]):
             self._m_state = MADD
             # logging.debug('[1] Modifiers ->[5]')
@@ -5528,7 +5538,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         cmenu.addSeparator()
         delete_action = cmenu.addAction("Delete")
         cmenu.addSeparator()
-        #presentation_action=cmenu.addAction("Presentation")
+        # presentation_action=cmenu.addAction("Presentation")
 
         action = cmenu.exec(global_pos)
 
@@ -5544,7 +5554,7 @@ class StemItem(QtWidgets.QGraphicsItem):
             self.scene().paste(stem=self)
         elif action == copylink_action:
             self.scene().copyStemLink(stem=self)
-        #elif action==presentation_action:
+        # elif action==presentation_action:
         #    print('presentation')
 
     def mouseDoubleClickEvent(self, event):
@@ -5652,7 +5662,7 @@ class StemItem(QtWidgets.QGraphicsItem):
             return self.parentStem().direction()*self.node['flip']
 
     def base(self):
-        p = self.node['pos'] ## Don't modify p in place!
+        p = self.node['pos']  # Don't modify p in place!
         if self.depth == 0:
             return QtCore.QPointF(p[0], p[1])
         else:
@@ -5713,7 +5723,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
     def newStem(self, p=QtCore.QPointF(), fullscreen=False, iconified=False):
 
-        ## add new db items but don't save then yet in case user cancels
+        # Add new db items but don't save then yet in case user cancels
         G = self.node.graph
         newnode = G.Node('Stem', content={})
         newedge = G.Edge(self.node, 'Child', newnode)
@@ -5721,8 +5731,8 @@ class StemItem(QtWidgets.QGraphicsItem):
         # settings = QtCore.QSettings("Ectropy", "Nexus")
         if self.depth == 0:
             scale = CONFIG['child_scale']
-            #scale = float(settings.value('new/stemscale'))
-            ## Set a random color
+            # scale = float(settings.value('new/stemscale'))
+            # Set a random color
             newnode['branchcolor'] = self.newstemtail.brush().color().name()
         else:
             scale = self.transform().m11()
@@ -5760,7 +5770,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         '''
         return parent stem ... here for completeness
         '''
-        ## NB parentItem of stem is either None or another stem
+        # NB parentItem of stem is either None or another stem
         return self.parentItem()
 
     def allParentStems(self):
@@ -5777,7 +5787,7 @@ class StemItem(QtWidgets.QGraphicsItem):
     def posangle(self):
         x, y = self.node['pos']
         x *= self.direction()
-        ## y measured down in QT
+        # y measured down in QT
         y *= -1
         parentdirection = self.direction()*self.node['flip']
         if self.depth == 1:
@@ -5816,7 +5826,7 @@ class StemItem(QtWidgets.QGraphicsItem):
                 bb = self.selectpath.boundingRect().bottomRight()+QtCore.QPointF(-dW/2, dW)
             self.actionWidget.setPos(bb)
             self.actionWidget.show()
-            #self.childWidget.setPos(t.x()+self.direction()*dW, 0)
+            # self.childWidget.setPos(t.x()+self.direction()*dW, 0)
             self.childWidget.setPos(tt)
             self.childWidget.show()
         else:

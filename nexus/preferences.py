@@ -20,7 +20,6 @@
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-
 import logging
 
 class InputPage(QtWidgets.QWidget):
@@ -41,7 +40,7 @@ class InputPage(QtWidgets.QWidget):
         layout = QtWidgets.QHBoxLayout()
         configLayout.addLayout(layout)
         layout.addWidget(QtWidgets.QLabel("Input panel zoom:"))
-        widget=QtWidgets.QSpinBox()
+        widget = QtWidgets.QSpinBox()
         widget.setToolTip("A slightly larger than normal zoom helps\n match handwriting to text size")
         layout.addWidget(widget)
 
@@ -55,13 +54,13 @@ class InputPage(QtWidgets.QWidget):
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(QtWidgets.QLabel("Default pens:"))
         configLayout.addLayout(layout)
-        widget=QtWidgets.QSpinBox()
+        widget = QtWidgets.QSpinBox()
         layout.addWidget(widget)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(QtWidgets.QLabel("Background:"))
         configLayout.addLayout(layout)
-        widget=QtWidgets.QSpinBox()
+        widget = QtWidgets.QSpinBox()
         layout.addWidget(widget)
 
         # ------------------------------
@@ -73,19 +72,18 @@ class InputPage(QtWidgets.QWidget):
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(QtWidgets.QLabel("Default color:"))
         configLayout.addLayout(layout)
-        widget=QtWidgets.QSpinBox()
+        widget = QtWidgets.QSpinBox()
         layout.addWidget(widget)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(QtWidgets.QLabel("Default font:"))
         configLayout.addLayout(layout)
-        widget=QtWidgets.QSpinBox()
+        widget = QtWidgets.QSpinBox()
         layout.addWidget(widget)
 
         mainLayout.addStretch(1)
 
-
-
+        
 class NewStemPage(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -104,20 +102,19 @@ class NewStemPage(QtWidgets.QWidget):
         layout = QtWidgets.QHBoxLayout()
         configLayout.addLayout(layout)
         layout.addWidget(QtWidgets.QLabel("New stem scale:"))
-        widget=QtWidgets.QSpinBox()
+        widget = QtWidgets.QSpinBox()
         layout.addWidget(widget)
 
         layout = QtWidgets.QHBoxLayout()
         configLayout.addLayout(layout)
         layout.addWidget(QtWidgets.QLabel("Branch Color:"))
-        widget=QtWidgets.QSpinBox()
+        widget = QtWidgets.QSpinBox()
         layout.addWidget(widget)
 
         updateGroup = QtWidgets.QGroupBox("Package selection")
         systemCheckBox = QtWidgets.QCheckBox("Update system")
         appsCheckBox = QtWidgets.QCheckBox("Update applications")
         docsCheckBox = QtWidgets.QCheckBox("Update documentation")
-#
 
         startUpdateButton = QtWidgets.QPushButton("Start update")
 
@@ -126,18 +123,17 @@ class NewStemPage(QtWidgets.QWidget):
         updateLayout.addWidget(appsCheckBox)
         updateLayout.addWidget(docsCheckBox)
         updateGroup.setLayout(updateLayout)
-#
-        #packageLayout = QtGui.QVBoxLayout()
-        #packageLayout.addWidget(packageList)
-        #packageGroup.setLayout(packageLayout)
-#
-        ##mainLayout = QtGui.QVBoxLayout()
-        #mainLayout.addWidget(updateGroup)
-        #mainLayout.addWidget(packageGroup)
-        #mainLayout.addSpacing(12)
-        #mainLayout.addWidget(startUpdateButton)
+
+        # packageLayout = QtGui.QVBoxLayout()
+        # packageLayout.addWidget(packageList)
+        # packageGroup.setLayout(packageLayout)
+
+        ## mainLayout = QtGui.QVBoxLayout()
+        # mainLayout.addWidget(updateGroup)
+        # mainLayout.addWidget(packageGroup)
+        # mainLayout.addSpacing(12)
+        # mainLayout.addWidget(startUpdateButton)
         mainLayout.addStretch(1)
-#
 
 
 class HelpersPage(QtWidgets.QWidget):
@@ -179,7 +175,7 @@ class ConfigDialog(QtWidgets.QDialog):
         self.contentsWidget.setViewMode(QtWidgets.QListView.IconMode)
         self.contentsWidget.setIconSize(QtCore.QSize(96, 84))
         self.contentsWidget.setMovement(QtWidgets.QListView.Static)
-        #self.contentsWidget.setMaximumWidth(128)
+        # self.contentsWidget.setMaximumWidth(128)
         self.contentsWidget.setMaximumWidth(144)
         self.contentsWidget.setSpacing(12)
 
@@ -224,19 +220,22 @@ class ConfigDialog(QtWidgets.QDialog):
         configButton.setIcon(QtGui.QIcon(':/images/inputpane.png'))
         configButton.setText("Input dialog")
         configButton.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
-        configButton.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled)
+        configButton.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable |
+                              QtCore.Qt.ItemFlag.ItemIsEnabled)
 
         updateButton = QtWidgets.QListWidgetItem(self.contentsWidget)
         updateButton.setIcon(QtGui.QIcon(':/images/inputpane.png'))
         updateButton.setText("New stems")
         updateButton.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
-        updateButton.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled)
+        updateButton.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable |
+                              QtCore.Qt.ItemFlag.ItemIsEnabled)
 
         queryButton = QtWidgets.QListWidgetItem(self.contentsWidget)
         queryButton.setIcon(QtGui.QIcon(':/images/inputpane.png'))
         queryButton.setText("Applications")
         queryButton.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
-        queryButton.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled)
+        queryButton.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable |
+                             QtCore.Qt.ItemFlag.ItemIsEnabled)
 
         self.contentsWidget.currentItemChanged.connect(self.changePage)
 
