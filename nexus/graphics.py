@@ -4833,7 +4833,9 @@ class ChildWidget(QtWidgets.QGraphicsPathItem):
         self.setPath(path)
 
     def mousePressEvent(self, event):
+        self.stem.drawBud(self.mapToParent(event.pos()))
         event.accept()
+        
     def mouseMoveEvent(self, event):
         self.stem.drawBud(self.mapToParent(event.pos()))
         event.accept()
