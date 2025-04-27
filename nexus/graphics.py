@@ -855,7 +855,7 @@ class InputDialog(QtWidgets.QDialog):
         '''
         # TODO select all current text
         # TODO tab should jump between text items
-        # TODO pointer should chage to I beam over text and ibeam_+ over canvas (adding text)
+        # TODO pointer should change to I beam over text and ibeam_+ over canvas (adding text)
         # TODO clicking on canvas should add text item
 
         self.scene.mode = TextMode
@@ -3910,9 +3910,8 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
         QtWidgets.QGraphicsPathItem.hoverLeaveEvent(self, event)
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 class TextWidthWidget(QtWidgets.QGraphicsPathItem):
-#----------------------------------------------------------------------
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -3975,11 +3974,8 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
         p.stem.node.save(setchange=True)
 
 
-
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
-#------------------`----------------------------------------------------
-
     url = None
 
     # these modes should not overlap with pen/text/select modes
@@ -4012,8 +4008,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
                                        self.get("font_size", CONFIG['text_item_font_size']))
 
         self.setFont(self.DefaultFont)
-        self.setDefaultTextColor(QtGui.QColor(self.get("color",
-                                                       CONFIG['text_item_color'])))
+        self.setDefaultTextColor(QtGui.QColor(self.get("color", CONFIG['text_item_color'])))
 
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
@@ -4040,16 +4035,16 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
     def getSrc(self):
 
-        # first look at the existing mode to grab the data
+        # First look at the existing mode to grab the data
 
         if self.mode == self.EditSourceMode:
-            # what's visible is the source .. grab verbatim
+            # What's visible is the source .. grab verbatim
             src = self.toPlainText().strip()
         else:
-            # what's visible is interpreted .. grab source
+            # What's visible is interpreted .. grab source
             src = self.document().toHtml().strip()
 
-        # clean up the html.
+        # Clean up the html.
         # Here is the problem: QT puts the default font in
         # the <body> tag but it doesn't read it back from the html, so that if
         # you change the font in the <body> tag, QT will move that change into
@@ -4100,23 +4095,23 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         self.mode = self.StaticMode
 
-        # set source so it's interpreted as html
+        # Set source so it's interpreted as html
         self.setHtml(src)
 
         self.setTextWidth(-1)
         if self.document().idealWidth() > self.maxTextWidth:
             self.setTextWidth(self.maxTextWidth)
 
-        # remove any textselections
+        # Remove any textselections
         cursor = self.textCursor()
         cursor.clearSelection()
         self.setTextCursor(cursor)
         self.setFont(self.DefaultFont)
 
-        # no special cursors
+        # No special cursors
         self.unsetCursor()
 
-        # width-setting widget hidden
+        # Width-setting widget hidden
         self.widthWidget.hide()
 
         self.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.LinksAccessibleByMouse)
@@ -4132,10 +4127,6 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         self.mode = SelectMode
 
         self.setHtml(self.getSrc())
-
-        # self.setTextWidth(-1)
-        # if self.document().idealWidth() > self.maxTextWidth:
-        #     self.setTextWidth(self.maxTextWidth)
 
         self.unsetCursor()
         self.widthWidget.show()
@@ -4180,7 +4171,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
     def setEditMode(self):
         '''
-        Mode for edting the text as WYSIWYG
+        Mode for editing the text as WYSIWYG
         '''
         src = self.getSrc()
 
@@ -4195,7 +4186,6 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         self.setHtml(src)
 
-        # TODO without adjusting the size the src can be unreasonably long
         self.setTextWidth(self.maxTextWidth)
 
         cursor = self.textCursor()
