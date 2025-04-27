@@ -1383,7 +1383,7 @@ class InputDialog(QtWidgets.QDialog):
             pastedobjects.append(item)
 
 
-        # translate all the items so that top left of their
+        # Translate all the items so that top left of their
         # bounding box is at the target position
         itemrect = QtCore.QRectF()
         for item in pastedobjects:
@@ -1513,7 +1513,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         super().__init__()
         self.scene = scene
 
-        # double headed arrow origin on left point
+        # Double headed arrow origin on left point
         dapath = QtGui.QPainterPath()
         dapath.lineTo(8, -8)
         dapath.lineTo(8, -4)
@@ -1526,7 +1526,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         dapath.lineTo(8, 8)
         dapath.lineTo(0, 0)
 
-        # double headed curved arrow
+        # Double headed curved arrow
         x0 = 12
         y0 = 4
         capath = QtGui.QPainterPath()
@@ -1606,7 +1606,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         self.overRect.setRect(rect)
 
     def paint(self, painter, option, widget):
-        # this has to be overriden
+        # This has to be overridden
         pass
 
     def hide(self):
@@ -1638,7 +1638,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
 
         # TODO draw pivot point
 
-        # pivot in scene coords
+        # Pivot in scene coords
         if (event.modifiers & QtCore.Qt.KeyboardModifier.AltModifier) or \
            event.source in ["rNE", "rNW", "rSW", "rSE"]:
             self.pivot = rect.center()
@@ -1673,7 +1673,7 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
     def pointerReleaseEvent(self, event):
         # QtWidgets.QGraphicsItem.mouseReleaseEvent(self, event)
 
-        # save any changed items
+        # Save any changed items
         batch = graphydb.generateUUID()
         for item in self.selected:
             if item._changed:
@@ -1836,7 +1836,7 @@ class TransformationHandle(QtWidgets.QGraphicsPathItem):
         self.setAcceptHoverEvents(True)
         self.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.black))
 
-        # this is so that the widget doesn't change with scene scaling
+        # This is so that the widget doesn't change with scene scaling
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
 
     def hoverEnterEvent(self, event):
@@ -2152,13 +2152,13 @@ class InkView(QtWidgets.QGraphicsView):
             itemunder.pointerPressEvent(event)
 
         else:
-            # this grouping is so we can delete the items easily
+            # This grouping is so we can delete the items easily
             scene.tmpselect = QtWidgets.QGraphicsPolygonItem()
             scene.tmpselect.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.gray, 0.5,
                                               QtCore.Qt.PenStyle.DotLine,
                                               QtCore.Qt.PenCapStyle.RoundCap,
                                               QtCore.Qt.PenJoinStyle.RoundJoin))
-            # draw over everything
+            # Draw over everything
             scene.tmpselect.setZValue(1000)
             scene.addItem(scene.tmpselect)
 
@@ -2190,7 +2190,7 @@ class InkView(QtWidgets.QGraphicsView):
 
             if not hasattr(scene, "tmpselect"):
                 return
-            # find surrounded items and select them
+            # Find surrounded items and select them
             items = []
             for item in list(scene.items()):
                 if type(item) in [TextItem, InkItem, PixmapItem]:
@@ -2215,10 +2215,10 @@ class InkView(QtWidgets.QGraphicsView):
         scene = self.scene()
         scene._lastScenePos = scenePos
 
-        # this grouping is so we can delete the items easily
+        # This grouping is so we can delete the items easily
         scene.tmpgroup = QtWidgets.QGraphicsItemGroup()
 
-        # draw over everything
+        # Draw over everything
         scene.tmpgroup.setZValue(1000)
         scene.addItem(scene.tmpgroup)
 
@@ -2233,7 +2233,7 @@ class InkView(QtWidgets.QGraphicsView):
         t = time.time()
         scene = self.scene()
 
-        # empasise more the initial changes in pressure
+        # Empasise more the initial changes in pressure
         # tunes to astropad .. alittle heavy for wacom
         # TODO make the pressure curve user adjustable
         # pressure = 1-exp(-2*pressure)
@@ -2293,8 +2293,8 @@ class InkView(QtWidgets.QGraphicsView):
                 out.append([p[0]-p0[0], p[1]-p0[1]])
         data['stroke'] = out
 
-        # make copy of transform otherwise default one instantiated on definition
-        # accumulates translations
+        # Make copy of transform otherwise default one instantiated on definition
+        # Accumulates translations
         T = Transform()
         T.translate(p0[0], p0[1])
         data['frame'] = T.tolist()
@@ -2426,7 +2426,7 @@ class InkView(QtWidgets.QGraphicsView):
         dist = sqrt(dv.x()**2 + dv.y()**2)
         # logging.debug('Pinch dist %f', dist)
 
-        # base movement stickiness on view coordinates (finger motion)
+        # Base movement stickiness on view coordinates (finger motion)
         if not (CONFIG['pinch_no_scale_threshold'][0] < Stot < CONFIG['pinch_no_scale_threshold'][1] \
                  and abs(Rtot) < CONFIG['pinch_no_rotate_threshold']): 
             self._sticky = False
@@ -2530,7 +2530,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
     mapModified = QtCore.pyqtSignal()
     showEditDialog = QtCore.pyqtSignal(object)
 
-    # in presentation mode (changes how items react):
+    # In presentation mode (changes how items react):
     # presentation = False
     mode = "edit"
 
@@ -2539,7 +2539,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
         self.setSceneRect(-3000, -3000, 6000, 6000)
 
-        # default mode for new dialogs (will remember last one chosen)
+        # Default mode for new dialogs (will remember last one chosen)
         self.dialogstate = {
             'mode': TextMode,
             'geometry': None,
@@ -2557,7 +2557,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
 
         mimedata = event.mimeData()
 
-        # need to give feedback as to which item is closest
+        # Need to give feedback as to which item is closest
         if mimedata.hasImage() or mimedata.hasHtml() or \
            mimedata.hasText() or mimedata.hasUrls():
             event.acceptProposedAction()
@@ -2603,7 +2603,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         '''
         Delete selected items
         '''
-        # find selected base stems (selection may include children)
+        # Find selected base stems (selection may include children)
         nodes = graphydb.NSet()
         parents = []
         if stem is None:
@@ -2666,7 +2666,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         else:
             selected = {stem}
 
-        # find selected base stems (the selection may include children)
+        # Find selected base stems (the selection may include children)
         nodes = graphydb.NSet()
         for item in selected:
             if isinstance(item, StemItem) \
@@ -2688,7 +2688,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         node.update(nodedata)
         # Copy format has children list, remove it
         del node.data['children']
-        # content should be a dict with UID's
+        # Content should be a dict with UID's
         content = {}
         for item in node['content']:
             content[graphydb.generateUUID()] = item
@@ -2751,7 +2751,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         batch = graphydb.generateUUID()
         for target in selected:
             for data in copydata.nodes:
-                # recursively add nodes
+                # Recursively add nodes
                 self.recursivePaste(target.node, data, copydata.images, batch)
 
             target.renew(create=False)
@@ -2764,7 +2764,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         for root in self.childStems():
             if includeroot:
                 if nottaggedhide and 'hide' in root.getTags():
-                    # this is silly but if they request it ... ah well
+                    # This is silly but if they request it ... ah well
                     continue
                 allstems.append(root)
             allstems.extend(root.allChildStems(nottaggedhide))
@@ -2802,14 +2802,14 @@ class NexusView(QtWidgets.QGraphicsView):
     _dragy = 0
     _dragx = 0
 
-    # on windows pinch events also send a mouse move
+    # On windows pinch events also send a mouse move
     # ignore mouse move for this time [s] after a pinch:
     # _ignoremousetime = 0
 
-    # seems different trackpads/mice have different zoom factors
+    # Seems different trackpads/mice have different zoom factors
     _scrollwheelfactor = 0.5
 
-    # on iw3 no key presses are received by action when in full screen
+    # On iw3 no key presses are received by action when in full screen
     # Do alternative pathway here
     presentationEscape = QtCore.pyqtSignal()
 
@@ -2829,7 +2829,7 @@ class NexusView(QtWidgets.QGraphicsView):
         self.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
         self.setCacheMode(self.CacheModeFlag.CacheBackground)
 
-        # implement the drag pan ourselves to avoid tablet event bug
+        # Implement the drag pan ourselves to avoid tablet event bug
         self.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
 
         self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse)
@@ -2845,7 +2845,7 @@ class NexusView(QtWidgets.QGraphicsView):
         self.grabGesture(QtCore.Qt.GestureType.PinchGesture)
         # self.grabGesture(QtCore.Qt.GestureType.SwipeGesture)
 
-        # some data structures to hold the pointer trail
+        # Some data structures to hold the pointer trail
         # the points are in a list of lists in reverse order
         self.pointertrail = []
         self.pointertrailitem = None
@@ -2855,7 +2855,7 @@ class NexusView(QtWidgets.QGraphicsView):
         self._trailTimer.timeout.connect(self.trailTimerExpire)
         self._trailTimer.setInterval(int(CONFIG['trail_hold_time'])*1000)
 
-        # track when pinch events occur
+        # Track when pinch events occur
         self.pinchtime = 0
 
         # Qt6 self._v0 = QtCore.QPoint()
@@ -2867,7 +2867,7 @@ class NexusView(QtWidgets.QGraphicsView):
     def scaleView(self, scaleFactor, point=None):
 
         matrix = self.transform()
-        # first check final scale is within an acceptable range
+        # First check final scale is within an acceptable range
 
         factor = matrix.scale(scaleFactor, scaleFactor).mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
         if factor < 0.05 or factor > 1000:
@@ -2946,7 +2946,7 @@ class NexusView(QtWidgets.QGraphicsView):
         self.recordStateEvent.emit({'t': time.time(), 'cmd': 'view',
                                     'left': sides['left'], 'right': sides['right']})
 
-        # when streaming
+        # When streaming
         self.viewChangeStream.emit(self)
 
     def wheelEvent(self, event):
@@ -3052,7 +3052,7 @@ class NexusView(QtWidgets.QGraphicsView):
             self.recordStateEvent.emit({'t': time.time(), 'cmd': 'pen-point',
                                         'x': ps.x(), 'y': ps.y()})
             if len(self.pointertrail) == 0:
-                # if there's nothing in the queue add the point within a stroke list
+                # If there's nothing in the queue add the point within a stroke list
                 self.pointertrail.append([ps])
             else:
                 # Append to last strokelist
@@ -3072,7 +3072,7 @@ class NexusView(QtWidgets.QGraphicsView):
                 self.pointertrailitem.setGraphicsEffect(TrailBlur)
                 self.scene().addItem(self.pointertrailitem)
             if self.pointertrailitem2 is None:
-                # inner collor
+                # Inner color
                 self.pointertrailitem2 = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath())
                 # self.pointertrailitem2.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
                 pen = QtGui.QPen(QtGui.QColor(CONFIG['trail_inner_color']))
@@ -3135,7 +3135,7 @@ class NexusView(QtWidgets.QGraphicsView):
                 stem.setSelected(False)
         self._dragmode = self.DRAGOFF
 
-        # start a new stroke
+        # Start a new stroke
         self.pointertrail.append([])
         self._trailTimer.start()
 
@@ -3153,10 +3153,10 @@ class NexusView(QtWidgets.QGraphicsView):
         if self.scene().mode in ["presentation", "record"]:
             item = self.itemAt(event.pos())
             if isinstance(item, OpenCloseWidget):
-                # pass through event for open-close widget as a single click
+                # Pass through event for open-close widget as a single click
                 item.mousePressEvent(event)
             else:
-                # the item could be any of the individual scene items
+                # The item could be any of the individual scene items
                 # if it's an item in a stem get the stem
                 stem = None
                 try:
@@ -3237,12 +3237,12 @@ class NexusView(QtWidgets.QGraphicsView):
         self._dragmode = self.DRAGOFF
 
         if anchor == QtWidgets.QGraphicsView.ViewportAnchor.AnchorUnderMouse:
-            # this is used in normal mode
+            # This is used in normal mode
             # v1 = self.mapToScene(self.mapFromGlobal(QtGui.QCursor.pos()))
             # p = c1
             pass
         elif anchor == QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter:
-            # this is used in presentation mode
+            # This is used in presentation mode
             v1 = QtCore.QPointF(self.viewport().rect().center())
         else:
             pass
@@ -3250,7 +3250,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
         # print(f'pinch state {pinch.state()}')
         if pinch.state() == QtCore.Qt.GestureState.GestureStarted:
-            # gesture begin
+            # Gesture begin
             # if self._eventstate == Free:
             #     self._eventstate = Gesture
             # elif self._eventstate == Mouse:
@@ -3283,7 +3283,7 @@ class NexusView(QtWidgets.QGraphicsView):
         dist = sqrt(dv.x()**2+dv.y()**2)
         # logging.debug('Pinch dist %f', dist)
 
-        # base movement stickiness on view coordinates (finger motion)
+        # Base movement stickiness on view coordinates (finger motion)
         if not (CONFIG['pinch_no_scale_threshold'][0] < Stot < CONFIG['pinch_no_scale_threshold'][1] \
                  and abs(Rtot)<CONFIG['pinch_no_rotate_threshold']): 
             self._sticky = False
@@ -3323,7 +3323,7 @@ class BackgroundDialog(QtWidgets.QDialog):
         self.setModal(False)
         self.setWindowTitle("Map background")
 
-        # store the scene locally so we can make live changes
+        # Store the scene locally so we can make live changes
         self.scene = scene
 
         brush = self.scene.backgroundBrush()
@@ -4495,7 +4495,7 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
         self.setTransform(Transform(*self['frame']))
 
         # Set pixmap from stored data
-        ## Need to find correct image based on sha1
+        # Need to find correct image based on sha1
         datanode = self.stem.node.outN('n.kind="ImageData" AND n.data.sha1=:sha1', sha1=self['sha1']).one
         if datanode is None:
             logging.debug("Could not find image data! Ignoring.")
@@ -4613,7 +4613,7 @@ class Leaf(QtWidgets.QGraphicsItem):
         self.stem = stem
         iconified = stem.node.get('iconified', False)
         if iconified:
-            ## just create an icon and store the information
+            # Just create an icon and store the information
             # TODO Can't identify the QGraphicsScene in the arguments of the QGraphicsItem
             # TODO why have self.leaf in leaf?? Oh leaf icon
             # TODO need to fix for high resolution displays
@@ -4625,13 +4625,12 @@ class Leaf(QtWidgets.QGraphicsItem):
                     item = InkItem(uid=u, stem=self.stem, parent=self)
                 elif k['kind'] == 'Text':
                     item = TextItem(uid=u, stem=self.stem, parent=self)
-                    ## this is needed to make alignments work:
+                    # This is needed to make alignments work:
                     item.setTextWidth(item.boundingRect().width())
                 elif k['kind'] == 'Image':
                     item = PixmapItem(uid=u, stem=self.stem, parent=self)
 
-
-        # this is the size of the leaf before adding tags etc
+        # This is the size of the leaf before adding tags etc
         pad = self.pad
 
         self.titlerect = self.childrenBoundingRect().adjusted(-pad, -pad, pad, pad)
@@ -4650,7 +4649,7 @@ class Leaf(QtWidgets.QGraphicsItem):
         return self.titlerect.center()
 
     def childrenBoundingRect(self):
-        ## override to skip width widget in textitem
+        # Override to skip width widget in textitem
 
         rect = QtCore.QRectF()
         for child in self.childItems():
@@ -4873,7 +4872,7 @@ class StemItem(QtWidgets.QGraphicsItem):
     # Tip width of stems
     stemwidth = 5
 
-    #_move_threshold = CONFIG['no_move_threshold']
+    # _move_threshold = CONFIG['no_move_threshold']
     # _move_threshold = 0
 
     def __init__(self, node, override={}, parent=None, scene=None):
@@ -4889,7 +4888,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         self.node = node
         # node['_qt'] = self
 
-        # Keep refrence to QT child stems
+        # Keep reference to QT child stems
         self.childStems2 = []
 
         self.index = 0
@@ -4904,34 +4903,34 @@ class StemItem(QtWidgets.QGraphicsItem):
         # Sometimes this is not set in pointer press event, set it here as a backup.
         self._m_press_pos = QtCore.QPointF()
 
-        ##
-        ## widget to show stem as selected
-        ##
+        #
+        # Widget to show stem as selected
+        #
         self.selectpath = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(), self)
         self.selectpath.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black,
                                           1, QtCore.Qt.PenStyle.DashLine))
         self.selectpath.hide()
 
-        ##
-        ## widget to show stem as being edited
-        ##
+        #
+        # Widget to show stem as being edited
+        #
         self.editedpath = QtWidgets.QGraphicsPathItem(QtGui.QPainterPath(), self)
         self.editedpath.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.red,
                                           2, QtCore.Qt.PenStyle.SolidLine))
         self.editedpath.hide()
 
-        ##
-        ## widget to show log press feedback
-        ##
+        #
+        # Widget to show log press feedback
+        #
         # self.longPressWidget = QtWidgets.QGraphicsEllipseItem(0,0,6,6,self)
         # self.longPressWidget.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1))
         # self.longPressWidget.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.gray))
         # self.longPressWidget.hide()
         # self.longPressWidget.setZValue(90)
 
-        ##
-        ## widget for stem actions
-        ##
+        #
+        # Widget for stem actions
+        #
         # self.actionWidget = QtWidgets.QGraphicsEllipseItem(-10,0,10,10,self)
         self.actionWidget = ActionWidget(self)
         # self.actionWidget.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1))
@@ -4939,9 +4938,9 @@ class StemItem(QtWidgets.QGraphicsItem):
         self.actionWidget.hide()
         self.actionWidget.setZValue(90)
 
-        ##
-        ## widget to add children
-        ##
+        #
+        # Widget to add children
+        #
         # self.childWidget = QtWidgets.QGraphicsPathItem()
         # path = QtGui.QPainterPath()
         # loc = QtCore.QPointF(0, 0)
@@ -4958,18 +4957,18 @@ class StemItem(QtWidgets.QGraphicsItem):
         self.childWidget.hide()
         self.childWidget.setZValue(90)
 
-        ##
-        ## widget to relocate stem
-        ##
+        #
+        # Widget to relocate stem
+        #
         # self.relocateWidget = QtWidgets.QGraphicsEllipseItem(0,0,10,10,self)
         # self.relocateWidget.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, 1))
         # self.relocateWidget.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.green))
         # self.relocateWidget.hide()
         # self.relocateWidget.setZValue(90)
 
-        ##
-        ## setup a basic starting point for flags etc
-        ##
+        #
+        # Setup a basic starting point for flags etc
+        #
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity, True)
@@ -4985,7 +4984,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         self.indexText = None
         self.indexBack = None
-        # tag label items
+        # Tag label items
         self.tagitems = None
         self.leaf = None
 
@@ -5004,18 +5003,18 @@ class StemItem(QtWidgets.QGraphicsItem):
              recurse = renew down tree with same parameters
         '''
 
-        ##
-        ## Reload the data
-        ##
+        #
+        # Reload the data
+        #
         if reload:
-            ## reload data ... local changes will be discarded (other than keys stating with _)
+            # Reload data ... local changes will be discarded (other than keys stating with _)
             self.node.renew()
 
-        ##
-        ## If marked 'hide' remove (check after potential reload)
-        ##
+        #
+        # If marked 'hide' remove (check after potential reload)
+        #
         if 'hide' in self.node:
-            ## remove this stem
+            # Remove this stem
             parent = self.parentStem()
             if parent is not None:
                 parent.childStems2.remove(self)
@@ -5027,7 +5026,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         if 'scale' in self.node:
             scale = self.node['scale']
         else:
-            ## Set the scale to the parent
+            # Set the scale to the parent
             scale = self.style('scale')
             self.node['scale'] = scale
             self.node.save()
@@ -5038,43 +5037,43 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         tmpposition = False
         if create or self.leaf is None:
-            ## Depth goes off the QT structure with parents child
+            # Depth goes off the QT structure with parents child
             self.depth = len(self.allParentStems())
             self.setZValue(-self.depth)
 
-            #self.prepareGeometryChange()
+            # self.prepareGeometryChange()
             self.createLeaf()
 
-            ## Use temporary variable so original value is recursed
+            # Use temporary variable so original value is recursed
             tmpposition = True
 
         if position or tmpposition:
             self.positionLeaf()
 
-        ##
-        ## manage the children
-        ##
+        #
+        # Manage the children
+        #
         if children:
-            ## fetch from database
+            # Fetch from database
             childNodes = self.node.outN('e.kind = "Child"')
 
-            ## exorcise ghost children
+            # Exorcise ghost children
             for qc in list(self.childStems2):
                 if qc.node['uid'] not in childNodes:
 
                     self.scene().removeItem(qc)
                     self.childStems2.remove(qc)
 
-            ## welcome new children
+            # Welcome new children
             currentchilduids = [q.node['uid'] for q in self.childStems2]
             for n in childNodes:
                 if n['uid'] not in currentchilduids:
                     child = StemItem(node=n, scene=self.scene(), parent=self)
                     self.childStems2.append(child)
 
-        ##
-        ## Recursively attend to decendants
-        ##
+        #
+        # Recursively attend to decendants
+        #
         if recurse:
             ## renew children
             for child in list(self.childStems2):
@@ -5091,7 +5090,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         # TODO check to see what needs to be changed instead of obliterating
 
-        ## first clear any old leaf items
+        # First clear any old leaf items
         if self.leaf is not None:
             self.scene().removeItem(self.leaf)
 
@@ -5101,11 +5100,11 @@ class StemItem(QtWidgets.QGraphicsItem):
         # TODO removing this means central node in wrong place
         self.positionLeaf()
 
-        ##
-        ## create stem index text to show order
-        ##
+        #
+        # Create stem index text to show order
+        #
         if self.depth == 0:
-            ## no stem index on root
+            # No stem index on root
             self.indexText = None
             self.indexBack = None
         else:
@@ -5132,19 +5131,19 @@ class StemItem(QtWidgets.QGraphicsItem):
             self.indexText.setPos(pos.x(), pos.y())
             self.indexBack = indexBack
 
-        ##
-        ## Draw leaf surrounds
-        ##
+        #
+        # Draw leaf surrounds
+        #
         if self.depth == 0:
-            ##
-            ## Central topic
-            ##
+            #
+            # Central topic
+            #
             penwidth = 2
             pad = 10
 
             tr = self.leaf.mapToParent(self.leaf.boundingRect()).boundingRect().adjusted(-pad, -pad, pad, pad)
             path = QtGui.QPainterPath()
-            path.addRoundedRect(tr,6,6)
+            path.addRoundedRect(tr, 6, 6)
             self.path.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black, penwidth,
                                         QtCore.Qt.PenStyle.SolidLine,
                                         QtCore.Qt.PenCapStyle.RoundCap,
@@ -5153,16 +5152,16 @@ class StemItem(QtWidgets.QGraphicsItem):
             self.path.setPath(path)
 
         else:
-            ##
-            ## draw standard branch, actually, use redrawTail()
-            ##
+            #
+            # Draw standard branch, actually, use redrawTail()
+            #
             self.path.setPen(QtGui.QPen(QtCore.Qt.PenStyle.NoPen))
             self.path.setBrush(QtGui.QBrush(QtGui.QColor(self.style('branchcolor'))))
             self.redrawTail()
 
-        ##
-        ## Set tag labels
-        ##
+        #
+        # Set tag labels
+        #
         if self.tagitems is not None:
             self.scene().removeItem(self.tagitems)
         self.tagitems = QtWidgets.QGraphicsItemGroup(self)
@@ -5200,9 +5199,9 @@ class StemItem(QtWidgets.QGraphicsItem):
             self.tagitems.hide()
 
     def positionLeaf(self):
-        ##
-        ## Position leaf
-        ##
+        #
+        # Position leaf
+        #
         if self.depth == 0:
             leafrect = self.leaf.boundingRect()
             p = leafrect.center()
@@ -5219,9 +5218,9 @@ class StemItem(QtWidgets.QGraphicsItem):
             d = tip-ltip
             self.leaf.setTransform(QtGui.QTransform.fromTranslate(d.x(), d.y()), True)
 
-        ##
-        ## Set rect to show stem is selected
-        ##
+        #
+        # Set rect to show stem is selected
+        #
         tr = self.leaf.mapToParent(self.leaf.boundingRect()).boundingRect()
         sp = QtGui.QPainterPath()
         if self.depth == 0:
@@ -5230,18 +5229,18 @@ class StemItem(QtWidgets.QGraphicsItem):
         self.selectpath.setPath(sp)
         self.selectpath.setZValue(20)
 
-        ##
-        ## Set rect to show stem is being edited
-        ##
+        #
+        # Set rect to show stem is being edited
+        #
         sp = QtGui.QPainterPath()
         tr = tr.adjusted(-5, -5, 5, 5)
         sp.addRect(tr)
         self.editedpath.setPath(sp)
         self.editedpath.setZValue(20)
 
-        ##
-        ## Position open-close symbol
-        ##
+        #
+        # Position open-close symbol
+        #
         if self.depth == 0:
             p = self.boundingRect().bottomRight()-QtCore.QPointF(0, 0)
         else:
@@ -5249,14 +5248,13 @@ class StemItem(QtWidgets.QGraphicsItem):
             p = self.tip()+QtCore.QPointF(0, self.stemwidth-2)/2.0
         self.openclose.setTransform(QtGui.QTransform.fromTranslate(p.x(), p.y()))
 
-
         # self.openclose.setSymbol()
         self.redrawTail()
 
     def redrawTail(self):
         if self.depth > 0:
             Proot = self.mapFromParent(self.parentStem().tip())
-            R = (self.rootwidth if self.depth==1 else self.stemwidth)/float(self.node.get('scale', 1.0))
+            R = (self.rootwidth if self.depth == 1 else self.stemwidth)/float(self.node.get('scale', 1.0))
             path = self.createTailPath(Proot, QtCore.QPointF(0, 0), self.tip(), self.direction(), R)
             self.path.setPath(path)
 
@@ -5309,7 +5307,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         Pbase is normally (0,0)
         '''
 
-        ## H is a relative vector
+        # H is a relative vector
         H = QtCore.QPointF(0, self.stemwidth)
 
         L = sqrt((Pbase.x()-Proot.x())**2+(Pbase.y()-Proot.y())**2)
@@ -5323,7 +5321,7 @@ class StemItem(QtWidgets.QGraphicsItem):
         ppt = Proot+direction*dpt+H/2.0
         ppb = Proot+direction*dpb+H/2.0
 
-        ## create path
+        # Create path
         path = QtGui.QPainterPath()
         path.moveTo(ppb)
         path.quadTo(Pbase+control+H, Pbase+H)
@@ -5370,7 +5368,7 @@ class StemItem(QtWidgets.QGraphicsItem):
                     self.setSelected(True)
 
             for stem in self.scene().selectedItems():
-                ## record the inition press point to see overall change in moves (more stable)
+                # Record the inition press point to see overall change in moves (more stable)
                 parent = stem.parentStem()
                 if parent is not None:
                     stem._scenebase = parent.mapToScene(stem.base())
@@ -5448,13 +5446,13 @@ class StemItem(QtWidgets.QGraphicsItem):
             # logging.debug('[1]/[2] End - Move')
             # Move all selected stems including this one
 
-            ## collect all the stems that may have changed
+            # Collect all the stems that may have changed
             stems = []
             for stem in self.scene().selectedItems():
                 stems.append(stem)
-                #stems.extend(stem.allChildStems())
+                # stems.extend(stem.allChildStems())
 
-            ## direction or position may have changed
+            # Direction or position may have changed
             batch = graphydb.generateUUID()
             for stem in stems:
                 stem.node.save(batch=batch, setchange=True)
@@ -5462,7 +5460,7 @@ class StemItem(QtWidgets.QGraphicsItem):
                 if stem.parentStem() is not None:
                     stem.parentStem().reindexChildren()
 
-                ## N.B. may flip at last instance?
+                # N.B. may flip at last instance?
                 # TODO check for last intance flips
                 stem.renew(reload=False, children=False, create=False, recurse=False)
 
@@ -5559,7 +5557,7 @@ class StemItem(QtWidgets.QGraphicsItem):
 
     def mouseDoubleClickEvent(self, event):
         self._m_state = MDOUBLE
-        # double click action handled in mouseReleaseEvent
+        # Double click action handled in mouseReleaseEvent
         event.accept()
 
     def drawBud(self, p):
@@ -5578,16 +5576,17 @@ class StemItem(QtWidgets.QGraphicsItem):
             self.scene().clearSelection()
             self.setSelected(True)
 
-        ## make direction the same as parent
+        # Make direction the same as parent
         direction = sign((p-self.tip()).x())
         R = (self.rootwidth if self.depth == 0 else self.stemwidth)
-        path = self.createTailPath(self.tip(), p, p+direction*QtCore.QPointF(30, 0), direction, R)
+        path = self.createTailPath(self.tip(), p, p+direction*QtCore.QPointF(30, 0),
+                                   direction, R)
         self.newstemtail.setPath(path)
 
     def moveSelected(self, scenedp):
 
         allselected = self.scene().selectedItems()
-        ## remove selected stems that have a parent selected
+        # Remove selected stems that have a parent selected
         children = []
         for stem in allselected:
             children.extend(stem.allChildStems())
@@ -5596,64 +5595,65 @@ class StemItem(QtWidgets.QGraphicsItem):
             if stem not in children:
                 selected.append(stem)
 
-        ## move the selected stems
+        # Move the selected stems
         for stem in selected:
             parent = stem.parentStem()
             if parent is not None:
-                ## branch
+                # Branch
                 ptip = parent.mapToScene(parent.tip())
             else:
-                ## root
+                # Root
                 ptip = QtCore.QPointF(0, 0)
 
             newbase = stem._scenebase + scenedp
 
-            ## half-way point to determine if flip should occur
+            # Half-way point to determine if flip should occur
             half = (stem._scenebase+stem._scenetip)/2.0 + scenedp
 
             stem._flipped = False
             if stem.depth > 0 and ((stem.direction() > 0 and half.x() < ptip.x()) \
                 or (stem.direction() < 0 and half.x() > ptip.x())):
-                ## need to flip stem
+                # Need to flip stem
                 flip = -1
 
-                ## new position with tip and base swapped
+                # New position with tip and base swapped
                 newbase = stem._scenetip + scenedp
 
-                ## flip base and tip for start of move
+                # Flip base and tip for start of move
                 stem._scenebase, stem._scenetip = stem._scenetip, stem._scenebase
 
                 stem._flipped = True
             else:
-                ## keep step orientation the same
+                # Keep step orientation the same
                 flip = 1
 
             stem.node['flip'] *= flip
 
-            ## store position relative to parent's tip
+            # Store position relative to parent's tip
             if parent is not None:
                 p = parent.mapFromScene(newbase)-parent.mapFromScene(ptip)
             else:
                 p = newbase-ptip
 
-            ## store as if in left to right direction
+            # Store as if in left to right direction
             if stem.direction() < 0:
-                ## correct direction for storing
+                # Correct direction for storing
                 stem.node['pos'] = [-p.x(), p.y()]
             else:
                 stem.node['pos'] = [p.x(), p.y()]
 
         for stem in selected:
-            ## update but don't save or reload yet! (done in mouseReleaseEvent)
+            # Update but don't save or reload yet! (done in mouseReleaseEvent)
             if stem._flipped:
                 stem.renew(reload=False, create=False, children=False)
             else:
-                ## Just move with no other updates for speed
+                # Just move with no other updates for speed
                 newbase = stem.base()
-                T = scaleRotateMove(float(stem.node.get('scale', 1.0)), stem.node.get('angle', 0.0), newbase.x(), newbase.y())
+                T = scaleRotateMove(float(stem.node.get('scale', 1.0)),
+                                    stem.node.get('angle', 0.0),
+                                    newbase.x(), newbase.y())
                 stem.setTransform(T)
                 stem.redrawTail()
-
 
     def direction(self):
         if self.depth == 0:
