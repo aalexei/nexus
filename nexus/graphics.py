@@ -439,7 +439,7 @@ class InputDialog(QtWidgets.QDialog):
                 itemnumbers['stroke'] += 1
             elif k['kind'] == 'Text':
                 item = TextItem(uid=u, stem=stem, scene=self.scene)
-                # this is needed to make alignments work:
+                # This is needed to make alignments work:
                 item.positionChanged.connect(self.setTextControls)
                 itemnumbers['text'] += 1
             elif k['kind'] == 'Image':
@@ -526,6 +526,7 @@ class InputDialog(QtWidgets.QDialog):
                 # TODO This will fail if item has been saves even is blank because
                 # QT will add a <p> tag with attributes etc.
                 # solution: reimplement Text with clean source not QT's interpretation.
+                # Should now be blank
 
         parentstem = self.stem.parentStem()
         if parentstem is not None:
@@ -4063,7 +4064,19 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         if body is None:
             body = soup
 
-        src = body.renderContents().decode('utf-8').strip()
+        # QT inserts style info into <p> tags
+        # e.g. style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"
+        # This is not useful for us, strip it out. N.B. color is in <span> tags
+
+        for p in body.find_all('p'):
+            del p['style']
+
+        # src = body.renderContents().decode('utf-8').strip()
+        src = body.encode_contents().decode('utf-8').strip()
+
+        # For some weird reason QT seems to insert a <br/> in <p>
+        if src == "<p><br/></p>":
+            src = ""
 
         return src
 
@@ -4139,7 +4152,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         self.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.NoTextInteraction)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
-        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
         self.setSelected(False)
 
     def setPenMode(self):
@@ -4177,7 +4190,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         self.mode = self.EditMode
 
-        # clear any formatting for edit mode
+        # Clear any formatting for edit mode
         doc = self.document()
         doc.clear()
 
@@ -4216,16 +4229,15 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         self.setCursor(QtCore.Qt.CursorShape.IBeamCursor)
 
-        # font = QtGui.QFont("Optima")
         font = QtGui.QFont()
         font.setPointSize(9)
         self.setFont(font)
 
-        # load up the text depending on editMode
+        # Load up the text depending on editMode
         # TODO escape the characters in unicode?
         self.setPlainText(src)
 
-        # generally want a wide width for the source
+        # Generally want a wide width for the source
         self.setTextWidth(CONFIG['text_item_width'])
 
         cursor = self.textCursor()
@@ -4234,7 +4246,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
                             QtGui.QTextCursor.MoveMode.MoveAnchor)
         self.setTextCursor(cursor)
 
-        self.setTextWidth(CONFIG['text_item_width'])
+        # self.setTextWidth(CONFIG['text_item_width'])
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, True)
@@ -4297,13 +4309,13 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
     def mousePressEvent(self, event):
         if self.url is not None:
             try:
-                # remove any existing links so we don't end up emiting multiple signals
+                # Remove any existing links so we don't end up emiting multiple signals
                 self.linkClicked.disconnect(self.scene().linkClicked)
             except TypeError:
-                # if the connection didn't exist it will emit a TypeError exception
+                # If the connection didn't exist it will emit a TypeError exception
                 pass
             # TODO should replace with Qt.UniqueConnection but...
-            # doesn't seem to work yet (v4.6-1) giving the error:
+            # Doesn't seem to work yet (v4.6-1) giving the error:
             # AttributeError: type object 'Qt' has no attribute 'UniqueConnection'
             # self.linkClicked.connect(self.scene().linkClicked, QtCore.Qt.ConnectionType.UniqueConnection)
             self.linkClicked.connect(self.scene().linkClicked)
@@ -4311,7 +4323,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             return
 
         if self.mode == self.StaticMode:
-            # normal actions
+            # Normal actions
             parent = self.parentItem()
             parent.mousePressEvent(event)
         else:
