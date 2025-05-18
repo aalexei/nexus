@@ -669,7 +669,9 @@ class InputDialog(QtWidgets.QDialog):
         # ----------------------------------------------------------------------------------
         self.deleteAct = QtGui.QAction(QtGui.QIcon(":/images/edit-delete.svg"),
                                        self.tr("&Delete"), self)
-        self.deleteAct.setShortcut(QtGui.QKeySequence.StandardKey.Delete)
+        # N.B Delete is mapped to Forward Delete on Apple devices! (elsewhere it's fine)
+        # Backspace is only defined on Apple and mapped to Del (why oh why)
+        self.deleteAct.setShortcuts([QtGui.QKeySequence.StandardKey.Delete,QtGui.QKeySequence.StandardKey.Backspace])
         self.deleteAct.setStatusTip(self.tr("Delete selected"))
         self.deleteAct.triggered.connect(self.deleteEvent)
 
@@ -3781,6 +3783,8 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
                 item.handleKeyPressEvent(event)
 
     def handleKeyPressEvent(self, event):
+
+        # Should this also match Backspace for Apple? Seems to work as is.
         if event.matches(QtGui.QKeySequence.StandardKey.Delete):
             self.deleteNodeItem()
             self.scene().refreshStem(reload=False)
@@ -4408,6 +4412,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
     def handleKeyPressEvent(self, event):
 
+        # Should this also match Backspace for Apple? Seems to work as is.
         if event.matches(QtGui.QKeySequence.StandardKey.Delete):
             self.deleteNodeItem()
 

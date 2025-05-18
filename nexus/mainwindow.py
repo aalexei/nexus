@@ -1491,7 +1491,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # ----------------------------------------------------------------------------------
         self.deleteAct = QtGui.QAction(QtGui.QIcon(":/images/edit-delete.svg"),
                                        self.tr("&Delete"), self)
-        self.deleteAct.setShortcut(QtGui.QKeySequence.StandardKey.Delete)
+        # N.B Delete is mapped to Forward Delete on Apple devices! (elsewhere it's fine)
+        # Backspace is only defined on Apple and mapped to Del (why oh why)
+        self.deleteAct.setShortcuts([QtGui.QKeySequence.StandardKey.Delete,QtGui.QKeySequence.StandardKey.Backspace])
         self.deleteAct.setStatusTip(self.tr("Delete selection"))
         self.deleteAct.triggered.connect(self.scene.delete)
 
