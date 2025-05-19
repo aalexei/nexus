@@ -1594,6 +1594,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.zoomOutAct.triggered.connect(self.view.zoomOut)
 
         # ----------------------------------------------------------------------------------
+        self.zoomAllAct = QtGui.QAction(self.tr("Zoom All"), self)
+        self.zoomAllAct.setShortcut(self.tr("Ctrl+0"))
+        self.zoomAllAct.setStatusTip(self.tr("Zoom out"))
+        self.zoomAllAct.triggered.connect(self.view.zoomAll)
+        
+        # ----------------------------------------------------------------------------------
         self.zoomSelectionAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-select.svg"),
                                               self.tr("Zoom to Selection"), self)
         self.zoomSelectionAct.setShortcut("Z")
@@ -1784,6 +1790,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu = self.menuBar().addMenu(self.tr("&View"))
         self.viewMenu.addAction(self.zoomInAct)
         self.viewMenu.addAction(self.zoomOutAct)
+        self.viewMenu.addAction(self.zoomAllAct)
         self.viewMenu.addAction(self.zoomSelectionAct)
         self.viewMenu.addSeparator()
 

@@ -2887,15 +2887,38 @@ class NexusView(QtWidgets.QGraphicsView):
         self.setTransform(matrix, False)
 
     def zoomIn(self):
+        """
+        Zoom into the map (triggered from keyboard)
+        Use view center
+        """
+        anchor = self.transformationAnchor()
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter)
+
         self.scaleView(1.15)
+        
+        self.setTransformationAnchor(anchor)
 
     def zoomOut(self):
+        """
+        Zoom out of the map (triggered from keyboard)
+        Use view center
+        """
+        anchor = self.transformationAnchor()
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter)
+
         self.scaleView(1 / 1.15)
 
+        self.setTransformationAnchor(anchor)
+        
     def zoomOriginal(self):
         # TODO set 1:1 zoom
         logging.warn("zoomOriginal not implemented")
+        
+    def zoomAll(self):
 
+        rect = self.scene().itemsBoundingRect() 
+        self.fitInView(rect, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+        
     def zoomSelection(self):
 
         selected = self.scene().selectedItems()
