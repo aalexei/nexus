@@ -1582,14 +1582,15 @@ class MainWindow(QtWidgets.QMainWindow):
         # ----------------------------------------------------------------------------------
         self.zoomInAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-in.svg"),
                                        self.tr("Zoom In"), self)
-        self.zoomInAct.setShortcut(QtGui.QKeySequence.StandardKey.ZoomIn)
+        # QtGui.QKeySequence.StandardKey.ZoomIn not working on Windows?
+        self.zoomInAct.setShortcuts([QtGui.QKeySequence.StandardKey.ZoomIn,"Ctrl++","Ctrl+="])
         self.zoomInAct.setStatusTip(self.tr("Zoom in"))
         self.zoomInAct.triggered.connect(self.view.zoomIn)
 
         # ----------------------------------------------------------------------------------
         self.zoomOutAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-out.svg"),
                                         self.tr("Zoom Out"), self)
-        self.zoomOutAct.setShortcut(QtGui.QKeySequence.StandardKey.ZoomOut)
+        self.zoomOutAct.setShortcuts([QtGui.QKeySequence.StandardKey.ZoomOut,"Ctrl+-"])
         self.zoomOutAct.setStatusTip(self.tr("Zoom out"))
         self.zoomOutAct.triggered.connect(self.view.zoomOut)
 
