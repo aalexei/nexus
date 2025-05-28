@@ -2595,6 +2595,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.presentationModeAct.setShortcut(QtGui.QKeySequence())
         self.viewsFirstAct.setShortcut(QtGui.QKeySequence())
         self.hidePointerAct.setShortcut(QtGui.QKeySequence())
+        self.deselectAct.setEnabled(True)
 
         self.editModeAct.setShortcut(self.tr("Ctrl+E"))
 
@@ -2642,6 +2643,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
         self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
 
+        self.deselectAct.setEnabled(False)
         self.editModeAct.setShortcuts(["Ctrl+E", "Esc"])
 
     def keyPressEvent(self, event):
