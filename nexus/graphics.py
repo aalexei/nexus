@@ -2928,8 +2928,8 @@ class NexusView(QtWidgets.QGraphicsView):
                 rect = rect.united(item.sceneBoundingRect())
 
         else:
-            for item in self.scene().allChildStems():
-                rect = rect.united(item.sceneBoundingRect())
+            # If nothing is selected zoom to show whole map
+            rect = self.scene().itemsBoundingRect() 
 
         self.fitInView(rect, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
