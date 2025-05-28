@@ -1546,6 +1546,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.selectSiblingsAct.triggered.connect(self.sceneSelectSiblings)
 
         # ----------------------------------------------------------------------------------
+        self.deselectAct = QtGui.QAction(self.tr("Deselect All"), self)
+        self.deselectAct.setStatusTip(self.tr("Deselect all nodes"))
+        self.deselectAct.setShortcut("Esc")
+        self.deselectAct.triggered.connect(self.sceneDeselectAll)
+        
+        # ----------------------------------------------------------------------------------
         # self.clearStyleAct = QtGui.QAction(self.tr("Clear Style"), self)
         # self.clearStyleAct.setStatusTip(self.tr("Clear the style setting for selected"))
         # self.clearStyleAct.triggered.connect(self.sceneSelectedClearStyle)
@@ -1776,6 +1782,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editMenu.addAction(self.selectAllAct)
         self.editMenu.addAction(self.selectChildrenAct)
         self.editMenu.addAction(self.selectSiblingsAct)
+        self.editMenu.addAction(self.deselectAct)
         self.editMenu.addSeparator()
         self.editMenu.addAction(self.setScaleAct)
         self.editMenu.addAction(self.scaleByAct)
@@ -2344,6 +2351,13 @@ class MainWindow(QtWidgets.QMainWindow):
         for stem in self.scene.allChildStems(includeroot=False):
             stem.setSelected(not allselected)
 
+    def sceneDeselectAll(self): 
+        '''
+        Deselect all stems
+        '''
+        for stem in self.scene.allChildStems(includeroot=True):
+            stem.setSelected(False)
+            
     def sceneSelectChildren(self):
         selected = self.scene.selectedItems()
         for selectedstem in selected:
