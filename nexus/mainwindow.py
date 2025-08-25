@@ -1724,6 +1724,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewRotateAct.setChecked(False)
 
         # ----------------------------------------------------------------------------------
+        self.viewFullscreenPresentationAct = QtGui.QAction(self.tr("Use Fullscreen"), self)
+        self.viewFullscreenPresentationAct.setCheckable(True)
+        self.viewFullscreenPresentationAct.setChecked(True)
+        
+        # ----------------------------------------------------------------------------------
         self.setBackgroundAct = QtGui.QAction(self.tr("Set Background..."), self)
         self.setBackgroundAct.triggered.connect(self.sceneSetBackground)
 
@@ -1809,6 +1814,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu.addSeparator()
         self.viewMenu.addAction(self.viewsFramesAct)
         self.viewMenu.addAction(self.viewRotateAct)
+        self.viewMenu.addAction(self.viewFullscreenPresentationAct)
         self.viewMenu.addAction(self.setBackgroundAct)
         self.viewMenu.addAction(self.hidePointerAct)
         self.viewMenu.addAction(self.runStreamingServerAct)
@@ -2630,7 +2636,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Remember curent window flags to restore later
         self._windowflags = self.windowFlags()
-        self.showFullScreen()
+        if self.viewFullscreenPresentationAct.isChecked():
+            self.showFullScreen()
 
         self.hidePointerAct.setEnabled(True)
         self.hidePointerAct.setChecked(True)
