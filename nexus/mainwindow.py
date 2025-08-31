@@ -1440,6 +1440,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.printViewsAct = QtGui.QAction(QtGui.QIcon(":/images/print.svg"),
                                            self.tr("&Print Views"), self)
+        self.printViewsAct.setShortcut("Ctrl+Shift+P")
         self.printViewsAct.setStatusTip(self.tr("Print Views"))
         self.printViewsAct.triggered.connect(self.printViewsSlot)
         # ----------------------------------------------------------------------------------
@@ -2176,6 +2177,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.printer.setCreator('Nexus %s' % str(graphics.VERSION))
 
         filename = os.path.basename(str(self.scene.graph.path))
+        filename, ext = os.path.splitext(filename)
+
         self.printer.setDocName(filename)
         self.printer.setPageOrientation(QtGui.QPageLayout.Orientation.Landscape)
 
@@ -2183,7 +2186,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         dialog = QtPrintSupport.QPrintDialog(self.printer, self)
 
-        dialog.setWindowTitle(self.tr("Print ")+filename)
+        # TODO this doesn't set the title as expected 
+        if views:
+            dialog.setWindowTitle(self.tr("Print Views ")+filename)
+        else:
+            dialog.setWindowTitle(self.tr("Print Map ")+filename)
 
         #
         # Hide frames
