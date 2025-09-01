@@ -1741,6 +1741,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.hidePointerAct.setEnabled(False)
 
         # ----------------------------------------------------------------------------------
+        self.trailAct = QtGui.QAction(self.tr("Trail"), self)
+        self.trailAct.setCheckable(True)
+        self.trailAct.setChecked(True)
+        self.trailAct.setEnabled(False)
+
+        # ----------------------------------------------------------------------------------
         self.recentFileActs = []
         for ii in range(self.MaxRecentFiles):
             self.recentFileActs.append(
@@ -1818,6 +1824,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu.addAction(self.viewFullscreenPresentationAct)
         self.viewMenu.addAction(self.setBackgroundAct)
         self.viewMenu.addAction(self.hidePointerAct)
+        self.viewMenu.addAction(self.trailAct)
         self.viewMenu.addAction(self.runStreamingServerAct)
         self.viewMenu.addSeparator()
         self.viewMenu.addAction(self.viewsAct)
@@ -2601,6 +2608,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.hidePointerAct.trigger()
         self.hidePointerAct.setEnabled(False)
         QtWidgets.QApplication.instance().restoreOverrideCursor()
+        
+        self.trailAct.setEnabled(False)
 
         self.viewsNextAct.setShortcut(QtGui.QKeySequence())
         self.viewsPreviousAct.setShortcut(QtGui.QKeySequence())
@@ -2650,6 +2659,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.hidePointerAct.setChecked(True)
         self.hidePointerAct.trigger()
 
+        self.trailAct.setEnabled(True)
+        
         # (Use shift to actually move canvas)
         self.viewsNextAct.setShortcuts(CONFIG['view_next_keys'])
         self.viewsPreviousAct.setShortcuts(CONFIG['view_prev_keys'])
@@ -2698,6 +2709,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.hidePointerAct.setChecked(True)  # force toggle on
         self.hidePointerAct.trigger()
 
+        self.trailAct.setEnabled(True)
+        
         # (Use shift to actually move canvas)
         self.viewsNextAct.setShortcuts(CONFIG['view_next_keys'])
         self.viewsPreviousAct.setShortcuts(CONFIG['view_prev_keys'])

@@ -3027,7 +3027,8 @@ class NexusView(QtWidgets.QGraphicsView):
 
         # logging.debug('N mousePressEvent')
 
-        if self.scene().mode in ["presentation", "record"]:
+        if self.scene().mode in ["presentation", "record"] and \
+            self.parent().trailAct.isEnabled() and self.parent().trailAct.isChecked():
             self._dragmode = self.PREDRAGPAN
 
         elif event.button() in [QtCore.Qt.MouseButton.RightButton, QtCore.Qt.MouseButton.MiddleButton] and (self.itemAt(event.pos()) is None):
@@ -3070,7 +3071,8 @@ class NexusView(QtWidgets.QGraphicsView):
             self.viewChangeStream.emit(self)
             event.accept()
 
-        elif self._dragmode == self.DRAGPAN and self.scene().mode in ["presentation", "record"]:
+        elif self._dragmode == self.DRAGPAN and self.scene().mode in ["presentation", "record"] and \
+             self.parent().trailAct.isEnabled() and self.parent().trailAct.isChecked():
 
             s = self.transform().m11()
             self._trailTimer.stop()
