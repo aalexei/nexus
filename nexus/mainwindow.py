@@ -1734,11 +1734,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setBackgroundAct.triggered.connect(self.sceneSetBackground)
 
         # ----------------------------------------------------------------------------------
-        self.hidePointerAct = QtGui.QAction(self.tr("Hide Pointer"), self)
-        self.hidePointerAct.setCheckable(True)
-        self.hidePointerAct.setChecked(False)
-        self.hidePointerAct.triggered.connect(self.hidePointer)
-        self.hidePointerAct.setEnabled(False)
+        self.pointerAct = QtGui.QAction(self.tr("Pointer"), self)
+        self.pointerAct.setCheckable(True)
+        self.pointerAct.setChecked(True)
+        self.pointerAct.triggered.connect(self.hidePointer)
+        self.pointerAct.setEnabled(False)
 
         # ----------------------------------------------------------------------------------
         self.trailAct = QtGui.QAction(self.tr("Trail"), self)
@@ -1823,7 +1823,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu.addAction(self.viewRotateAct)
         self.viewMenu.addAction(self.viewFullscreenPresentationAct)
         self.viewMenu.addAction(self.setBackgroundAct)
-        self.viewMenu.addAction(self.hidePointerAct)
+        self.viewMenu.addAction(self.pointerAct)
         self.viewMenu.addAction(self.trailAct)
         self.viewMenu.addAction(self.runStreamingServerAct)
         self.viewMenu.addSeparator()
@@ -2604,9 +2604,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.presentationhiddenstems = []
 
         # self.view.centerOn(center)
-        self.hidePointerAct.setChecked(True)  # force toggle off
-        self.hidePointerAct.trigger()
-        self.hidePointerAct.setEnabled(False)
+        self.pointerAct.setChecked(True)  # force toggle
+        self.pointerAct.trigger()
+        self.pointerAct.setEnabled(False)
         QtWidgets.QApplication.instance().restoreOverrideCursor()
         
         self.trailAct.setEnabled(False)
@@ -2616,7 +2616,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewsHomeAct.setShortcut(QtGui.QKeySequence())
         # self.presentationModeAct.setShortcut(QtGui.QKeySequence())
         self.viewsFirstAct.setShortcut(QtGui.QKeySequence())
-        self.hidePointerAct.setShortcut(QtGui.QKeySequence())
+        self.pointerAct.setShortcut(QtGui.QKeySequence())
         self.deselectAct.setEnabled(True)
 
         self.editModeAct.setShortcut(self.tr("Ctrl+E"))
@@ -2655,9 +2655,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.viewFullscreenPresentationAct.isChecked():
             self.showFullScreen()
 
-        self.hidePointerAct.setEnabled(True)
-        self.hidePointerAct.setChecked(True)
-        self.hidePointerAct.trigger()
+        self.pointerAct.setEnabled(True)
+        self.pointerAct.setChecked(False) # force toggle
+        self.pointerAct.trigger()
 
         self.trailAct.setEnabled(True)
         
@@ -2666,7 +2666,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewsPreviousAct.setShortcuts(CONFIG['view_prev_keys'])
         self.viewsHomeAct.setShortcuts(CONFIG['view_home_keys'])
         self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
-        self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
+        self.pointerAct.setShortcuts(CONFIG['view_pointer_keys'])
+        self.trailAct.setShortcuts(CONFIG['view_trail_keys'])
 
         self.deselectAct.setEnabled(False)
         self.editModeAct.setShortcuts(["Ctrl+E", "Esc"])
@@ -2705,9 +2706,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.showMaximized()
 
-        self.hidePointerAct.setEnabled(True)
-        self.hidePointerAct.setChecked(True)  # force toggle on
-        self.hidePointerAct.trigger()
+        self.pointerAct.setEnabled(True)
+        self.pointerAct.setChecked(True)  # force toggle
+        self.pointerAct.trigger()
 
         self.trailAct.setEnabled(True)
         
@@ -2716,7 +2717,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewsPreviousAct.setShortcuts(CONFIG['view_prev_keys'])
         self.viewsHomeAct.setShortcuts(CONFIG['view_home_keys'])
         self.viewsFirstAct.setShortcuts(CONFIG['view_first_keys'])
-        self.hidePointerAct.setShortcuts(CONFIG['view_pointer_keys'])
+        self.pointerAct.setShortcuts(CONFIG['view_pointer_keys'])
 
         #
         # Recording setup
@@ -3057,7 +3058,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Change zoom to view center when pointer is hidden and to cursor when pointer is shown
         '''
 
-        if self.hidePointerAct.isChecked():
+        if not self.pointerAct.isChecked():
             QtWidgets.QApplication.instance().restoreOverrideCursor()
             QtWidgets.QApplication.instance().setOverrideCursor(QtCore.Qt.CursorShape.BlankCursor)
             # self.view.setTransformationAnchor(QtWidgets.QGraphicsView.ViewportAnchor.AnchorViewCenter)

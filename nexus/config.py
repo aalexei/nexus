@@ -91,6 +91,7 @@ default_config = {
     "view_home_keys": [".", "H"],
     "view_first_keys": ["0", "S"],
     "view_pointer_keys": ["P"],
+    "view_trail_keys": ["T"],
 
     #
     # Recording

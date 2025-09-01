@@ -5377,9 +5377,13 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         # TODO refactor as _m_press_timer
         # self._pressTimer.start()
-
         self._m_press_pos = event.scenePos()
         self._m_state = MPRESS
+        
+        if self.scene().mode in ['presentation','record']:
+            event.ignore()
+            return
+
         # logging.debug('[*] Press event ->[1]')
 
         if (event.button() == QtCore.Qt.MouseButton.LeftButton and \
@@ -5390,7 +5394,7 @@ class StemItem(QtWidgets.QGraphicsItem):
             self.drawBud(event.pos())
 
         else:
-
+            
             if event.button() == QtCore.Qt.MouseButton.LeftButton:
                 if event.modifiers() == QtCore.Qt.KeyboardModifier.ShiftModifier:
                     self.setSelected(not self.isSelected())
@@ -5429,6 +5433,9 @@ class StemItem(QtWidgets.QGraphicsItem):
         #     #self.presstime = 0
         #     event.ignore()
         #     return
+        if self.scene().mode in ['presentation','record']:
+            event.ignore()
+            return
 
         if self._m_state == MPRESS:
             self._m_state = MMOVE
@@ -5466,6 +5473,9 @@ class StemItem(QtWidgets.QGraphicsItem):
         p1 = event.scenePos()
         p0 = self._m_press_pos
         # self._pressTimer.stop()
+        if self.scene().mode in ['presentation','record']:
+            event.ignore()
+            return
 
         # Use item pos as touch gesture shouldn't depend on zoom
         p0i = self.mapFromScene(p0)
