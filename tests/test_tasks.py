@@ -5,6 +5,7 @@ import unittest
 from unittest import mock
 
 import test_inline as inline_tests
+import test_window_layout as layout_tests
 import test_contents as contents_tests
 from PyQt6 import QtCore, QtGui, QtWidgets, QtTest, QtSvg
 from nexus import tasks, graphydb, nexusgraph
@@ -712,3 +713,96 @@ class DoingContentsTests(unittest.TestCase):
         self.assertEqual(tasks.state(stem.node), tasks.DOING)
         self.click_checkbox(row)
         self.assertEqual(tasks.state(stem.node), tasks.DONE)
+
+
+
+class TaskWindowTests(unittest.TestCase):
+    setUpClass = classmethod(layout_tests.WindowLayoutTests.setUpClass.__func__)
+    tearDownClass = classmethod(layout_tests.WindowLayoutTests.tearDownClass.__func__)
+    setUp = layout_tests.WindowLayoutTests.setUp
+    tearDown = layout_tests.WindowLayoutTests.tearDown
+    node = layout_tests.WindowLayoutTests.node
+    close_window = layout_tests.WindowLayoutTests.close_window
+    open_window = layout_tests.WindowLayoutTests.open_window
+
+    def test_cmd_d_cycles_from_contents_and_cmd_enter_still_opens_editor(self):
+        window = self.open_window()
+        root = window.scene.root()
+        root.setSelected(True)
+        window.contentsPanel.syncSelection()
+        window.contentsPanel.tree.setFocus()
+        QtTest.QTest.keyClick(window.contentsPanel.tree, QtCore.Qt.Key.Key_D, QtCore.Qt.KeyboardModifier.ControlModifier)
+        self.app.processEvents()
+        self.assertTrue(tasks.is_task(root.node))
+        self.assertFalse(window.view.tasks.enabled)
+        self.assertIn(window.cycleTaskAct, window.editMenu.actions())
+        window.view.setFocus()
+        QtTest.QTest.keyClick(window.view, QtCore.Qt.Key.Key_Return, QtCore.Qt.KeyboardModifier.ControlModifier)
+        self.app.processEvents()
+        self.assertTrue(window.editDialog.isVisible())
+
+    def test_actual_shortcut_converts_selected_note_and_survives_reopening(self):
+        window = self.open_window()
+        root = window.scene.root()
+        original = copy.deepcopy(root.node['content'])
+        root.setSelected(True)
+        window.view.setFocus()
+        QtTest.QTest.keyClick(window.view, QtCore.Qt.Key.Key_D, QtCore.Qt.KeyboardModifier.ControlModifier)
+        self.app.processEvents()
+        self.assertTrue(tasks.is_task(root.node))
+        self.assertEqual(root.node['content'], original)
+        self.assertFalse(window.todoModeAct.isChecked())
+        self.assertEqual(window.todoModeButton.text(), 'Todo OFF')
+        window.todoModeAct.trigger()
+        self.assertTrue(window.view.tasks.enabled)
+        self.assertTrue(tasks.is_task(root.node))
+        self.close_window(window)
+        reopened = self.open_window()
+        self.assertTrue(tasks.is_task(reopened.scene.root().node))
+        self.assertEqual(reopened.scene.root().node['content'], original)
+        self.assertFalse(reopened.view.tasks.enabled)
+
+    def test_actual_action_shortcut_works_while_typing_and_toolbar_stays_in_sync(self):
+        window = self.open_window()
+        root = window.scene.root(); root.setSelected(True)
+        window.view.setFocus()
+        QtTest.QTest.keyClick(window.view, QtCore.Qt.Key.Key_Tab)
+        QtTest.QTest.keyClicks(window.view, 'First task')
+        QtTest.QTest.keyClick(window.view, QtCore.Qt.Key.Key_T, TaskTests.toggle_mod)
+        self.app.processEvents()
+        self.assertTrue(window.todoModeAct.isChecked())
+        self.assertEqual(window.todoModeAct.text(), 'Todo mode ON')
+        self.assertFalse(tasks.is_task(window.view.inline.item.stem.node))
+        QtTest.QTest.keyClick(window.view, QtCore.Qt.Key.Key_D, QtCore.Qt.KeyboardModifier.ControlModifier)
+        self.assertTrue(tasks.is_task(window.view.inline.item.stem.node))
+        window.todoModeAct.trigger()
+        self.assertFalse(window.view.tasks.enabled)
+        self.assertFalse(window.todoModeAct.isChecked())
+        self.assertTrue(tasks.is_task(window.view.inline.item.stem.node))
+
+    def test_real_plain_text_export_uses_task_markers(self):
+        window = self.open_window()
+        root = window.scene.root()
+        root.node['todo'], root.node['todo_done'] = True, True
+        root.node.save(); root.renew()
+        target = Path(self.tmp.name) / 'tasks.txt'
+        with mock.patch.object(QtWidgets.QFileDialog, 'getSaveFileName', return_value=(str(target), '')):
+            window.exportText()
+        self.assertTrue(target.read_text().startswith('[x] Root label'))
+
+    def test_doing_setting_defaults_on_persists_and_toolbar_is_one_compact_row(self):
+        window = self.open_window()
+        self.assertTrue(tasks.doing_enabled())
+        self.assertTrue(window.doingStateAct.isChecked())
+        self.assertIn(window.doingStateAct, window.settingsMenu.actions())
+        self.assertFalse(window.toolBarBreak(window.viewToolBar))
+        bars = (window.fileToolBar, window.editToolBar, window.viewToolBar, window.modeToolBar, window.filterToolBar)
+        self.assertEqual(len({bar.y() for bar in bars}), 1)
+        self.assertEqual(window.fullEditorButton.text(), 'Editor')
+        self.assertEqual(window.todoModeButton.text(), 'Todo OFF')
+        self.assertLessEqual(window.filterEdit.maximumWidth(), 160)
+        window.doingStateAct.trigger()
+        self.assertFalse(tasks.doing_enabled())
+        self.close_window(window)
+        reopened = self.open_window()
+        self.assertFalse(reopened.doingStateAct.isChecked())

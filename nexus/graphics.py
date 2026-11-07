@@ -3908,6 +3908,13 @@ class NexusView(QtWidgets.QGraphicsView):
         return super().eventFilter(watched, event)
 
 
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, 'inline'):
+            self.inline.updateHint()
+
+
+
 
 
 

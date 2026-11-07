@@ -27,7 +27,7 @@ from functools import reduce
 import webbrowser, tempfile
 
 import webbrowser, urllib.parse, logging
-from . import graphics, resources, interpreter, graphydb, nexusgraph, config, tasks, contents
+from . import graphics, resources, interpreter, graphydb, nexusgraph, config, tasks, contents, window_layout
 from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi, cos, sin
 import re, subprocess
 import apsw
@@ -857,7 +857,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.createMenus()
         self.createStatusBar()
 
-        self.readSettings()
 
         self.scene.statusMessage.connect(self.showMessage)
         self.scene.linkClicked.connect(self.linkClicked)
@@ -871,12 +870,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("{}".format(Path(self.scene.graph.path).name))
         self.showMessage("Nexus Map loaded")
-
-        rect = QtCore.QRectF()
-        for item in self.scene.allChildStems():
-            rect = rect.united(item.sceneBoundingRect())
-
-        self.view.fitInView(rect, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
         # Update the recent files
         settings = QtCore.QSettings("Ectropy", "Nexus")
@@ -921,6 +914,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setMode()
 
+        self.readSettings()
+        self._initialLayoutDone = False
+        self._initialLayoutTimer = QtCore.QTimer(self)
+        self._initialLayoutTimer.setSingleShot(True)
+        self._initialLayoutTimer.timeout.connect(self.fitInitialMap)
         # Initialize file system watcher
         # Not working - see notes in onFileChanged()
         # self.file_watcher = QtCore.QFileSystemWatcher()
@@ -1937,23 +1935,39 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def createToolBars(self):
         self.fileToolBar = self.addToolBar(self.tr("File"))
-        self.fileToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],
-                                                  CONFIG['icon_size']))
+        self.fileToolBar.setIconSize(QtCore.QSize(24, 24))
         self.fileToolBar.addAction(self.newAct)
         self.fileToolBar.addAction(self.openAct)
 
         self.editToolBar = self.addToolBar(self.tr("Edit"))
-        self.editToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],
-                                                  CONFIG['icon_size']))
+        self.editToolBar.setIconSize(QtCore.QSize(24, 24))
         self.editToolBar.addAction(self.undoAct)
         self.editToolBar.addAction(self.cutAct)
         self.editToolBar.addAction(self.copyAct)
         self.editToolBar.addAction(self.pasteAct)
         self.editToolBar.addAction(self.deleteAct)
+        self.textModeButton = QtWidgets.QToolButton(self)
+        self.textModeButton.setDefaultAction(self.textModeAct)
+        self.textModeButton.setText('Text')
+        self.view.inline.modeChanged.connect(lambda enabled: self.textModeButton.setText('Text'))
+        self.editToolBar.addWidget(self.textModeButton)
+        self.todoModeButton = QtWidgets.QToolButton(self)
+        self.todoModeButton.setDefaultAction(self.todoModeAct)
+        self.todoModeButton.setText('Todo OFF')
+        self.editToolBar.addWidget(self.todoModeButton)
+        self.fullEditorButton = QtWidgets.QToolButton(self)
+        self.fullEditorButton.setDefaultAction(self.fullEditorAct)
+        self.fullEditorButton.setText('Editor')
+        self.editToolBar.addWidget(self.fullEditorButton)
+        if hasattr(self, 'childSizeAct'):
+            self.childSizeButton = QtWidgets.QToolButton(self)
+            self.childSizeButton.setDefaultAction(self.childSizeAct)
+            self.childSizeButton.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            self.childSizeButton.setText('Size')
+            self.editToolBar.addWidget(self.childSizeButton)
 
         self.viewToolBar = self.addToolBar(self.tr("View"))
-        self.viewToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],
-                                                  CONFIG['icon_size']))
+        self.viewToolBar.setIconSize(QtCore.QSize(24, 24))
         self.viewToolBar.addAction(self.zoomInAct)
         self.viewToolBar.addAction(self.zoomOutAct)
         self.viewToolBar.addAction(self.zoomSelectionAct)
@@ -1964,6 +1978,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewToolBar.addAction(self.viewsNextAct)
 
         self.modeToolBar = self.addToolBar(self.tr("Mode"))
+        self.modeToolBar.setIconSize(QtCore.QSize(24, 24))
         self.modeToolBar.addAction(self.editModeAct)
         self.modeToolBar.addAction(self.presentationModeAct)
         self.modeToolBar.addAction(self.recordModeAct)
@@ -1978,12 +1993,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recToolBar.addWidget(self.recSourceCombo)
 
         self.filterEdit = FilterEdit()
+        self.filterEdit.setMinimumWidth(90)
+        self.filterEdit.setMaximumWidth(160)
         self.filterToolBar = self.addToolBar(self.tr("Filter"))
         self.filterToolBar.addWidget(self.filterEdit)
         self.filterToolBar.addAction(self.filterClearAct)
         self.filterToolBar.addAction(self.filterRunAct)
-        self.filterToolBar.setIconSize(QtCore.QSize(CONFIG['icon_size'],
-                                                    CONFIG['icon_size']))
+        self.filterToolBar.setIconSize(QtCore.QSize(24, 24))
         self.filterEdit.runfilter.connect(self.sceneFilterStems)
         self.filterRunAct.triggered.connect(self.filterEdit.editingFinished2)
         self.filterClearAct.triggered.connect(self.filterEdit.clear)
@@ -1996,16 +2012,10 @@ class MainWindow(QtWidgets.QMainWindow):
         logging.info("Statusbar: {}".format(msg))
 
     def readSettings(self):
-        settings = QtCore.QSettings("Ectropy", "Nexus")
-        pos = settings.value('pos', QtCore.QPoint(200, 200))
-        size = settings.value('size', QtCore.QSize(400, 400))
-        self.resize(size)
-        self.move(pos)
+        window_layout.restore(self)
 
     def writeSettings(self):
-        settings = QtCore.QSettings("Ectropy", "Nexus")
-        settings.setValue('pos', self.pos())
-        settings.setValue('size', self.size())
+        window_layout.save(self)
 
     def undo(self):
         if self.view.inline.item is not None:
@@ -2616,18 +2626,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self.setEditingMode()
 
     def setEditingMode(self):
+        previous_mode = self.scene.mode
         self.scene.presentation = False
         self.scene.mode = "edit"
         # self.presentationModeAct.setChecked(False)
         logging.debug("Switching on edit mode")
 
-        # TODO Need to store geometry of window on first use
-        # show Normal seems too abrupt after full screen
-        # Seems to not store maximised state on a mac?
-
-        self.setWindowFlags(self._windowflags)
-        self.showNormal()
-        # self.showMaximized()
+        # Startup must not force a restored maximized window back to normal.
+        if previous_mode != 'edit':
+            self.setWindowFlags(self._windowflags)
+            if hasattr(self, '_editingGeometry'):
+                self.restoreGeometry(self._editingGeometry)
+            else:
+                self.setWindowState(QtCore.Qt.WindowState.WindowNoState)
+            self.show()
 
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
@@ -2665,7 +2677,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editModeAct.setShortcut(self.tr("Ctrl+E"))
 
     def setPresentationMode(self):
-
+        self.rememberEditingLayout()
         self.scene.mode = "presentation"
         logging.debug("Switching on presentation mode")
 
@@ -2720,7 +2732,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # self.showNormal()
 
     def setRecordingMode(self):
-
+        self.rememberEditingLayout()
         self.scene.mode = "record"
         logging.debug("Switching on record mode")
 
@@ -3204,6 +3216,34 @@ class MainWindow(QtWidgets.QMainWindow):
             selected[0].editStem(full=True)
         elif len(selected) > 1:
             self.scene.statusMessage.emit('Select one node to open the full editor')
+
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if hasattr(self, '_initialLayoutTimer') and not self._initialLayoutDone:
+            self._initialLayoutDone = True
+            self._initialLayoutTimer.start(0)
+
+
+    def fitInitialMap(self):
+        if not self.isVisible() or self.scene.mode != 'edit':
+            return
+        window_layout.size_contents(self)
+        self.layout().activate()
+        rect = QtCore.QRectF()
+        for stem in self.scene.visibleStemsById().values():
+            rect = rect.united(stem.sceneBoundingRect())
+        if not rect.isEmpty():
+            self.view.fitInView(rect.adjusted(-20, -20, 20, 20), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+
+
+    def rememberEditingLayout(self):
+        if self.scene.mode == 'edit':
+            self._editingGeometry = self.saveGeometry()
+            self._editingContentsWidth = self.contentsDock.width()
+
+
+
 
 
 
