@@ -3130,6 +3130,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def showChildSize(self):
         if self.scene.mode != 'edit' or self.editDialog.isVisible():
             return
+        inline = getattr(self.view, 'inline', None)
+        if inline is not None:
+            inline.finish()
+            if inline.item is not None:
+                return
         dialog = getattr(self, '_childSizeDialog', None)
         if dialog is None:
             dialog = self._childSizeDialog = branch_size.ChildSizeDialog(self)

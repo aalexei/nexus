@@ -9,6 +9,18 @@ from nexus import branch_size, graphics, graphydb, nexusgraph
 
 
 class BranchSizeTests(navigation.MapTestCase):
+    def test_optional_inline_save_failure_blocks_size_dialog(self):
+        from types import SimpleNamespace
+        from nexus import mainwindow
+        inline = mock.Mock(item=object())
+        owner = SimpleNamespace(scene=self.scene, view=SimpleNamespace(inline=inline),
+                                editDialog=SimpleNamespace(isVisible=lambda: False))
+        before = self.graph.connection.total_changes()
+        mainwindow.MainWindow.showChildSize(owner)
+        inline.finish.assert_called_once_with()
+        self.assertFalse(hasattr(owner, '_childSizeDialog'))
+        self.assertEqual(self.graph.connection.total_changes(), before)
+
     setUpClass = classmethod(navigation.MapTestCase.setUpClass.__func__)
     tearDownClass = classmethod(navigation.MapTestCase.tearDownClass.__func__)
     setUp = navigation.MapTestCase.setUp
