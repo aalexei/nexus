@@ -215,6 +215,11 @@ class InputDialog(QtWidgets.QDialog):
         # need a backref to link signal on pasted item
         # TODO better way of doing this, without backref to dialog
         self.view.input_dialog = self
+        self.modeIndicator = QtWidgets.QLabel()
+        self.modeIndicator.setAccessibleName('Editor mode and keyboard hints')
+        self.modeIndicator.setMargin(6)
+        layout.addWidget(self.modeIndicator)
+
 
         #
         # Toolbar
@@ -389,6 +394,7 @@ class InputDialog(QtWidgets.QDialog):
         self.scene = InkScene(stem=stem, parent=self)
         self.scene.setBackgroundBrush(QtGui.QBrush(QtGui.QPixmap(":/images/gridbackground.png")))
         self.view.setScene(self.scene)
+        self.scene.focusItemChanged.connect(self.updateModeIndicator)
 
         stem.isBeingEdited = True
 
@@ -629,17 +635,17 @@ class InputDialog(QtWidgets.QDialog):
 
         self.penmode = QtGui.QAction(QtGui.QIcon(":/images/pencil.svg"),
                                      self.tr("&Pen mode"), self)
-        self.penmode.setShortcut("b")
+        self.penmode.setToolTip("Pen mode (P)")
         self.penmode.triggered.connect(self.setPenModeClicked)
 
         self.highlightmode = QtGui.QAction(QtGui.QIcon(":/images/highlighter.svg"),
                                            self.tr("&Highlight mode"), self)
-        self.highlightmode.setShortcut("h")
+        self.highlightmode.setToolTip("Highlight mode (H)")
         self.highlightmode.triggered.connect(self.setHighlightModeClicked)
 
         self.erasermode = QtGui.QAction(QtGui.QIcon(":/images/eraser.svg"),
                                         self.tr("&Eraser mode"), self)
-        self.erasermode.setShortcut("e")
+        self.erasermode.setToolTip("Eraser mode (E)")
         self.erasermode.triggered.connect(self.setEraserMode)
 
         self.selectmode = QtGui.QAction(QtGui.QIcon(":/images/pointer.svg"),
@@ -821,6 +827,7 @@ class InputDialog(QtWidgets.QDialog):
 
         else:
             self.stackedwidget.setCurrentIndex(0)
+        self.updateModeIndicator()
 
     def setPenCursor(self):
         if not self.ishighlighter:
@@ -852,6 +859,7 @@ class InputDialog(QtWidgets.QDialog):
 
         self.scene.pen = QtGui.QPen(QtGui.QColor(color))
         self.scene.pen.setWidthF(size)
+        self.updateModeIndicator()
 
     def setTextMode(self):
         '''
@@ -920,10 +928,9 @@ class InputDialog(QtWidgets.QDialog):
         for item in items:
             if isinstance(item, TextItem):
                 item.setFocus()
-                # Make sure the item being editied in centred in view
-                self.view.fitInView(item.mapToScene(item.boundingRect()).boundingRect().adjusted(-10, -10, 10, 10),
-                                    QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+                self.view.centerOn(item.sceneBoundingRect().center())
                 break
+        self.updateModeIndicator()
 
     def setHighlightModeClicked(self):
 
@@ -994,6 +1001,7 @@ class InputDialog(QtWidgets.QDialog):
         self.setPenMode()
         self.view.viewport().setCursor(QtCore.Qt.CursorShape.CrossCursor)
         self.scene.mode = EraserMode
+        self.updateModeIndicator()
 
     # TODO should drawing modes be in the scene instead?
 
@@ -1025,6 +1033,7 @@ class InputDialog(QtWidgets.QDialog):
 
         for item in self.scene.getItems():
             item.setMode(SelectMode)
+        self.updateModeIndicator()
 
     # def saveSettings(self):
 
@@ -1412,6 +1421,21 @@ class InputDialog(QtWidgets.QDialog):
         # self.scene.refreshStem()
         self.scene.transformationWidget.setSelectedItems(pastedobjects)
         self.scene.transformationWidget.show()
+
+
+    def updateModeIndicator(self, *unused):
+        if not hasattr(self, 'scene'):
+            return
+        if self.stackedwidget.currentIndex() == 1:
+            label = 'Properties'
+        elif self.view.activeTextItem() is not None:
+            self.modeIndicator.setText('Typing — Esc: finish typing · Enter: save & close · Shift+Enter: newline')
+            return
+        else:
+            label = {TextMode: 'Text', SelectMode: 'Select', EraserMode: 'Eraser',
+                     PenMode: 'Highlighter' if getattr(self, 'ishighlighter', False) else 'Pen'}.get(self.scene.mode, 'Select')
+        self.modeIndicator.setText(label + ' — T: text · P: pen · Esc: save & close')
+
 
 
 class MyEvent(QtWidgets.QGraphicsSceneMouseEvent):
@@ -2362,6 +2386,15 @@ class InkView(QtWidgets.QGraphicsView):
 
     def event(self, event):
 
+        if event.type() == QtCore.QEvent.Type.ShortcutOverride and self.activeTextItem() is not None:
+            # Prevent Delete/Backspace actions from deleting the text object
+            # while its text cursor is active. Qt still receives the keypress.
+            if event.modifiers() in (QtCore.Qt.KeyboardModifier.NoModifier,
+                                      QtCore.Qt.KeyboardModifier.ShiftModifier):
+                event.accept()
+                return True
+        if event.type() == QtCore.QEvent.Type.KeyPress and self.editorKeyPress(event):
+            return True
         if event.type() == QtCore.QEvent.Type.Gesture:
             return self.gestureEvent(event)
         elif event.type() == QtCore.QEvent.Type.TouchBegin:
@@ -2566,6 +2599,55 @@ class InkView(QtWidgets.QGraphicsView):
         self._eventstate = Free
         self._itemUnder = None
         self._event = None
+
+
+    def activeTextItem(self):
+        item = self.scene().focusItem() if self.scene() else None
+        if isinstance(item, TextItem) and item.mode in (item.EditMode, item.EditSourceMode):
+            return item
+        return None
+
+
+    def editorKeyPress(self, event):
+        dialog = getattr(self, 'input_dialog', None)
+        if dialog is None or event.modifiers() != QtCore.Qt.KeyboardModifier.NoModifier:
+            return False
+        key = event.key()
+        text = self.activeTextItem()
+        if key == QtCore.Qt.Key.Key_Escape:
+            if event.isAutoRepeat():
+                event.accept()
+                return True
+            if text is not None:
+                text.saveIfChanged()
+                dialog.selectmode.trigger()
+                self.scene().clearFocus()
+                self.setFocus()
+            else:
+                dialog.saveClose()
+        elif text is not None:
+            if key not in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter):
+                return False
+            dialog.saveClose()
+        else:
+            action = {QtCore.Qt.Key.Key_T: dialog.textmode,
+                      QtCore.Qt.Key.Key_P: dialog.penmode,
+                      QtCore.Qt.Key.Key_B: dialog.penmode,
+                      QtCore.Qt.Key.Key_H: dialog.highlightmode,
+                      QtCore.Qt.Key.Key_E: dialog.erasermode}.get(key)
+            if action is None:
+                return False
+            action.trigger()
+        event.accept()
+        return True
+
+
+    def keyPressEvent(self, event):
+        if not self.editorKeyPress(event):
+            super().keyPressEvent(event)
+
+
+
 
 
 
