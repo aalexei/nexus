@@ -1967,7 +1967,7 @@ class InkView(QtWidgets.QGraphicsView):
         # self.grabGesture(QtCore.Qt.GestureType.PanGesture)
         self.grabGesture(QtCore.Qt.GestureType.PinchGesture)
 
-        self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.SmartViewportUpdate)
+        self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
 
         self.setAcceptDrops(True)
 
