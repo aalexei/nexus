@@ -1211,10 +1211,11 @@ class InputDialog(QtWidgets.QDialog):
         self.deleteEvent()
 
     def copyEvent(self):
-
-        # TODO create a Copy-As function
-
-        selected = self.scene.selectedItems()
+        contentitems = self.scene.getItems()
+        selected = [item for item in self.scene.selectedItems()
+                    if item in contentitems]
+        if not selected:
+            return
         selected.sort(key=lambda x: x.zValue())
 
         clipboard = QtWidgets.QApplication.clipboard()
@@ -1225,17 +1226,13 @@ class InputDialog(QtWidgets.QDialog):
         #
         rect = QtCore.QRectF()
 
-        # Unselect items so selection marks dont show up
         for item in selected:
             rect = rect.united(item.sceneBoundingRect())
-            item.setSelected(False)
-
-        # Grab all items that will show up in the region
-        # TODO isn't this the same as above?,
-        allregionitems = self.scene.items(rect)
 
         # Build a pixmap at 2x the size for better resolution
-        pixmap = QtGui.QPixmap(rect.size().toSize()*2)
+        from math import ceil
+        pixmap = QtGui.QPixmap(max(1, ceil(rect.width()*2)),
+                              max(1, ceil(rect.height()*2)))
 
         # Make background transparent
         pixmap.fill(QtGui.QColor(0, 0, 0, 0))
@@ -1244,23 +1241,27 @@ class InputDialog(QtWidgets.QDialog):
         painter.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
         painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
 
-        # Hide unselected visible items that are in the rect
+        # Export only the content. The editor grid and resize handles belong
+        # to the editing UI, rather than the image placed on the clipboard.
+        background = self.scene.backgroundBrush()
         hiddenitems = []
-        for item in allregionitems:
-            if item not in selected and item.isVisible():
-                item.setVisible(False)
-                hiddenitems.append(item)
-
-        self.scene.render(painter, QtCore.QRectF(), rect)
-        painter.end()
-        mimedata.setImageData(pixmap)
-
-        # Return selection
-        for item in selected:
-            item.setSelected(True)
-        # Return hidden items
-        for item in hiddenitems:
-            item.setVisible(True)
+        try:
+            for item in selected:
+                item.setSelected(False)
+            for item in self.scene.items():
+                if item not in selected and item.isVisible():
+                    item.setVisible(False)
+                    hiddenitems.append(item)
+            self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
+            self.scene.render(painter, QtCore.QRectF(), rect)
+        finally:
+            painter.end()
+            self.scene.setBackgroundBrush(background)
+            for item in hiddenitems:
+                item.setVisible(True)
+            for item in selected:
+                item.setSelected(True)
+        mimedata.setImageData(pixmap.toImage())
 
         #
         # Copy Nexus internal data for pasting elsewhere in a tree
@@ -1286,8 +1287,6 @@ class InputDialog(QtWidgets.QDialog):
             data = graphydb.cleandata(node.data)
             copydata.images[sha] = data
 
-        clipboard = QtWidgets.QApplication.clipboard()
-        mimedata = QtCore.QMimeData()
         copydata.setMimedata(mimedata)
         clipboard.setMimeData(mimedata)
 
