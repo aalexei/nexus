@@ -450,74 +450,8 @@ def createViewImage(view, width, height, removebackground=False):
     return image
 
 #----------------------------------------------------------------------
-class NewOrOpenDialog(QtWidgets.QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        logging.debug('Launching NewOrOpenDialog')
-
-        self.setModal(True)
-        self.setWindowTitle("Create or Open Nexus Map")
-
-        baselayout = QtWidgets.QVBoxLayout()
-        self.setLayout(baselayout)
-
-        baselayout.addWidget(QtWidgets.QLabel("Recent Maps (click to open):"))
-        listWidget = QtWidgets.QListWidget(self)
-        baselayout.addWidget(listWidget)
-
-        listWidget.itemClicked.connect(self.recentFileOpen)
-
-        # Update the recent files
-        settings = QtCore.QSettings("Ectropy", "Nexus")
-        files = settings.value('recentFileList', [])
-
-        self.maps = {}
-        for f in files:
-            name = QtCore.QFileInfo(f).fileName()
-            path = QtCore.QFileInfo(f).path()
-            text = "{} [{}]".format(name, path)
-            self.maps[text] = f
-
-            item = QtWidgets.QListWidgetItem(text, listWidget)
-
-        hlayout = QtWidgets.QHBoxLayout()
-        baselayout.addLayout(hlayout)
-
-        button = QtWidgets.QPushButton("Quit")
-        button.clicked.connect(self.reject)
-        hlayout.addWidget(button)
-        button = QtWidgets.QPushButton("New map")
-        button.setToolTip("Create a new map")
-        button.clicked.connect(self.newmap)
-        hlayout.addWidget(button)
-        button = QtWidgets.QPushButton("Open another")
-        button.setToolTip("Open another map")
-        button.clicked.connect(self.openmap)
-        button.setDefault(True)
-        hlayout.addWidget(button)
-
-    def recentFileOpen(self, item):
-        path = self.maps[item.text()]
-        app = QtWidgets.QApplication.instance()
-        app.raiseOrOpen(path)
-
-        self.accept()
-
-    def newmap(self):
-        app = QtWidgets.QApplication.instance()
-        app.dialogNew()
-        self.accept()
-
-    def openmap(self):
-        app = QtWidgets.QApplication.instance()
-        self.hide()
-        w = app.dialogOpen()
-        if w is not None:
-            self.accept()
-        else:
-            self.reject()
-
+from . import welcome, map_preview
+from .welcome import NewOrOpenDialog
 
 #----------------------------------------------------------------------
 class NexusApplication(QtWidgets.QApplication):
@@ -579,8 +513,9 @@ class NexusApplication(QtWidgets.QApplication):
         logging.debug("raise or open: '%s'", fileName)
         if len(fileName) == 0:
             return None
+        fileName = welcome.normalize(fileName)
         for window in self.windowList():
-            if window.scene.graph.path == fileName:
+            if welcome.normalize(window.scene.graph.path) == fileName:
                 w = window
                 logging.debug("Raising %s", fileName)
                 break
@@ -866,19 +801,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.view.fitInView(rect, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
 
-        # Update the recent files
-        settings = QtCore.QSettings("Ectropy", "Nexus")
-        files = settings.value('recentFileList', [])
-
-        try:
-            files.remove(fileName)
-        except ValueError:
-            pass
-
-        files.insert(0, fileName)
-        del files[self.MaxRecentFiles:]
-
-        settings.setValue('recentFileList', files)
+        welcome.record_recent(fileName)
 
         self.updateRecentFilesMenu()
 
@@ -909,6 +832,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setMode()
 
+        self.previewWarmup = map_preview.IdlePreview(self)
         # Initialize file system watcher
         # Not working - see notes in onFileChanged()
         # self.file_watcher = QtCore.QFileSystemWatcher()
@@ -975,6 +899,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
 
+        self.previewWarmup.stop()
         self.writeSettings()
         self.scene.graph.close()
         event.accept()
@@ -1842,8 +1767,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.helpMenu.addAction(self.aboutAct)
 
     def updateRecentFilesMenu(self):
-        settings = QtCore.QSettings("Ectropy", "Nexus")
-        files = settings.value('recentFileList', [])
+        files, _ = welcome.history()
 
         numRecentFiles = min(len(files), self.MaxRecentFiles)
 
