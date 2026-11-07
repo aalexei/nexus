@@ -27,7 +27,7 @@ from functools import reduce
 import webbrowser, tempfile
 
 import webbrowser, urllib.parse, logging
-from . import graphics, resources, interpreter, graphydb, nexusgraph, config
+from . import graphics, resources, interpreter, graphydb, nexusgraph, config, branch_size
 from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi, cos, sin
 import re, subprocess
 import apsw
@@ -1506,6 +1506,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.undoAct.triggered.connect(self.undo)
 
         # ----------------------------------------------------------------------------------
+        self.childSizeAct = QtGui.QAction(QtGui.QIcon(':/images/zoom-one.svg'), self.tr('Child size…'), self)
+        self.childSizeAct.setShortcut('Ctrl+Shift+R')
+        self.childSizeAct.setAutoRepeat(False)
+        self.childSizeAct.setToolTip('Child size (Cmd+Shift+R / Ctrl+Shift+R): choose how deeper nodes shrink')
+        self.childSizeAct.triggered.connect(self.showChildSize)
         self.setScaleAct = QtGui.QAction(self.tr("Set Scale"), self)
         self.setScaleAct.setStatusTip(self.tr("Set the scale for selected"))
         self.setScaleAct.setShortcut("S")
@@ -1791,6 +1796,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editMenu.addAction(self.deselectAct)
         self.editMenu.addSeparator()
         self.editMenu.addAction(self.setScaleAct)
+        self.editMenu.addAction(self.childSizeAct)
         self.editMenu.addAction(self.scaleByAct)
         self.editMenu.addAction(self.increaseScaleAct)
         self.editMenu.addAction(self.decreaseScaleAct)
@@ -3119,6 +3125,27 @@ class MainWindow(QtWidgets.QMainWindow):
                 item['_rect'].setVisible(vis)
             else:
                 item['_rect'].setVisible(False)
+
+
+    def showChildSize(self):
+        if self.scene.mode != 'edit' or self.editDialog.isVisible():
+            return
+        inline = getattr(self.view, 'inline', None)
+        if inline is not None:
+            inline.finish()
+            if inline.item is not None:
+                return
+        dialog = getattr(self, '_childSizeDialog', None)
+        if dialog is None:
+            dialog = self._childSizeDialog = branch_size.ChildSizeDialog(self)
+        if not dialog.isVisible():
+            dialog.refresh()
+            dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
+        dialog.percent.setFocus()
+        dialog.percent.selectAll()
+
 
 
 class FilterEdit(QtWidgets.QLineEdit):
