@@ -16,7 +16,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Nexus.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets, sip
 from PyQt6.QtCore import pyqtSlot
 
 from math import sqrt, atan2, cos, sin, pi, asin, degrees, pow, exp, fmod
@@ -24,7 +24,7 @@ import logging
 
 from bs4 import BeautifulSoup
 
-import re, time, copy, hashlib, json
+import re, time, copy, hashlib, json, weakref
 from . import interpreter, tools, graphydb, config, nexusgraph
 
 import urllib.parse, os
@@ -47,6 +47,12 @@ MPRESS, MMOVE, MLONG, MDOUBLE, MADD = 1, 2, 3, 4, 5
 VERSION = 0.91
 
 #----------------------------------------------------------------------
+def shortcutModifiers(event):
+    # Qt marks macOS arrow keys as keypad keys, even on laptop keyboards.
+    # This describes the key's origin, not a held shortcut modifier.
+    return event.modifiers() & ~QtCore.Qt.KeyboardModifier.KeypadModifier
+
+
 class Transform(QtGui.QTransform):
     '''
     Add some functionality to QT's QTransform
@@ -375,11 +381,20 @@ class InputDialog(QtWidgets.QDialog):
         dlayout.addRow("Allow canvas rotation", self.view.allowrotationwidget)
 
     def setDialog(self, stem):
+        from . import editor_window
+        map_view = next((v for v in stem.scene().views() if isinstance(v, NexusView)), None)
+        if map_view is not None:
+            map_view.inline.finish()
+            if map_view.inline.item is not None:
+                return
+        if not self.isVisible():
+            editor_window.restore(self, map_view)
+        self.view.resetPointerInteraction()
         if hasattr(self, 'scene'):
             # When dialog is first set up it won't have a scene
             self.scene.clear()
 
-        if hasattr(self, 'stem'):
+        if hasattr(self, 'stem') and not sip.isdeleted(self.stem):
             # In case we jump straight to editing another item
             self.stem.isBeingEdited = False
             # Redraw stem to remove editing mark
@@ -491,18 +506,20 @@ class InputDialog(QtWidgets.QDialog):
         elif self.textmode.isChecked():
             self.setTextMode()
 
-        if self.stem.scene().mode == "presentation":
-            self.showFullScreen()
-        elif self.fullscreenwidget.currentText() == "Maximise":
+        if self.fullscreenwidget.currentText() == "Maximise":
             self.showMaximized()
         elif self.fullscreenwidget.currentText() == "Fullscreen":
             self.showFullScreen()
-        elif hasattr(self, 'inputgeometry') and not self.isVisible():
-            # If the dialog is already visible don't move it
-            self.setGeometry(self.inputgeometry)
+        else:
+            self.showNormal()
         self.show()
 
     def saveClose(self):
+
+        mapscene = self.stem.scene()
+        edited_uid = self.stem.node['uid']
+        parent = self.stem.parentStem()
+        parent_uid = parent.node['uid'] if parent is not None else None
 
         # If a text item has been entered but has not lost focus it will not have been saved yet
         for item in self.scene.getItems():
@@ -511,7 +528,7 @@ class InputDialog(QtWidgets.QDialog):
 
         # If there are no outgoing links (With, Child) and
         # there are no items (or just blank Text items) delete branch
-        if self.stem.node.outE('e.kind="With"', COUNT=True) == 0 and \
+        if getattr(self.stem, '_inline_new', False) and self.stem.node.outE('e.kind="With"', COUNT=True) == 0 and \
            self.stem.node.outE('e.kind="Child"', COUNT=True) == 0:
 
             empty = True
@@ -535,10 +552,33 @@ class InputDialog(QtWidgets.QDialog):
             self.stem.renew(reload=False, children=True)
 
         self.inputgeometry = self.geometry()
+        from . import editor_window
+        editor_window.save(self)
 
         self.stem.isBeingEdited = False
+        self.stem._inline_new = False
 
         self.hide()
+
+        # Renew may recreate items or remove an empty new branch. Resolve the
+        # selection afresh instead of retaining a removed graphics item.
+        for uid in ((edited_uid, parent_uid) if mapscene.mode == "edit" else ()):
+            target = next((s for s in mapscene.allChildStems()
+                           if s.node['uid'] == uid), None)
+            if target is not None:
+                if getattr(target, '_keyboard_autoplace', False):
+                    target.placeBelowOverlappingLabels()
+                    target._keyboard_autoplace = False
+                mapscene.clearSelection()
+                target.setSelected(True)
+                view = getattr(self.stem, '_keyboard_view', None)
+                if view is None:
+                    view = next((v for v in mapscene.views() if isinstance(v, NexusView)), None)
+                if view is not None:
+                    view.ensureVisible(target.leaf)
+                    view.window().activateWindow()
+                    view.setFocus()
+                break
 
     def done(self, r):
         # Finalise closing dialog even if WM button clicked or ESC pressed
@@ -1198,7 +1238,8 @@ class InputDialog(QtWidgets.QDialog):
                 item.setTextCursor(cursor)
 
     def deleteEvent(self):
-        selected = self.scene.selectedItems()
+        content = self.scene.getItems()
+        selected = [item for item in self.scene.selectedItems() if item in content]
         batch = graphydb.generateUUID()
         for item in selected:
             item.deleteNodeItem(batch)
@@ -1476,7 +1517,8 @@ class InkScene(QtWidgets.QGraphicsScene):
         return items
 
     def setSelectionWidget(self):
-        selected = self.selectedItems()
+        content = self.getItems()
+        selected = [item for item in self.selectedItems() if item in content]
 
         if len(selected) > 0:
             rect = QtCore.QRectF()
@@ -1486,6 +1528,7 @@ class InkScene(QtWidgets.QGraphicsScene):
             self.transformationWidget.setSelectedItems(selected)
             self.transformationWidget.show()
         else:
+            self.transformationWidget.setSelectedItems([])
             self.transformationWidget.hide()
 
     def normaliseZvalues(self):
@@ -1580,8 +1623,9 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
 
         # self.setMode(self.ResizeMode)
 
-    def setSelectedItems(self, selected=[]):
-        self.selected = selected
+    def setSelectedItems(self, selected=None):
+        content = self.scene.getItems()
+        self.selected = [item for item in (selected or []) if item in content]
         self.resize()
 
     def resize(self):
@@ -1679,6 +1723,9 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         # Save any changed items
         batch = graphydb.generateUUID()
         for item in self.selected:
+            if (not isinstance(item, (TextItem, InkItem, PixmapItem)) or
+                    sip.isdeleted(item) or item.scene() is not self.scene):
+                continue
             if item._changed:
                 item['frame'] = Transform(item.transform()).tolist()
                 # Trigger a change
@@ -1954,6 +2001,7 @@ class InkView(QtWidgets.QGraphicsView):
         # Set default scale for the view
         self.scale(3, 3)
 
+        self._rememberMousePosition()
     def tabletEvent(self, event):
         '''
         tablet event dispatcher
@@ -2050,6 +2098,7 @@ class InkView(QtWidgets.QGraphicsView):
 
     def mousePressEvent(self, event):
 
+        self._rememberMousePosition(event)
         # TODO is this still used?
         if self._eventstate != Free:
             # logging.debug("    (ignoring mousepress)")
@@ -2079,6 +2128,7 @@ class InkView(QtWidgets.QGraphicsView):
 
     def mouseMoveEvent(self, event):
 
+        self._rememberMousePosition(event)
         if event.buttons() == QtCore.Qt.MouseButton.NoButton:
             # Ignore hover events
             return
@@ -2117,6 +2167,7 @@ class InkView(QtWidgets.QGraphicsView):
 
     def mouseReleaseEvent(self, event):
 
+        self._rememberMousePosition(event)
         if self._eventstate != Mouse:
             # logging.debug("    (ignoring mouserelease)")
             return
@@ -2186,8 +2237,10 @@ class InkView(QtWidgets.QGraphicsView):
     def pointerReleaseEvent(self, event):
         scene = self.scene()
         if self._itemUnder is not None:
-            self._itemUnder.pointerReleaseEvent(event)
+            target = self._itemUnder
             self._itemUnder = None
+            if not sip.isdeleted(target) and target.scene() is scene:
+                target.pointerReleaseEvent(event)
 
         else:
 
@@ -2524,8 +2577,41 @@ class InkView(QtWidgets.QGraphicsView):
         super().focusInEvent(event)
         self.viewChangeStream.emit(self)
 
+
+    def _rememberMousePosition(self, event=None):
+        if event is None:
+            global_pos = QtCore.QPointF(QtGui.QCursor.pos())
+            local_pos = QtCore.QPointF(self.mapFromGlobal(global_pos.toPoint()))
+        else:
+            global_pos = event.globalPosition()
+            local_pos = event.position()
+        # Keep the cache neutral: Qt may replay it after zooming or scrolling,
+        # and a cached button press must not start a second scene interaction.
+        cached_event = QtGui.QMouseEvent(QtCore.QEvent.Type.MouseMove, local_pos, global_pos,
+                                        QtCore.Qt.MouseButton.NoButton,
+                                        QtCore.Qt.MouseButton.NoButton,
+                                        QtCore.Qt.KeyboardModifier.NoModifier)
+        interactive = self.isInteractive()
+        # Populate QGraphicsView's native mouse cache without dispatching
+        # scene mouse/hover events alongside Nexus's own drawing handlers.
+        self.setInteractive(False)
+        try:
+            QtWidgets.QGraphicsView.mouseMoveEvent(self, cached_event)
+        finally:
+            self.setInteractive(interactive)
+
+
+    def resetPointerInteraction(self):
+        self._eventstate = Free
+        self._itemUnder = None
+        self._event = None
+
+
+
 #----------------------------------------------------------------------
 class NexusScene(QtWidgets.QGraphicsScene):
+    mapModified = QtCore.pyqtSignal()
+
 #----------------------------------------------------------------------
 
     statusMessage = QtCore.pyqtSignal(str)
@@ -2541,6 +2627,8 @@ class NexusScene(QtWidgets.QGraphicsScene):
         super().__init__(parent)
 
         self.setSceneRect(-3000, -3000, 6000, 6000)
+        self._undoSelections = {}
+        self._visibleStems = None
 
         # Default mode for new dialogs (will remember last one chosen)
         self.dialogstate = {
@@ -2609,6 +2697,7 @@ class NexusScene(QtWidgets.QGraphicsScene):
         # Find selected base stems (selection may include children)
         nodes = graphydb.NSet()
         parents = []
+        bases = []
         if stem is None:
             selected = set(self.selectedItems())
         else:
@@ -2618,15 +2707,63 @@ class NexusScene(QtWidgets.QGraphicsScene):
             if isinstance(item, StemItem) \
                and selected.isdisjoint(item.allParentStems()):
                 nodes.add(item.node)
+                bases.append(item)
                 parent = item.parentStem()
                 if parent is not None and parent not in parents:
                     parents.append(parent)
 
+        if not bases:
+            return
+
+        # Capture a surviving destination before renew removes/recreates items.
+        # For a multi-selection, use its topmost base branch as the anchor.
+        fallback_uid = None
+        if self.mode == "edit":
+            removed_uids = {s.node['uid'] for base in bases
+                            for s in [base] + base.allChildStems()}
+            order = lambda s: (s.leaf.sceneBoundingRect().center().y(), s.node['uid'])
+            anchor = min(bases, key=order)
+            parent = anchor.parentStem()
+            if parent is not None:
+                siblings = sorted(parent.childStems2, key=order)
+                index = siblings.index(anchor)
+                candidates = siblings[index + 1:] + list(reversed(siblings[:index])) + [parent]
+                fallback_uid = next((s.node['uid'] for s in candidates
+                                     if s.isVisible() and s.node['uid'] not in removed_uids), None)
+
         batch = graphydb.generateUUID()
+        self.rememberUndoSelection(batch, [s.node['uid'] for s in sorted(bases, key=lambda s:
+                                   (s.leaf.sceneBoundingRect().center().y(), s.node['uid']))])
+        root_bases = [base for base in bases if base.parentStem() is None]
         self.graph.deleteOutFromNodes(nodes, batch=batch, setchange=True)
 
         for parent in parents:
             parent.renew()
+
+        # A displayed root has no StemItem parent to refresh it away.
+        for base in root_bases:
+            if base.scene() is self:
+                self.removeItem(base)
+
+        if fallback_uid is not None:
+            target = next((s for s in self.allChildStems()
+                           if s.node['uid'] == fallback_uid and s.isVisible()), None)
+            if target is not None:
+                self.clearSelection()
+                target.setSelected(True)
+                views = [v for v in self.views() if isinstance(v, NexusView)]
+                view = next((v for v in views if v.hasFocus() or v.viewport().hasFocus()),
+                            views[0] if views else None)
+                if view is not None:
+                    rect = target.leaf.sceneBoundingRect()
+                    visible = view.mapToScene(view.viewport().rect()).boundingRect()
+                    if not visible.contains(rect):
+                        if rect.width() > visible.width() or rect.height() > visible.height():
+                            rect = QtCore.QRectF(rect.center(), QtCore.QSizeF(1, 1))
+                        view.ensureVisible(rect, 20, 20)
+                    view.window().activateWindow()
+                    view.setFocus()
+                    view.viewChangeStream.emit(view)
 
     def cut(self, *param, stem=None):
         '''
@@ -2790,6 +2927,157 @@ class NexusScene(QtWidgets.QGraphicsScene):
         return self.childStems()[0]
 
 
+    def invalidateStemCache(self):
+        self._visibleStems = None
+
+
+    def visibleStemsById(self):
+        """Cache membership only; navigation still reads current geometry."""
+        if self._visibleStems is None:
+            self._visibleStems = {item.node['uid']: item for item in self.items()
+                if isinstance(item, StemItem) and getattr(item, 'leaf', None) is not None
+                and item.isVisible()}
+        return self._visibleStems
+
+
+    def removeItem(self, item):
+        # Selection callbacks can run in the middle of removal. Invalidate on
+        # both sides, including when removing a non-stem ancestor of stems.
+        self.invalidateStemCache()
+        super().removeItem(item)
+        self.invalidateStemCache()
+
+
+    def clear(self):
+        self.invalidateStemCache()
+        super().clear()
+        self.invalidateStemCache()
+
+
+    def selectNodes(self, uids, reveal_hidden=False, focus=True):
+        """Resolve durable IDs after a refresh; reveal without changing zoom."""
+        if reveal_hidden:
+            batch = graphydb.generateUUID()
+            changed = False
+            for uid in uids:
+                node = self.graph.getuid(uid)
+                seen = set()
+                while node is not None and node['uid'] not in seen:
+                    seen.add(node['uid'])
+                    if 'hide' in node:
+                        node.discard('hide')
+                        node.save(batch=batch)
+                        changed = True
+                    node = next(iter(node.inN('e.kind="Child"')), None)
+            if changed:
+                for root in self.childStems():
+                    root.renew()
+        items = self.visibleStemsById()
+        targets = [items[uid] for uid in uids if uid in items]
+        if not targets:
+            return False
+        self.clearSelection()
+        for target in targets:
+            target.setSelected(True)
+        views = [v for v in self.views() if isinstance(v, NexusView)]
+        view = next((v for v in views if v.hasFocus() or v.viewport().hasFocus()),
+                    views[0] if views else None)
+        if view is not None:
+            rect = targets[0].leaf.sceneBoundingRect()
+            visible = view.mapToScene(view.viewport().rect()).boundingRect()
+            if not visible.contains(rect):
+                if rect.width() > visible.width() or rect.height() > visible.height():
+                    rect = QtCore.QRectF(rect.center(), QtCore.QSizeF(1, 1))
+                view.ensureVisible(rect, 20, 20)
+            if focus:
+                view.window().activateWindow()
+                view.setFocus()
+            view.viewChangeStream.emit(view)
+        return True
+
+
+    def rememberUndoSelection(self, batch, uids):
+        self._undoSelections[batch] = list(uids)
+        while len(self._undoSelections) > 100:
+            del self._undoSelections[next(iter(self._undoSelections))]
+
+
+    def undo(self):
+        if self.mode != 'edit':
+            return
+        last = self.graph.lastchanges()
+        if not last:
+            return
+        selected = sorted((s for s in self.selectedItems() if isinstance(s, StemItem)),
+                          key=lambda s: (s.leaf.sceneBoundingRect().center().y(), s.node['uid']))
+        previous = [s.node['uid'] for s in selected]
+        ancestors = [p.node['uid'] for s in selected for p in s.allParentStems()]
+        batch = last[-1][1].get('batch')
+        remembered = self._undoSelections.pop(batch, [])
+        changes = self.graph.undo()
+        # Undo can restore a deleted displayed root when there are no existing
+        # root graphics left to renew. Recreate only missing root IDs.
+        existing_roots = {s.node['uid'] for s in self.childStems()}
+        for node in self.graph.fetch('(r:Root) -(e:Child)> [n:Stem]'):
+            if node['uid'] not in existing_roots:
+                StemItem(node=node, scene=self)
+        for root in self.childStems():
+            root.renew()
+        stems = self.allChildStems()
+        restored = {uid for action, uid in changes if action == '+'}
+        bases = [s.node['uid'] for s in stems if s.node['uid'] in restored
+                 and all(p.node['uid'] not in restored for p in s.allParentStems())]
+        touched = [s.node['uid'] for s in stems if s.node['uid'] in {uid for _, uid in changes}]
+        # A deleted branch takes priority over its deletion fallback. For other
+        # edits, retain surviving selection; after undoing creation use its parent.
+        for candidates in (remembered, bases, previous, ancestors[:1], touched):
+            if self.selectNodes(candidates):
+                break
+        return changes
+
+
+    def reorderBranch(self, direction):
+        if self.mode != 'edit':
+            return
+        selected = [s for s in self.selectedItems() if isinstance(s, StemItem)]
+        if len(selected) != 1 or selected[0].parentStem() is None:
+            return
+        stem = selected[0]
+        parent = stem.parentStem()
+        # Keep branches on their original side; exchange vertical slots only.
+        siblings = sorted((s for s in parent.childStems2
+                           if s.isVisible() and s.direction() == stem.direction()),
+                          key=lambda s: (s.leaf.sceneBoundingRect().center().y(), s.node['uid']))
+        index = siblings.index(stem) + direction
+        if not 0 <= index < len(siblings):
+            return
+        other = siblings[index]
+        first = stem.leaf.sceneBoundingRect().center()
+        second = other.leaf.sceneBoundingRect().center()
+        delta = second.y() - first.y()
+        # If labels share a vertical slot, create a small ordered separation.
+        if abs(delta) < 1:
+            delta = direction * (max(stem.leaf.sceneBoundingRect().height(),
+                                     other.leaf.sceneBoundingRect().height()) + 20)
+        batch = graphydb.generateUUID()
+        self.rememberUndoSelection(batch, [stem.node['uid']])
+        for item, point, dy in ((stem, first, delta), (other, second, -delta)):
+            local_delta = parent.mapFromScene(point + QtCore.QPointF(0, dy)) - parent.mapFromScene(point)
+            pos = item.node['pos']
+            item.node['pos'] = [pos[0] + item.direction() * local_delta.x(), pos[1] + local_delta.y()]
+            item.node.save(batch=batch)
+        parent.renew()
+        self.selectNodes([stem.node['uid']])
+
+
+
+
+
+
+
+
+
+
 
 
 #----------------------------------------------------------------------
@@ -2825,7 +3113,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
         super().__init__(scene, parent)
 
-        self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.SmartViewportUpdate)
+        self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
 
         self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         self.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
@@ -2840,8 +3128,8 @@ class NexusView(QtWidgets.QGraphicsView):
 
         self.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
 
-        self.setOptimizationFlags(self.OptimizationFlag.DontSavePainterState |
-                                  self.OptimizationFlag.DontAdjustForAntialiasing)
+        self.setOptimizationFlag(self.OptimizationFlag.DontSavePainterState, False)
+        self.setOptimizationFlag(self.OptimizationFlag.DontAdjustForAntialiasing, False)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
         self.grabGesture(QtCore.Qt.GestureType.PanGesture)
@@ -2864,8 +3152,18 @@ class NexusView(QtWidgets.QGraphicsView):
         # Qt6 self._v0 = QtCore.QPoint()
         self._sticky = True
 
-        # Trying to fix touchpad zoom on linux
-        # self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
+        self.horizontalScrollBar().installEventFilter(self)
+        self.verticalScrollBar().installEventFilter(self)
+        from .inline import InlineController
+        self.inline = InlineController(self)
+        from .selection import SelectionController
+        self.selection = SelectionController(self)
+
+        InkView._rememberMousePosition(self)        # Trying to fix touchpad zoom on linux
+
+        from .tasks import TaskController
+        self.tasks = TaskController(self)
+        self._taskClick = False        # self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
 
     def scaleView(self, scaleFactor, point=None):
 
@@ -3020,6 +3318,18 @@ class NexusView(QtWidgets.QGraphicsView):
         self.viewChangeStream.emit(self)
 
     def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.MouseButton.LeftButton and event.modifiers() == QtCore.Qt.KeyboardModifier.NoModifier:
+            uid = self.tasks.hit(event.pos())
+            if uid is not None:
+                self._taskClick = True
+                self.tasks.cycle(uid)
+                self.setFocus()
+                event.accept()
+                return
+        if self.inline.item is not None:
+            item = self.inline.item
+            if not item.sceneBoundingRect().contains(self.mapToScene(event.pos())):
+                self.inline.finish(select=False)
 
         # if abs(self.pinchtime - time.time())<self._ignoremousetime:
         #     event.accept()
@@ -3047,6 +3357,9 @@ class NexusView(QtWidgets.QGraphicsView):
             QtWidgets.QGraphicsView.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):
+        if self._taskClick:
+            event.accept()
+            return
         # TODO performance
         # movement triggers drag move
 
@@ -3149,7 +3462,10 @@ class NexusView(QtWidgets.QGraphicsView):
             QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
-
+        if self._taskClick:
+            self._taskClick = False
+            event.accept()
+            return
         # if abs(self.pinchtime - time.time())<self._ignoremousetime:
         #    event.accept()
         #    return
@@ -3175,6 +3491,11 @@ class NexusView(QtWidgets.QGraphicsView):
         self.viewChangeStream.emit(self)
 
     def mouseDoubleClickEvent(self, event):
+        if (event.button() == QtCore.Qt.MouseButton.LeftButton and
+                event.modifiers() == QtCore.Qt.KeyboardModifier.NoModifier and self.tasks.hit(event.pos()) is not None):
+            self._taskClick = True
+            event.accept()
+            return
 
         if self.scene().mode in ["presentation", "record"]:
             item = self.itemAt(event.pos())
@@ -3212,6 +3533,10 @@ class NexusView(QtWidgets.QGraphicsView):
         self.viewChangeStream.emit(self)
 
     def keyPressEvent(self, event):
+        # Viewport key events can arrive directly here through QAbstractScrollArea,
+        # bypassing our event() override. Consume navigation before default panning.
+        if self.handleMapKey(event):
+            return
         if self.scene().mode in ["presentation", "record"] and \
            event.key() == QtCore.Qt.Key.Key_Escape:
             self.presentationEscape.emit()
@@ -3221,6 +3546,18 @@ class NexusView(QtWidgets.QGraphicsView):
 
     def event(self, event):
         # logging.debug('Event %s', event)
+        # Tab must be intercepted before QGraphicsView uses it for focus travel.
+        if event.type() == QtCore.QEvent.Type.ShortcutOverride and hasattr(self, 'inline') and self.inline.protectShortcut(event):
+            event.accept()
+            return True
+        if event.type() == QtCore.QEvent.Type.ShortcutOverride and hasattr(self, 'selection') and self.selection.protectShortcut(event):
+            event.accept()
+            return True
+        if event.type() == QtCore.QEvent.Type.ShortcutOverride and self.mapArrowEvent(event):
+            event.accept()
+            return True
+        if event.type() == QtCore.QEvent.Type.KeyPress and self.handleMapKey(event):
+            return True
         if event.type() == QtCore.QEvent.Type.Gesture:
             return self.gestureEvent(event)
         else:
@@ -3337,6 +3674,244 @@ class NexusView(QtWidgets.QGraphicsView):
     def focusInEvent(self, event):
         super().focusInEvent(event)
         self.viewChangeStream.emit(self)
+
+
+    def mapArrowEvent(self, event):
+        scene = self.scene()
+        arrows = (QtCore.Qt.Key.Key_Left, QtCore.Qt.Key.Key_Right,
+                  QtCore.Qt.Key.Key_Up, QtCore.Qt.Key.Key_Down)
+        if scene is None or scene.mode != "edit" or event.key() not in arrows:
+            return False
+        focus = scene.focusItem()
+        if isinstance(focus, QtWidgets.QGraphicsTextItem) and focus.textInteractionFlags() & QtCore.Qt.TextInteractionFlag.TextEditable:
+            return False
+        modifiers = shortcutModifiers(event)
+        return modifiers in (QtCore.Qt.KeyboardModifier.NoModifier,
+                             QtCore.Qt.KeyboardModifier.ControlModifier,
+                             QtCore.Qt.KeyboardModifier.ShiftModifier) or (
+            modifiers == QtCore.Qt.KeyboardModifier.AltModifier and
+            event.key() in (QtCore.Qt.Key.Key_Up, QtCore.Qt.Key.Key_Down))
+
+
+    def arrowTarget(self, stem, key, expand=False, exclude=()):
+        """One target calculation shared by navigation and extended selection."""
+        keys = QtCore.Qt.Key
+        rect = self.viewportTransform().mapRect(stem.leaf.sceneBoundingRect())
+
+        def visible(target):
+            return (target.isVisible() and target.leaf.isVisible()
+                    and target.leaf.effectiveOpacity() > 0 and target.node['uid'] not in exclude)
+
+        if key in (keys.Key_Left, keys.Key_Right):
+            direction = -1 if key == keys.Key_Left else 1
+
+            def on_side(x):
+                return direction * (x - rect.center().x()) > 1e-6
+
+            def screen_rect(target):
+                return self.viewportTransform().mapRect(target.leaf.sceneBoundingRect())
+
+            # Returning inward must work on either side, including mirrored or
+            # rotated branches. When parent and child fold onto the same side,
+            # prefer the parent rather than unexpectedly entering that child.
+            parent = stem.parentStem()
+            if (parent is not None and visible(parent)
+                    and on_side(screen_rect(parent).center().x())):
+                return parent
+            children = [c for c in stem.childStems2 if visible(c)
+                        and on_side(screen_rect(c).center().x())]
+            if children:
+                # Visible children remain reachable when another child is hidden.
+                # Keep the existing top-to-bottom first-child ordering per side.
+                return min(children, key=lambda s: (screen_rect(s).center().y(), s.node['uid']))
+            if expand:
+                hidden = [n for n in stem.node.outN('e.kind="Child"') if 'hide' in n]
+                to_reveal = []
+                for node in hidden:
+                    pos = node.get('pos', [0, 0])
+                    side = stem.direction() * node.get('flip', 1)
+                    point = stem.tip() + QtCore.QPointF(side * pos[0], pos[1])
+                    # Hidden labels have no graphics; use their stored attachment
+                    # positions, mapped through the parent's actual transform.
+                    x = self.viewportTransform().map(stem.mapToScene(point)).x()
+                    if on_side(x):
+                        to_reveal.append(node)
+                if to_reveal:
+                    # An arrow opens only its side, not every hidden child of a
+                    # two-sided root. Space/open-close still controls all sides.
+                    batch = graphydb.generateUUID()
+                    try:
+                        with stem.node.graph.connection:
+                            for node in to_reveal:
+                                node.discard('hide')
+                                node.save(batch=batch, setchange=True)
+                    except Exception as error:
+                        logging.exception('Could not expand branch')
+                        self.scene().statusMessage.emit(f'Could not expand branch: {error}. Retry when saving is available.')
+                        return None
+                    stem.renew(create=False, position=False)
+                    return None  # First press expands; next press enters.
+            return None
+        direction = -1 if key == keys.Key_Up else 1
+        candidates = []
+        for target in self.scene().visibleStemsById().values():
+            if target is stem or not visible(target):
+                continue
+            other = self.viewportTransform().mapRect(target.leaf.sceneBoundingRect())
+            dy = other.center().y() - rect.center().y()
+            if direction * dy <= 0:
+                continue
+            gap = max(0, rect.left() - other.right(), other.left() - rect.right())
+            candidates.append(((gap > 0, gap * gap + dy * dy, target.node['uid']), target))
+        return min(candidates, key=lambda entry: entry[0])[1] if candidates else None
+
+
+    def navigateNode(self, event):
+        scene = self.scene()
+        if scene is None or scene.mode != "edit":
+            return False
+        key = event.key()
+        keys = QtCore.Qt.Key
+        modifiers = shortcutModifiers(event)
+        sibling = key in (keys.Key_Return, keys.Key_Enter) and modifiers == QtCore.Qt.KeyboardModifier.ShiftModifier
+        if modifiers != QtCore.Qt.KeyboardModifier.NoModifier and not sibling:
+            return False
+        if key not in (keys.Key_Tab, keys.Key_Return, keys.Key_Enter,
+                       keys.Key_F2, keys.Key_Up, keys.Key_Down,
+                       keys.Key_Left, keys.Key_Right, keys.Key_Space):
+            return False
+        focus = scene.focusItem()
+        if isinstance(focus, QtWidgets.QGraphicsTextItem) and focus.textInteractionFlags() & QtCore.Qt.TextInteractionFlag.TextEditable:
+            return False
+        selected = [s for s in scene.selectedItems() if isinstance(s, StemItem)]
+        if len(selected) > 1 and key in (keys.Key_Up, keys.Key_Down, keys.Key_Left, keys.Key_Right):
+            self.selection.collapse(reveal=False)
+            selected = [s for s in scene.selectedItems() if isinstance(s, StemItem)]
+        if len(selected) > 1 or (not selected and key != keys.Key_Tab):
+            if len(selected) > 1:
+                scene.statusMessage.emit('Select one node to edit, create, or collapse a branch')
+            event.accept()
+            return True
+        roots = scene.childStems()
+        stem = selected[0] if selected else (roots[0] if roots else None)
+        if stem is None:
+            return False
+        event.accept()
+        if event.isAutoRepeat() and key not in (keys.Key_Up, keys.Key_Down, keys.Key_Left, keys.Key_Right):
+            return True
+
+        def select(target, reveal=True):
+            changed = selected != [target]
+            scene.clearSelection()
+            target.setSelected(True)
+            if changed and reveal:
+                rect = target.leaf.sceneBoundingRect()
+                visible = self.mapToScene(self.viewport().rect()).boundingRect()
+                if not visible.contains(rect):
+                    # Oversized labels cannot fit: reveal their centre instead
+                    # of jumping between their opposite edges on repeated keys.
+                    if rect.width() > visible.width() or rect.height() > visible.height():
+                        rect = QtCore.QRectF(rect.center(), QtCore.QSizeF(1, 1))
+                    self.ensureVisible(rect, 20, 20)
+
+        select(stem, reveal=False)
+        if key == keys.Key_Tab or sibling:
+            parent = stem if key == keys.Key_Tab else (stem.parentStem() or stem)
+            parent.openclose.setSymbol()
+            if not parent.openclose.open:
+                parent.openclose.toggleVisibilities()
+            # Match the current side when making a sibling of a root branch.
+            direction = stem.direction() if parent is not stem else parent.direction()
+            tip = parent.tip()
+            bounds = [parent.mapFromItem(c.leaf, c.leaf.boundingRect()).boundingRect()
+                      for c in parent.childStems2 if c.direction() == direction]
+            x = tip.x() + direction * 100
+            y = max((r.bottom() for r in bounds), default=tip.y() - 40) + 40
+            # Reserve a label-sized area, moving down past occupied labels.
+            occupied = [parent.mapFromItem(s.leaf, s.leaf.boundingRect()).boundingRect()
+                        for s in scene.allChildStems()]
+            while any(QtCore.QRectF(x - (140 if direction < 0 else 0), y - 40,
+                                   140, 60).intersects(r) for r in occupied):
+                y += 60
+            point = QtCore.QPointF(x, y)
+            parent.drawBud(point)
+            parent.newStem(point, keyboard_view=self)
+        elif key in (keys.Key_F2, keys.Key_Return, keys.Key_Enter):
+            stem._keyboard_view = self
+            stem.editStem()
+        elif key == keys.Key_Space:
+            stem.openclose.setSymbol()
+            if stem.node.outN('e.kind="Child"', COUNT=True):
+                stem.openclose.toggleVisibilities()
+            select(stem)
+        elif key in (keys.Key_Left, keys.Key_Right, keys.Key_Up, keys.Key_Down):
+            target = self.arrowTarget(stem, key, expand=True)
+            if target is not None:
+                select(target)
+        return True
+
+
+    def zoomParent(self):
+        scene = self.scene()
+        if scene is None or scene.mode != "edit":
+            return
+        selected = scene.selectedItems()
+        if len(selected) != 1 or not isinstance(selected[0], StemItem):
+            return
+        focus = scene.focusItem()
+        if isinstance(focus, QtWidgets.QGraphicsTextItem) and focus.textInteractionFlags() & QtCore.Qt.TextInteractionFlag.TextEditable:
+            return
+        parent = selected[0].parentStem() or selected[0]
+        rect = parent.sceneBoundingRect()
+        for child in parent.allChildStems():
+            if child.isVisible():
+                rect = rect.united(child.sceneBoundingRect())
+                rect = rect.united(child.path.sceneBoundingRect())
+        scene.clearSelection()
+        parent.setSelected(True)
+        self.fitInView(rect, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+        self.viewChangeStream.emit(self)
+
+
+    def handleMapKey(self, event):
+        if self.inline.item is not None and self.scene().focusItem() is not self.inline.item:
+            self.inline.item.setFocus()
+        if self.inline.handleKey(event):
+            return True
+        if self.selection.handleKey(event):
+            return True
+        if self.mapArrowEvent(event) and shortcutModifiers(event) == QtCore.Qt.KeyboardModifier.AltModifier:
+            if not event.isAutoRepeat():
+                self.scene().reorderBranch(-1 if event.key() == QtCore.Qt.Key.Key_Up else 1)
+            event.accept()
+            return True
+        if self.mapArrowEvent(event) and shortcutModifiers(event) == QtCore.Qt.KeyboardModifier.ControlModifier:
+            # Qt maps ControlModifier to Command on macOS by default.
+            horizontal = event.key() in (QtCore.Qt.Key.Key_Left, QtCore.Qt.Key.Key_Right)
+            bar = self.horizontalScrollBar() if horizontal else self.verticalScrollBar()
+            direction = -1 if event.key() in (QtCore.Qt.Key.Key_Left, QtCore.Qt.Key.Key_Up) else 1
+            bar.setValue(bar.value() + direction * 48)
+            self.viewChangeStream.emit(self)
+            event.accept()
+            return True
+        return self.navigateNode(event)
+
+
+    def eventFilter(self, watched, event):
+        if watched in (self.horizontalScrollBar(), self.verticalScrollBar()) and event.type() in (
+                QtCore.QEvent.Type.KeyPress, QtCore.QEvent.Type.ShortcutOverride):
+            if self.mapArrowEvent(event) or self.selection.protectShortcut(event):
+                if event.type() == QtCore.QEvent.Type.ShortcutOverride:
+                    event.accept()
+                    return True
+                return self.handleMapKey(event)
+        return super().eventFilter(watched, event)
+
+
+
+
+
+
 
 
 #----------------------------------------------------------------------
@@ -3595,6 +4170,9 @@ def distanceToLine(P, A, B):
     ABAB = dot(AB, AB)
     APAP = dot(AP, AP)
 
+    # A closed stroke has coincident endpoints: this is distance to a point.
+    if ABAB == 0:
+        return sqrt(APAP)
     d = sqrt(abs(APAP-ABAP**2/ABAB))
 
     return d
@@ -3842,6 +4420,9 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
     def setinkpath(self, S):
 
         path = QtGui.QPainterPath(QtCore.QPointF(S[0][0], S[0][1]))
+        if len(S) == 1:
+            width = self.width * S[0][2] if len(S[0]) > 2 else self.width
+            path.addEllipse(QtCore.QPointF(S[0][0], S[0][1]), width/2, width/2)
 
         b1 = None
         for ii in range(1, len(S)):
@@ -3859,6 +4440,11 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
 
             d = b1-b0
             length = sqrt(d.x()**2+d. y()**2)
+            if length == 0:
+                # Stationary samples represent a dot/pressure change.
+                width = max(width0, width1)
+                path.addEllipse(b0, width/2, width/2)
+                continue
             d = d/length
             # rotate by 90 deg
             p = QtCore.QPointF(-d.y(), d.x())
@@ -3944,9 +4530,9 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
-        self.setAcceptHoverEvents(True)
+        self.setAcceptHoverEvents(False)
 
         self.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.black))
         self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black))
@@ -4286,6 +4872,9 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         QtWidgets.QGraphicsTextItem.focusInEvent(self, event)
 
+        if getattr(self, '_inline_controller', None) is not None:
+            return
+
         if self.mode in [self.EditMode, self.EditSourceMode]:
 
             # clean up other items
@@ -4321,6 +4910,10 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
     def focusOutEvent(self,  event):
         QtWidgets.QGraphicsTextItem.focusOutEvent(self, event)
 
+        controller = getattr(self, '_inline_controller', None)
+        if controller is not None:
+            controller.checkpoint()
+            return
         self.saveIfChanged()
 
     def mouseDoubleClickEvent(self, event):
@@ -4389,6 +4982,10 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         return QtWidgets.QGraphicsTextItem.setPos(self, *args)
 
     def keyPressEvent(self, event):
+
+        controller = getattr(self, '_inline_controller', None)
+        if controller is not None and controller.item is self and controller.handleKey(event):
+            return
 
         # if event.key()==QtCore.Qt.Key.Key_Return and event.modifiers()==QtCore.Qt.KeyboardModifier.NoModifier:
         #     # pass event along so 'OK' is clicked .. (get actual return with shift-return)
@@ -4497,6 +5094,29 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             painter.setPen(QtGui.QPen(QtGui.QColor(0, 0, 0, 0)))
             painter.drawRect(self.boundingRect())
         QtWidgets.QGraphicsTextItem.paint(self, painter, option, widget)
+        from .tasks import done
+        if isinstance(self.parentItem(), Leaf) and done(self.stem.node):
+            painter.save()
+            painter.setPen(QtGui.QPen(QtGui.QColor('#777777'), 1.2))
+            block = self.document().begin()
+            while block.isValid():
+                rect = self.document().documentLayout().blockBoundingRect(block)
+                layout = block.layout()
+                for index in range(layout.lineCount()):
+                    line = layout.lineAt(index)
+                    y = rect.y() + line.y() + line.height() * .5
+                    x = rect.x() + line.x()
+                    painter.drawLine(QtCore.QPointF(x, y), QtCore.QPointF(x + line.naturalTextWidth(), y))
+                block = block.next()
+            painter.restore()
+
+
+    def inputMethodEvent(self, event):
+        controller = getattr(self, '_inline_controller', None)
+        if controller is not None:
+            controller.preedit = bool(event.preeditString())
+        super().inputMethodEvent(event)
+
 
 #----------------------------------------------------------------------
 class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
@@ -4660,6 +5280,8 @@ class Leaf(QtWidgets.QGraphicsItem):
                 elif k['kind'] == 'Image':
                     item = PixmapItem(uid=u, stem=self.stem, parent=self)
 
+        self.taskbox = None
+        self.updateTaskBox()
         # This is the size of the leaf before adding tags etc
         pad = self.pad
 
@@ -4683,6 +5305,8 @@ class Leaf(QtWidgets.QGraphicsItem):
 
         rect = QtCore.QRectF()
         for child in self.childItems():
+            if getattr(self, 'taskbox', None) is child and not child.isVisible():
+                continue
             rect = rect.united(self.mapRectFromItem(child, child.boundingRect()))
 
             if not isinstance(child, QtWidgets.QGraphicsTextItem):
@@ -4703,6 +5327,22 @@ class Leaf(QtWidgets.QGraphicsItem):
     def boundingRect(self):
         # Return cached bounding rect
         return self.boundingrect
+
+
+    def updateTaskBox(self):
+        from .tasks import is_task, TaskBox
+        if is_task(self.stem.node):
+            rect = QtCore.QRectF()
+            for item in self.childItems():
+                if item is not self.taskbox:
+                    rect = rect.united(self.mapRectFromItem(item, item.boundingRect()))
+            if self.taskbox is None:
+                self.taskbox = TaskBox(self)
+            self.taskbox.setPos(rect.left() - 28, rect.top() + 3)
+            self.taskbox.show()
+        elif self.taskbox is not None:
+            self.taskbox.hide()
+
 
 
 class OpenCloseWidget(QtWidgets.QGraphicsPathItem):
@@ -5125,6 +5765,7 @@ class StemItem(QtWidgets.QGraphicsItem):
             self.scene().removeItem(self.leaf)
 
         self.leaf = Leaf(stem=self)
+        self.scene().invalidateStemCache()
         self.leaf.setZValue(10)
 
         # TODO removing this means central node in wrong place
@@ -5252,10 +5893,17 @@ class StemItem(QtWidgets.QGraphicsItem):
         # Set rect to show stem is selected
         #
         tr = self.leaf.mapToParent(self.leaf.boundingRect()).boundingRect()
+        if self.depth == 0:
+            frame = QtGui.QPainterPath()
+            frame.addRoundedRect(tr.adjusted(-10, -10, 10, 10), 6, 6)
+            self.path.setPath(frame)
         sp = QtGui.QPainterPath()
         if self.depth == 0:
             tr = tr.adjusted(-5, -5, 5, 5)
         sp.addRect(tr)
+        # StemItem.boundingRect() is derived from this child path. Notify the
+        # scene about the parent's new bounds before changing the path itself.
+        self.prepareGeometryChange()
         self.selectpath.setPath(sp)
         self.selectpath.setZValue(20)
 
@@ -5396,6 +6044,10 @@ class StemItem(QtWidgets.QGraphicsItem):
                 elif event.modifiers() == QtCore.Qt.KeyboardModifier.NoModifier and not self.isSelected():
                     self.scene().clearSelection()
                     self.setSelected(True)
+
+                for view in self.scene().views():
+                    if isinstance(view, NexusView):
+                        view.selection.clicked(self.node['uid'])
 
             for stem in self.scene().selectedItems():
                 # Record the inition press point to see overall change in moves (more stable)
@@ -5751,11 +6403,14 @@ class StemItem(QtWidgets.QGraphicsItem):
 
         return X, Y
 
-    def newStem(self, p=QtCore.QPointF(), fullscreen=False, iconified=False):
+    def newStem(self, p=QtCore.QPointF(), fullscreen=False, iconified=False, keyboard_view=None):
 
         # Add new db items but don't save then yet in case user cancels
         G = self.node.graph
         newnode = G.Node('Stem', content={})
+        task_view = keyboard_view or next((view for view in self.scene().views() if isinstance(view, NexusView)), None)
+        if task_view is not None and task_view.tasks.enabled and self.scene().mode == 'edit':
+            newnode['todo'], newnode['todo_done'], newnode['todo_state'] = True, False, 'todo'
         newedge = G.Edge(self.node, 'Child', newnode)
 
         # settings = QtCore.QSettings("Ectropy", "Nexus")
@@ -5784,16 +6439,32 @@ class StemItem(QtWidgets.QGraphicsItem):
         newstem = StemItem(newnode, parent=self)
         self.childStems2.append(newstem)
 
-        self.scene().showEditDialog.emit(newstem)
+        if keyboard_view is not None:
+            newstem._keyboard_view = keyboard_view
+            newstem._keyboard_autoplace = True
+
+        newstem._inline_new = True
+        newstem._creation_batch = batch
+        newstem.editStem()
 
         self.scene().removeItem(self.newstemtail)
         self.newstemtail = None
         self.openclose.setSymbol()
 
-    def editStem(self):
+    def editStem(self, full=False):
         '''
         Bring up a dialog to edit the stem and then reimplement
         '''
+        view = next((v for v in self.scene().views() if isinstance(v, NexusView)), None)
+        if view is not None:
+            if full:
+                view.inline.finish(keep_blank=True)
+            elif view.inline.start(self):
+                return
+            else:
+                view.inline.finish()
+            if view.inline.item is not None:
+                return
         self.scene().showEditDialog.emit(self)
 
     def parentStem(self):
@@ -5880,3 +6551,51 @@ class StemItem(QtWidgets.QGraphicsItem):
     def shape(self):
 
         return self.selectpath.shape()
+
+
+    def itemChange(self, change, value):
+        changes = QtWidgets.QGraphicsItem.GraphicsItemChange
+        if change == changes.ItemVisibleChange:
+            # Qt can send a redundant show during deferred item polishing.
+            # Repainting/selection must not invalidate membership in that case.
+            self._visibility_changed = self.isVisible() != bool(value)
+            if not self._visibility_changed:
+                return super().itemChange(change, value)
+        elif change == changes.ItemVisibleHasChanged:
+            if not getattr(self, '_visibility_changed', False):
+                return super().itemChange(change, value)
+            self._visibility_changed = False
+        if change in (changes.ItemSceneChange, changes.ItemSceneHasChanged,
+                      changes.ItemParentChange, changes.ItemParentHasChanged,
+                      changes.ItemVisibleChange, changes.ItemVisibleHasChanged):
+            scene = self.scene()
+            previous = getattr(self, '_membership_scene', lambda: None)()
+            for candidate in (scene, previous):
+                if candidate is not None and not sip.isdeleted(candidate):
+                    invalidate = getattr(candidate, 'invalidateStemCache', None)
+                    if invalidate is not None:
+                        invalidate()
+            self._membership_scene = weakref.ref(scene) if scene is not None else lambda: None
+        return super().itemChange(change, value)
+
+
+    def placeBelowOverlappingLabels(self, batch=None):
+        """Fit a keyboard-created label after its actual size is known."""
+        parent = self.parentStem()
+        if parent is None:
+            return
+        occupied = [parent.mapFromItem(s.leaf, s.leaf.boundingRect()).boundingRect()
+                    for s in self.scene().allChildStems() if s is not self]
+        moved = False
+        while True:
+            bounds = parent.mapFromItem(self.leaf, self.leaf.boundingRect()).boundingRect()
+            overlaps = [r for r in occupied if bounds.adjusted(-12, -12, 12, 12).intersects(r)]
+            if not overlaps:
+                break
+            pos = list(self.node['pos'])
+            pos[1] += max(r.bottom() for r in overlaps) - bounds.top() + 24
+            self.node['pos'] = pos
+            self.renew(reload=False, create=False, children=False, recurse=False)
+            moved = True
+        if moved:
+            self.node.save(setchange=True, batch=batch)
