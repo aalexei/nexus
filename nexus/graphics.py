@@ -16,7 +16,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Nexus.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets, sip
 from PyQt6.QtCore import pyqtSlot
 
 from math import sqrt, atan2, cos, sin, pi, asin, degrees, pow, exp, fmod
@@ -215,6 +215,11 @@ class InputDialog(QtWidgets.QDialog):
         # need a backref to link signal on pasted item
         # TODO better way of doing this, without backref to dialog
         self.view.input_dialog = self
+        self.modeIndicator = QtWidgets.QLabel()
+        self.modeIndicator.setAccessibleName('Editor mode and keyboard hints')
+        self.modeIndicator.setMargin(6)
+        layout.addWidget(self.modeIndicator)
+
 
         #
         # Toolbar
@@ -375,11 +380,12 @@ class InputDialog(QtWidgets.QDialog):
         dlayout.addRow("Allow canvas rotation", self.view.allowrotationwidget)
 
     def setDialog(self, stem):
+        self.view.resetPointerInteraction()
         if hasattr(self, 'scene'):
             # When dialog is first set up it won't have a scene
             self.scene.clear()
 
-        if hasattr(self, 'stem'):
+        if hasattr(self, 'stem') and not sip.isdeleted(self.stem):
             # In case we jump straight to editing another item
             self.stem.isBeingEdited = False
             # Redraw stem to remove editing mark
@@ -388,6 +394,7 @@ class InputDialog(QtWidgets.QDialog):
         self.scene = InkScene(stem=stem, parent=self)
         self.scene.setBackgroundBrush(QtGui.QBrush(QtGui.QPixmap(":/images/gridbackground.png")))
         self.view.setScene(self.scene)
+        self.scene.focusItemChanged.connect(self.updateModeIndicator)
 
         stem.isBeingEdited = True
 
@@ -628,17 +635,17 @@ class InputDialog(QtWidgets.QDialog):
 
         self.penmode = QtGui.QAction(QtGui.QIcon(":/images/pencil.svg"),
                                      self.tr("&Pen mode"), self)
-        self.penmode.setShortcut("b")
+        self.penmode.setToolTip("Pen mode (P)")
         self.penmode.triggered.connect(self.setPenModeClicked)
 
         self.highlightmode = QtGui.QAction(QtGui.QIcon(":/images/highlighter.svg"),
                                            self.tr("&Highlight mode"), self)
-        self.highlightmode.setShortcut("h")
+        self.highlightmode.setToolTip("Highlight mode (H)")
         self.highlightmode.triggered.connect(self.setHighlightModeClicked)
 
         self.erasermode = QtGui.QAction(QtGui.QIcon(":/images/eraser.svg"),
                                         self.tr("&Eraser mode"), self)
-        self.erasermode.setShortcut("e")
+        self.erasermode.setToolTip("Eraser mode (E)")
         self.erasermode.triggered.connect(self.setEraserMode)
 
         self.selectmode = QtGui.QAction(QtGui.QIcon(":/images/pointer.svg"),
@@ -820,6 +827,7 @@ class InputDialog(QtWidgets.QDialog):
 
         else:
             self.stackedwidget.setCurrentIndex(0)
+        self.updateModeIndicator()
 
     def setPenCursor(self):
         if not self.ishighlighter:
@@ -851,6 +859,7 @@ class InputDialog(QtWidgets.QDialog):
 
         self.scene.pen = QtGui.QPen(QtGui.QColor(color))
         self.scene.pen.setWidthF(size)
+        self.updateModeIndicator()
 
     def setTextMode(self):
         '''
@@ -919,10 +928,9 @@ class InputDialog(QtWidgets.QDialog):
         for item in items:
             if isinstance(item, TextItem):
                 item.setFocus()
-                # Make sure the item being editied in centred in view
-                self.view.fitInView(item.mapToScene(item.boundingRect()).boundingRect().adjusted(-10, -10, 10, 10),
-                                    QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+                self.view.centerOn(item.sceneBoundingRect().center())
                 break
+        self.updateModeIndicator()
 
     def setHighlightModeClicked(self):
 
@@ -993,6 +1001,7 @@ class InputDialog(QtWidgets.QDialog):
         self.setPenMode()
         self.view.viewport().setCursor(QtCore.Qt.CursorShape.CrossCursor)
         self.scene.mode = EraserMode
+        self.updateModeIndicator()
 
     # TODO should drawing modes be in the scene instead?
 
@@ -1024,6 +1033,7 @@ class InputDialog(QtWidgets.QDialog):
 
         for item in self.scene.getItems():
             item.setMode(SelectMode)
+        self.updateModeIndicator()
 
     # def saveSettings(self):
 
@@ -1198,7 +1208,8 @@ class InputDialog(QtWidgets.QDialog):
                 item.setTextCursor(cursor)
 
     def deleteEvent(self):
-        selected = self.scene.selectedItems()
+        content = self.scene.getItems()
+        selected = [item for item in self.scene.selectedItems() if item in content]
         batch = graphydb.generateUUID()
         for item in selected:
             item.deleteNodeItem(batch)
@@ -1412,6 +1423,21 @@ class InputDialog(QtWidgets.QDialog):
         self.scene.transformationWidget.show()
 
 
+    def updateModeIndicator(self, *unused):
+        if not hasattr(self, 'scene'):
+            return
+        if self.stackedwidget.currentIndex() == 1:
+            label = 'Properties'
+        elif self.view.activeTextItem() is not None:
+            self.modeIndicator.setText('Typing — Esc: finish typing · Enter: save & close · Shift+Enter: newline')
+            return
+        else:
+            label = {TextMode: 'Text', SelectMode: 'Select', EraserMode: 'Eraser',
+                     PenMode: 'Highlighter' if getattr(self, 'ishighlighter', False) else 'Pen'}.get(self.scene.mode, 'Select')
+        self.modeIndicator.setText(label + ' — T: text · P: pen · Esc: save & close')
+
+
+
 class MyEvent(QtWidgets.QGraphicsSceneMouseEvent):
 
     def setButtons(self, buttons):
@@ -1476,7 +1502,8 @@ class InkScene(QtWidgets.QGraphicsScene):
         return items
 
     def setSelectionWidget(self):
-        selected = self.selectedItems()
+        content = self.getItems()
+        selected = [item for item in self.selectedItems() if item in content]
 
         if len(selected) > 0:
             rect = QtCore.QRectF()
@@ -1486,6 +1513,7 @@ class InkScene(QtWidgets.QGraphicsScene):
             self.transformationWidget.setSelectedItems(selected)
             self.transformationWidget.show()
         else:
+            self.transformationWidget.setSelectedItems([])
             self.transformationWidget.hide()
 
     def normaliseZvalues(self):
@@ -1580,8 +1608,9 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
 
         # self.setMode(self.ResizeMode)
 
-    def setSelectedItems(self, selected=[]):
-        self.selected = selected
+    def setSelectedItems(self, selected=None):
+        content = self.scene.getItems()
+        self.selected = [item for item in (selected or []) if item in content]
         self.resize()
 
     def resize(self):
@@ -1679,6 +1708,9 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         # Save any changed items
         batch = graphydb.generateUUID()
         for item in self.selected:
+            if (not isinstance(item, (TextItem, InkItem, PixmapItem)) or
+                    sip.isdeleted(item) or item.scene() is not self.scene):
+                continue
             if item._changed:
                 item['frame'] = Transform(item.transform()).tolist()
                 # Trigger a change
@@ -1954,6 +1986,7 @@ class InkView(QtWidgets.QGraphicsView):
         # Set default scale for the view
         self.scale(3, 3)
 
+        self._rememberMousePosition()
     def tabletEvent(self, event):
         '''
         tablet event dispatcher
@@ -2050,6 +2083,7 @@ class InkView(QtWidgets.QGraphicsView):
 
     def mousePressEvent(self, event):
 
+        self._rememberMousePosition(event)
         # TODO is this still used?
         if self._eventstate != Free:
             # logging.debug("    (ignoring mousepress)")
@@ -2079,6 +2113,7 @@ class InkView(QtWidgets.QGraphicsView):
 
     def mouseMoveEvent(self, event):
 
+        self._rememberMousePosition(event)
         if event.buttons() == QtCore.Qt.MouseButton.NoButton:
             # Ignore hover events
             return
@@ -2117,6 +2152,7 @@ class InkView(QtWidgets.QGraphicsView):
 
     def mouseReleaseEvent(self, event):
 
+        self._rememberMousePosition(event)
         if self._eventstate != Mouse:
             # logging.debug("    (ignoring mouserelease)")
             return
@@ -2186,8 +2222,10 @@ class InkView(QtWidgets.QGraphicsView):
     def pointerReleaseEvent(self, event):
         scene = self.scene()
         if self._itemUnder is not None:
-            self._itemUnder.pointerReleaseEvent(event)
+            target = self._itemUnder
             self._itemUnder = None
+            if not sip.isdeleted(target) and target.scene() is scene:
+                target.pointerReleaseEvent(event)
 
         else:
 
@@ -2348,6 +2386,15 @@ class InkView(QtWidgets.QGraphicsView):
 
     def event(self, event):
 
+        if event.type() == QtCore.QEvent.Type.ShortcutOverride and self.activeTextItem() is not None:
+            # Prevent Delete/Backspace actions from deleting the text object
+            # while its text cursor is active. Qt still receives the keypress.
+            if event.modifiers() in (QtCore.Qt.KeyboardModifier.NoModifier,
+                                      QtCore.Qt.KeyboardModifier.ShiftModifier):
+                event.accept()
+                return True
+        if event.type() == QtCore.QEvent.Type.KeyPress and self.editorKeyPress(event):
+            return True
         if event.type() == QtCore.QEvent.Type.Gesture:
             return self.gestureEvent(event)
         elif event.type() == QtCore.QEvent.Type.TouchBegin:
@@ -2523,6 +2570,86 @@ class InkView(QtWidgets.QGraphicsView):
     def focusInEvent(self, event):
         super().focusInEvent(event)
         self.viewChangeStream.emit(self)
+
+
+    def _rememberMousePosition(self, event=None):
+        if event is None:
+            global_pos = QtCore.QPointF(QtGui.QCursor.pos())
+            local_pos = QtCore.QPointF(self.mapFromGlobal(global_pos.toPoint()))
+        else:
+            global_pos = event.globalPosition()
+            local_pos = event.position()
+        # Keep the cache neutral: Qt may replay it after zooming or scrolling,
+        # and a cached button press must not start a second scene interaction.
+        cached_event = QtGui.QMouseEvent(QtCore.QEvent.Type.MouseMove, local_pos, global_pos,
+                                        QtCore.Qt.MouseButton.NoButton,
+                                        QtCore.Qt.MouseButton.NoButton,
+                                        QtCore.Qt.KeyboardModifier.NoModifier)
+        interactive = self.isInteractive()
+        # Populate QGraphicsView's native mouse cache without dispatching
+        # scene mouse/hover events alongside Nexus's own drawing handlers.
+        self.setInteractive(False)
+        try:
+            QtWidgets.QGraphicsView.mouseMoveEvent(self, cached_event)
+        finally:
+            self.setInteractive(interactive)
+
+
+    def resetPointerInteraction(self):
+        self._eventstate = Free
+        self._itemUnder = None
+        self._event = None
+
+
+    def activeTextItem(self):
+        item = self.scene().focusItem() if self.scene() else None
+        if isinstance(item, TextItem) and item.mode in (item.EditMode, item.EditSourceMode):
+            return item
+        return None
+
+
+    def editorKeyPress(self, event):
+        dialog = getattr(self, 'input_dialog', None)
+        if dialog is None or event.modifiers() != QtCore.Qt.KeyboardModifier.NoModifier:
+            return False
+        key = event.key()
+        text = self.activeTextItem()
+        if key == QtCore.Qt.Key.Key_Escape:
+            if event.isAutoRepeat():
+                event.accept()
+                return True
+            if text is not None:
+                text.saveIfChanged()
+                dialog.selectmode.trigger()
+                self.scene().clearFocus()
+                self.setFocus()
+            else:
+                dialog.saveClose()
+        elif text is not None:
+            if key not in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter):
+                return False
+            dialog.saveClose()
+        else:
+            action = {QtCore.Qt.Key.Key_T: dialog.textmode,
+                      QtCore.Qt.Key.Key_P: dialog.penmode,
+                      QtCore.Qt.Key.Key_B: dialog.penmode,
+                      QtCore.Qt.Key.Key_H: dialog.highlightmode,
+                      QtCore.Qt.Key.Key_E: dialog.erasermode}.get(key)
+            if action is None:
+                return False
+            action.trigger()
+        event.accept()
+        return True
+
+
+    def keyPressEvent(self, event):
+        if not self.editorKeyPress(event):
+            super().keyPressEvent(event)
+
+
+
+
+
 
 #----------------------------------------------------------------------
 class NexusScene(QtWidgets.QGraphicsScene):
@@ -3595,6 +3722,9 @@ def distanceToLine(P, A, B):
     ABAB = dot(AB, AB)
     APAP = dot(AP, AP)
 
+    # A closed stroke has coincident endpoints: this is distance to a point.
+    if ABAB == 0:
+        return sqrt(APAP)
     d = sqrt(abs(APAP-ABAP**2/ABAB))
 
     return d
@@ -3842,6 +3972,9 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
     def setinkpath(self, S):
 
         path = QtGui.QPainterPath(QtCore.QPointF(S[0][0], S[0][1]))
+        if len(S) == 1:
+            width = self.width * S[0][2] if len(S[0]) > 2 else self.width
+            path.addEllipse(QtCore.QPointF(S[0][0], S[0][1]), width/2, width/2)
 
         b1 = None
         for ii in range(1, len(S)):
@@ -3859,6 +3992,11 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
 
             d = b1-b0
             length = sqrt(d.x()**2+d. y()**2)
+            if length == 0:
+                # Stationary samples represent a dot/pressure change.
+                width = max(width0, width1)
+                path.addEllipse(b0, width/2, width/2)
+                continue
             d = d/length
             # rotate by 90 deg
             p = QtCore.QPointF(-d.y(), d.x())
@@ -3944,9 +4082,9 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
-        self.setAcceptHoverEvents(True)
+        self.setAcceptHoverEvents(False)
 
         self.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.black))
         self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black))
