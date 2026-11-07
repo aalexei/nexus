@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title description">
+  <title id="title">Nexus application icon</title>
+  <desc id="description">Four red, purple, orange, and teal branches connect through a dark central hub on a warm rounded square.</desc>
+  <defs>
+    <radialGradient id="background" cx="50%" cy="48%" r="70%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#fcf4ee"/>
+    </radialGradient>
+    <linearGradient id="red" x1="145" y1="120" x2="515" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff343e"/>
+      <stop offset="1" stop-color="#ff4948"/>
+    </linearGradient>
+    <linearGradient id="purple" x1="145" y1="120" x2="515" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7438f0"/>
+      <stop offset="1" stop-color="#6131de"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="145" y1="120" x2="515" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff8615"/>
+      <stop offset="1" stop-color="#ff9c2c"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="145" y1="120" x2="515" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00b9ad"/>
+      <stop offset="1" stop-color="#0bc8b6"/>
+    </linearGradient>
+    <linearGradient id="hub" x1="410" y1="410" x2="615" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3b3b3a"/>
+      <stop offset="1" stop-color="#202322"/>
+    </linearGradient>
+    <path id="branch" d="M 418,470 C 418,346 346,250 268,246 C 247,245 236,253 222,273 C 240,240 240,208 222,176 C 236,204 248,214 270,214 C 386,213 484,315 548,447 Z"/>
+    <path id="fork" d="M 145,126 C 270,179 270,269 145,316"/>
+  </defs>
+  <!-- Transparent outer corners keep the .icns silhouette consistent in Finder and the Dock. -->
+  <rect x="32" y="32" width="960" height="960" rx="212" fill="url(#background)"/>
+  <g fill="url(#red)" stroke="url(#red)">
+    <use href="#branch" stroke="none"/>
+    <use href="#fork" fill="none" stroke-width="22" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(1024 0) scale(-1 1)" fill="url(#purple)" stroke="url(#purple)">
+    <use href="#branch" stroke="none"/>
+    <use href="#fork" fill="none" stroke-width="22" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(0 1024) scale(1 -1)" fill="url(#orange)" stroke="url(#orange)">
+    <use href="#branch" stroke="none"/>
+    <use href="#fork" fill="none" stroke-width="22" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(1024 1024) scale(-1 -1)" fill="url(#teal)" stroke="url(#teal)">
+    <use href="#branch" stroke="none"/>
+    <use href="#fork" fill="none" stroke-width="22" stroke-linecap="round"/>
+  </g>
+  <rect x="406" y="410" width="212" height="212" rx="50" fill="#161b19" opacity="0.09"/>
+  <rect x="408" y="408" width="208" height="208" rx="48" fill="url(#hub)"/>
+</svg>
