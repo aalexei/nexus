@@ -381,6 +381,14 @@ class InputDialog(QtWidgets.QDialog):
         dlayout.addRow("Allow canvas rotation", self.view.allowrotationwidget)
 
     def setDialog(self, stem):
+        from . import editor_window
+        map_view = next((v for v in stem.scene().views() if isinstance(v, NexusView)), None)
+        if map_view is not None:
+            map_view.inline.finish()
+            if map_view.inline.item is not None:
+                return
+        if not self.isVisible():
+            editor_window.restore(self, map_view)
         self.view.resetPointerInteraction()
         if hasattr(self, 'scene'):
             # When dialog is first set up it won't have a scene
@@ -498,15 +506,12 @@ class InputDialog(QtWidgets.QDialog):
         elif self.textmode.isChecked():
             self.setTextMode()
 
-        if self.stem.scene().mode == "presentation":
-            self.showFullScreen()
-        elif self.fullscreenwidget.currentText() == "Maximise":
+        if self.fullscreenwidget.currentText() == "Maximise":
             self.showMaximized()
         elif self.fullscreenwidget.currentText() == "Fullscreen":
             self.showFullScreen()
-        elif hasattr(self, 'inputgeometry') and not self.isVisible():
-            # If the dialog is already visible don't move it
-            self.setGeometry(self.inputgeometry)
+        else:
+            self.showNormal()
         self.show()
 
     def saveClose(self):
@@ -547,6 +552,8 @@ class InputDialog(QtWidgets.QDialog):
             self.stem.renew(reload=False, children=True)
 
         self.inputgeometry = self.geometry()
+        from . import editor_window
+        editor_window.save(self)
 
         self.stem.isBeingEdited = False
         self.stem._inline_new = False
@@ -3106,7 +3113,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
         super().__init__(scene, parent)
 
-        self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.SmartViewportUpdate)
+        self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
 
         self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         self.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
@@ -3121,8 +3128,8 @@ class NexusView(QtWidgets.QGraphicsView):
 
         self.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
 
-        self.setOptimizationFlags(self.OptimizationFlag.DontSavePainterState |
-                                  self.OptimizationFlag.DontAdjustForAntialiasing)
+        self.setOptimizationFlag(self.OptimizationFlag.DontSavePainterState, False)
+        self.setOptimizationFlag(self.OptimizationFlag.DontAdjustForAntialiasing, False)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
         self.grabGesture(QtCore.Qt.GestureType.PanGesture)
@@ -3147,6 +3154,8 @@ class NexusView(QtWidgets.QGraphicsView):
 
         self.horizontalScrollBar().installEventFilter(self)
         self.verticalScrollBar().installEventFilter(self)
+        from .inline import InlineController
+        self.inline = InlineController(self)
         from .selection import SelectionController
         self.selection = SelectionController(self)
         # Trying to fix touchpad zoom on linux
@@ -3305,6 +3314,10 @@ class NexusView(QtWidgets.QGraphicsView):
         self.viewChangeStream.emit(self)
 
     def mousePressEvent(self, event):
+        if self.inline.item is not None:
+            item = self.inline.item
+            if not item.sceneBoundingRect().contains(self.mapToScene(event.pos())):
+                self.inline.finish(select=False)
 
         # if abs(self.pinchtime - time.time())<self._ignoremousetime:
         #     event.accept()
@@ -3838,6 +3851,10 @@ class NexusView(QtWidgets.QGraphicsView):
 
 
     def handleMapKey(self, event):
+        if self.inline.item is not None and self.scene().focusItem() is not self.inline.item:
+            self.inline.item.setFocus()
+        if self.inline.handleKey(event):
+            return True
         if self.selection.handleKey(event):
             return True
         if self.mapArrowEvent(event) and shortcutModifiers(event) == QtCore.Qt.KeyboardModifier.AltModifier:
@@ -4832,6 +4849,9 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
 
         QtWidgets.QGraphicsTextItem.focusInEvent(self, event)
 
+        if getattr(self, '_inline_controller', None) is not None:
+            return
+
         if self.mode in [self.EditMode, self.EditSourceMode]:
 
             # clean up other items
@@ -4867,6 +4887,10 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
     def focusOutEvent(self,  event):
         QtWidgets.QGraphicsTextItem.focusOutEvent(self, event)
 
+        controller = getattr(self, '_inline_controller', None)
+        if controller is not None:
+            controller.checkpoint()
+            return
         self.saveIfChanged()
 
     def mouseDoubleClickEvent(self, event):
@@ -4935,6 +4959,10 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         return QtWidgets.QGraphicsTextItem.setPos(self, *args)
 
     def keyPressEvent(self, event):
+
+        controller = getattr(self, '_inline_controller', None)
+        if controller is not None and controller.item is self and controller.handleKey(event):
+            return
 
         # if event.key()==QtCore.Qt.Key.Key_Return and event.modifiers()==QtCore.Qt.KeyboardModifier.NoModifier:
         #     # pass event along so 'OK' is clicked .. (get actual return with shift-return)
@@ -5043,6 +5071,14 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             painter.setPen(QtGui.QPen(QtGui.QColor(0, 0, 0, 0)))
             painter.drawRect(self.boundingRect())
         QtWidgets.QGraphicsTextItem.paint(self, painter, option, widget)
+
+
+    def inputMethodEvent(self, event):
+        controller = getattr(self, '_inline_controller', None)
+        if controller is not None:
+            controller.preedit = bool(event.preeditString())
+        super().inputMethodEvent(event)
+
 
 #----------------------------------------------------------------------
 class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
@@ -5799,10 +5835,17 @@ class StemItem(QtWidgets.QGraphicsItem):
         # Set rect to show stem is selected
         #
         tr = self.leaf.mapToParent(self.leaf.boundingRect()).boundingRect()
+        if self.depth == 0:
+            frame = QtGui.QPainterPath()
+            frame.addRoundedRect(tr.adjusted(-10, -10, 10, 10), 6, 6)
+            self.path.setPath(frame)
         sp = QtGui.QPainterPath()
         if self.depth == 0:
             tr = tr.adjusted(-5, -5, 5, 5)
         sp.addRect(tr)
+        # StemItem.boundingRect() is derived from this child path. Notify the
+        # scene about the parent's new bounds before changing the path itself.
+        self.prepareGeometryChange()
         self.selectpath.setPath(sp)
         self.selectpath.setZValue(20)
 
@@ -6347,10 +6390,20 @@ class StemItem(QtWidgets.QGraphicsItem):
         self.newstemtail = None
         self.openclose.setSymbol()
 
-    def editStem(self):
+    def editStem(self, full=False):
         '''
         Bring up a dialog to edit the stem and then reimplement
         '''
+        view = next((v for v in self.scene().views() if isinstance(v, NexusView)), None)
+        if view is not None:
+            if full:
+                view.inline.finish(keep_blank=True)
+            elif view.inline.start(self):
+                return
+            else:
+                view.inline.finish()
+            if view.inline.item is not None:
+                return
         self.scene().showEditDialog.emit(self)
 
     def parentStem(self):
