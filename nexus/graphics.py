@@ -16,10 +16,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Nexus.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets, sip
 from PyQt6.QtCore import pyqtSlot
 
-from math import sqrt, atan2, cos, sin, pi, asin, degrees, pow, exp, fmod
+from math import sqrt, atan2, cos, sin, pi, asin, degrees, pow, exp, fmod, hypot
 import logging
 
 from bs4 import BeautifulSoup
@@ -251,6 +251,7 @@ class InputDialog(QtWidgets.QDialog):
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.zoomInAct)
         self.toolbar.addAction(self.zoomOutAct)
+        self.toolbar.addAction(self.fitContentAct)
 
         ## Extra tools for select mode
         self.toolbar.addAction(self.lowerBottomAct)
@@ -375,11 +376,12 @@ class InputDialog(QtWidgets.QDialog):
         dlayout.addRow("Allow canvas rotation", self.view.allowrotationwidget)
 
     def setDialog(self, stem):
+        self.view.resetPointerInteraction()
         if hasattr(self, 'scene'):
             # When dialog is first set up it won't have a scene
             self.scene.clear()
 
-        if hasattr(self, 'stem'):
+        if hasattr(self, 'stem') and not sip.isdeleted(self.stem):
             # In case we jump straight to editing another item
             self.stem.isBeingEdited = False
             # Redraw stem to remove editing mark
@@ -690,6 +692,11 @@ class InputDialog(QtWidgets.QDialog):
         self.zoomOutAct.triggered.connect(self.view.zoomOut)
 
         # ----------------------------------------------------------------------------------
+        self.fitContentAct = QtGui.QAction(QtGui.QIcon(':/images/zoom-select.svg'),
+                                           self.tr('Fit content'), self)
+        self.fitContentAct.setToolTip(self.tr('Show all text, images and drawings without changing their layout'))
+        self.fitContentAct.triggered.connect(self.view.zoomFitAll)
+
         self.zoomOriginalAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-one.svg"),
                                              self.tr("Reset Zoom"), self)
         self.zoomOriginalAct.setStatusTip(self.tr("Reset Zoom"))
@@ -1198,7 +1205,8 @@ class InputDialog(QtWidgets.QDialog):
                 item.setTextCursor(cursor)
 
     def deleteEvent(self):
-        selected = self.scene.selectedItems()
+        content = self.scene.getItems()
+        selected = [item for item in self.scene.selectedItems() if item in content]
         batch = graphydb.generateUUID()
         for item in selected:
             item.deleteNodeItem(batch)
@@ -1211,10 +1219,11 @@ class InputDialog(QtWidgets.QDialog):
         self.deleteEvent()
 
     def copyEvent(self):
-
-        # TODO create a Copy-As function
-
-        selected = self.scene.selectedItems()
+        contentitems = self.scene.getItems()
+        selected = [item for item in self.scene.selectedItems()
+                    if item in contentitems]
+        if not selected:
+            return
         selected.sort(key=lambda x: x.zValue())
 
         clipboard = QtWidgets.QApplication.clipboard()
@@ -1225,17 +1234,13 @@ class InputDialog(QtWidgets.QDialog):
         #
         rect = QtCore.QRectF()
 
-        # Unselect items so selection marks dont show up
         for item in selected:
             rect = rect.united(item.sceneBoundingRect())
-            item.setSelected(False)
-
-        # Grab all items that will show up in the region
-        # TODO isn't this the same as above?,
-        allregionitems = self.scene.items(rect)
 
         # Build a pixmap at 2x the size for better resolution
-        pixmap = QtGui.QPixmap(rect.size().toSize()*2)
+        from math import ceil
+        pixmap = QtGui.QPixmap(max(1, ceil(rect.width()*2)),
+                              max(1, ceil(rect.height()*2)))
 
         # Make background transparent
         pixmap.fill(QtGui.QColor(0, 0, 0, 0))
@@ -1244,23 +1249,27 @@ class InputDialog(QtWidgets.QDialog):
         painter.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
         painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
 
-        # Hide unselected visible items that are in the rect
+        # Export only the content. The editor grid and resize handles belong
+        # to the editing UI, rather than the image placed on the clipboard.
+        background = self.scene.backgroundBrush()
         hiddenitems = []
-        for item in allregionitems:
-            if item not in selected and item.isVisible():
-                item.setVisible(False)
-                hiddenitems.append(item)
-
-        self.scene.render(painter, QtCore.QRectF(), rect)
-        painter.end()
-        mimedata.setImageData(pixmap)
-
-        # Return selection
-        for item in selected:
-            item.setSelected(True)
-        # Return hidden items
-        for item in hiddenitems:
-            item.setVisible(True)
+        try:
+            for item in selected:
+                item.setSelected(False)
+            for item in self.scene.items():
+                if item not in selected and item.isVisible():
+                    item.setVisible(False)
+                    hiddenitems.append(item)
+            self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
+            self.scene.render(painter, QtCore.QRectF(), rect)
+        finally:
+            painter.end()
+            self.scene.setBackgroundBrush(background)
+            for item in hiddenitems:
+                item.setVisible(True)
+            for item in selected:
+                item.setSelected(True)
+        mimedata.setImageData(pixmap.toImage())
 
         #
         # Copy Nexus internal data for pasting elsewhere in a tree
@@ -1286,20 +1295,20 @@ class InputDialog(QtWidgets.QDialog):
             data = graphydb.cleandata(node.data)
             copydata.images[sha] = data
 
-        clipboard = QtWidgets.QApplication.clipboard()
-        mimedata = QtCore.QMimeData()
         copydata.setMimedata(mimedata)
         clipboard.setMimeData(mimedata)
 
     def pasteEvent(self):
         # TODO if text too long ask if it should be a iconified
-        # TODO check for images ... check size and scale appropriately
         # TODO paste to central topics (nothing selected)
-
-        # TODO image from nexus nor taken as item so lose transformations
 
         clipboard = QtWidgets.QApplication.clipboard()
         mimedata = clipboard.mimeData()
+
+        existing = self.scene.contentBounds()
+        external = not mimedata.hasFormat('application/x-nexus') and not mimedata.hasFormat('application/json')
+        source = mimedata.imageData() if external and mimedata.hasImage() else None
+        source_ratio = max(1.0, float(source.devicePixelRatio())) if hasattr(source, 'devicePixelRatio') else 1.0
 
         g = self.scene.graph
         copydata = g.mimedataToCopydata(mimedata)
@@ -1382,8 +1391,17 @@ class InputDialog(QtWidgets.QDialog):
             elif n['kind'] == 'Image':
                 # N.B. PixmapItem expects the data to be in a subnode in the graph
                 item = PixmapItem(uid=uid, stem=self.stem, scene=self.scene)
+                if external and not item.pixmap().isNull():
+                    # Choose a logical display size; retain the original PNG
+                    # and preserve internal Nexus copy/paste transforms.
+                    size = item.pixmap().size()
+                    scale = min(1.0 / source_ratio, 380.0 / size.width(), 280.0 / size.height())
+                    item.setTransform(QtGui.QTransform.fromScale(scale, scale))
             item.setMode(self.scene.mode)
             pastedobjects.append(item)
+
+        if not pastedobjects:
+            return
 
 
         # Translate all the items so that top left of their
@@ -1392,10 +1410,11 @@ class InputDialog(QtWidgets.QDialog):
         for item in pastedobjects:
             itemrect = itemrect.united(item.sceneBoundingRect())
 
-        # dp = targetpos-itemrect.center()
+        target = QtCore.QPointF(existing.left(), existing.bottom() + 24) if not existing.isEmpty() else QtCore.QPointF()
+        delta = target - itemrect.topLeft()
         t = QtGui.QTransform()
         # t.translate(dp.x(),dp.y())
-        t.translate(3, -3)
+        t.translate(delta.x(), delta.y())
         for item in pastedobjects:
             # note QTs backward transforms
             item.setTransform(item.transform()*t)
@@ -1408,8 +1427,12 @@ class InputDialog(QtWidgets.QDialog):
 
         # new_nodes.save(batch=batch, setchange=True)
         # self.scene.refreshStem()
+        self.selectmode.trigger()
+        for item in pastedobjects:
+            item.setSelected(True)
         self.scene.transformationWidget.setSelectedItems(pastedobjects)
         self.scene.transformationWidget.show()
+        self.view.showContent(self.scene.contentBounds(pastedobjects))
 
 
 class MyEvent(QtWidgets.QGraphicsSceneMouseEvent):
@@ -1476,7 +1499,8 @@ class InkScene(QtWidgets.QGraphicsScene):
         return items
 
     def setSelectionWidget(self):
-        selected = self.selectedItems()
+        content = self.getItems()
+        selected = [item for item in self.selectedItems() if item in content]
 
         if len(selected) > 0:
             rect = QtCore.QRectF()
@@ -1486,6 +1510,7 @@ class InkScene(QtWidgets.QGraphicsScene):
             self.transformationWidget.setSelectedItems(selected)
             self.transformationWidget.show()
         else:
+            self.transformationWidget.setSelectedItems([])
             self.transformationWidget.hide()
 
     def normaliseZvalues(self):
@@ -1499,6 +1524,14 @@ class InkScene(QtWidgets.QGraphicsScene):
             items[ii].setZValue(ii)
 
         return ii
+
+
+    def contentBounds(self, items=None):
+        rect = QtCore.QRectF()
+        for item in self.getItems() if items is None else items:
+            rect = rect.united(item.sceneBoundingRect())
+        return rect
+
 
 
 #----------------------------------------------------------------------
@@ -1580,8 +1613,9 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
 
         # self.setMode(self.ResizeMode)
 
-    def setSelectedItems(self, selected=[]):
-        self.selected = selected
+    def setSelectedItems(self, selected=None):
+        content = self.scene.getItems()
+        self.selected = [item for item in (selected or []) if item in content]
         self.resize()
 
     def resize(self):
@@ -1679,6 +1713,9 @@ class TransformationWidget(QtWidgets.QGraphicsItem):
         # Save any changed items
         batch = graphydb.generateUUID()
         for item in self.selected:
+            if (not isinstance(item, (TextItem, InkItem, PixmapItem)) or
+                    sip.isdeleted(item) or item.scene() is not self.scene):
+                continue
             if item._changed:
                 item['frame'] = Transform(item.transform()).tolist()
                 # Trigger a change
@@ -1930,7 +1967,7 @@ class InkView(QtWidgets.QGraphicsView):
         # self.grabGesture(QtCore.Qt.GestureType.PanGesture)
         self.grabGesture(QtCore.Qt.GestureType.PinchGesture)
 
-        self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.SmartViewportUpdate)
+        self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
 
         self.setAcceptDrops(True)
 
@@ -1954,6 +1991,7 @@ class InkView(QtWidgets.QGraphicsView):
         # Set default scale for the view
         self.scale(3, 3)
 
+        self._rememberMousePosition()
     def tabletEvent(self, event):
         '''
         tablet event dispatcher
@@ -2050,6 +2088,7 @@ class InkView(QtWidgets.QGraphicsView):
 
     def mousePressEvent(self, event):
 
+        self._rememberMousePosition(event)
         # TODO is this still used?
         if self._eventstate != Free:
             # logging.debug("    (ignoring mousepress)")
@@ -2079,6 +2118,7 @@ class InkView(QtWidgets.QGraphicsView):
 
     def mouseMoveEvent(self, event):
 
+        self._rememberMousePosition(event)
         if event.buttons() == QtCore.Qt.MouseButton.NoButton:
             # Ignore hover events
             return
@@ -2117,6 +2157,7 @@ class InkView(QtWidgets.QGraphicsView):
 
     def mouseReleaseEvent(self, event):
 
+        self._rememberMousePosition(event)
         if self._eventstate != Mouse:
             # logging.debug("    (ignoring mouserelease)")
             return
@@ -2186,8 +2227,10 @@ class InkView(QtWidgets.QGraphicsView):
     def pointerReleaseEvent(self, event):
         scene = self.scene()
         if self._itemUnder is not None:
-            self._itemUnder.pointerReleaseEvent(event)
+            target = self._itemUnder
             self._itemUnder = None
+            if not sip.isdeleted(target) and target.scene() is scene:
+                target.pointerReleaseEvent(event)
 
         else:
 
@@ -2476,9 +2519,15 @@ class InkView(QtWidgets.QGraphicsView):
         self.setTransform(QtGui.QTransform())
 
     def zoomFitAll(self):
-        rect = self.scene().itemsBoundingRect()
-        # self.fitInView(rect)
-        self.fitInView(rect, QtCore.Qt.KeepAspectRatio)
+        rect = self.scene().contentBounds()
+        if rect.isEmpty():
+            return
+        self.fitInView(rect.adjusted(-16, -16, 16, 16), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+        scale = hypot(self.transform().m11(), self.transform().m12())
+        if scale > 1.5:
+            self.scale(1.5 / scale, 1.5 / scale)
+        self.centerOn(rect.center())
+        self.viewChangeStream.emit(self)
 
     def wheelEvent(self, event):
         # logging.debug('Wheel event')
@@ -2523,6 +2572,48 @@ class InkView(QtWidgets.QGraphicsView):
     def focusInEvent(self, event):
         super().focusInEvent(event)
         self.viewChangeStream.emit(self)
+
+
+    def _rememberMousePosition(self, event=None):
+        if event is None:
+            global_pos = QtCore.QPointF(QtGui.QCursor.pos())
+            local_pos = QtCore.QPointF(self.mapFromGlobal(global_pos.toPoint()))
+        else:
+            global_pos = event.globalPosition()
+            local_pos = event.position()
+        # Keep the cache neutral: Qt may replay it after zooming or scrolling,
+        # and a cached button press must not start a second scene interaction.
+        cached_event = QtGui.QMouseEvent(QtCore.QEvent.Type.MouseMove, local_pos, global_pos,
+                                        QtCore.Qt.MouseButton.NoButton,
+                                        QtCore.Qt.MouseButton.NoButton,
+                                        QtCore.Qt.KeyboardModifier.NoModifier)
+        interactive = self.isInteractive()
+        # Populate QGraphicsView's native mouse cache without dispatching
+        # scene mouse/hover events alongside Nexus's own drawing handlers.
+        self.setInteractive(False)
+        try:
+            QtWidgets.QGraphicsView.mouseMoveEvent(self, cached_event)
+        finally:
+            self.setInteractive(interactive)
+
+
+    def resetPointerInteraction(self):
+        self._eventstate = Free
+        self._itemUnder = None
+        self._event = None
+
+
+    def showContent(self, rect):
+        if rect.isEmpty():
+            return
+        visible = self.mapToScene(self.viewport().rect()).boundingRect()
+        factor = min(1.0, visible.width() / (rect.width() + 32), visible.height() / (rect.height() + 32))
+        if factor < 1.0:
+            self.scaleView(factor)
+        self.ensureVisible(rect, 16, 16)
+
+
+
 
 #----------------------------------------------------------------------
 class NexusScene(QtWidgets.QGraphicsScene):
@@ -3595,6 +3686,9 @@ def distanceToLine(P, A, B):
     ABAB = dot(AB, AB)
     APAP = dot(AP, AP)
 
+    # A closed stroke has coincident endpoints: this is distance to a point.
+    if ABAB == 0:
+        return sqrt(APAP)
     d = sqrt(abs(APAP-ABAP**2/ABAB))
 
     return d
@@ -3842,6 +3936,9 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
     def setinkpath(self, S):
 
         path = QtGui.QPainterPath(QtCore.QPointF(S[0][0], S[0][1]))
+        if len(S) == 1:
+            width = self.width * S[0][2] if len(S[0]) > 2 else self.width
+            path.addEllipse(QtCore.QPointF(S[0][0], S[0][1]), width/2, width/2)
 
         b1 = None
         for ii in range(1, len(S)):
@@ -3859,6 +3956,11 @@ class InkItem(QtWidgets.QGraphicsPathItem, ContentItem):
 
             d = b1-b0
             length = sqrt(d.x()**2+d. y()**2)
+            if length == 0:
+                # Stationary samples represent a dot/pressure change.
+                width = max(width0, width1)
+                path.addEllipse(b0, width/2, width/2)
+                continue
             d = d/length
             # rotate by 90 deg
             p = QtCore.QPointF(-d.y(), d.x())
@@ -3944,9 +4046,9 @@ class TextWidthWidget(QtWidgets.QGraphicsPathItem):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
-        self.setAcceptHoverEvents(True)
+        self.setAcceptHoverEvents(False)
 
         self.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor.black))
         self.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.black))
