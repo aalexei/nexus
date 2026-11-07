@@ -3132,6 +3132,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def createRecoverySnapshot(self):
+        inline = getattr(self.view, 'inline', None)
+        if inline is not None and not inline.checkpoint():
+            return
         if self.recovery.capture(force=True) is not None:
             self.showMessage('Recovery snapshot created')
 

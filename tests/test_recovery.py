@@ -11,6 +11,16 @@ from nexus import graphics, recovery as workflow, mainwindow
 
 
 class RecoveryTests(navigation.MapTestCase):
+    def test_optional_inline_save_failure_blocks_manual_capture(self):
+        from types import SimpleNamespace
+        inline = mock.Mock()
+        inline.checkpoint.return_value = False
+        manager = mock.Mock()
+        owner = SimpleNamespace(view=SimpleNamespace(inline=inline), recovery=manager)
+        mainwindow.MainWindow.createRecoverySnapshot(owner)
+        inline.checkpoint.assert_called_once_with()
+        manager.capture.assert_not_called()
+
     def test_snapshots_are_valid_bounded_skip_unchanged_and_recover_without_overwrite(self):
         store = workflow.SnapshotStore(self.graph, Path(self.tmp.name) / 'recovery', keep=2)
         first = store.capture()
