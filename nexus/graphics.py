@@ -2825,7 +2825,7 @@ class NexusView(QtWidgets.QGraphicsView):
 
         super().__init__(scene, parent)
 
-        self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.SmartViewportUpdate)
+        self.setViewportUpdateMode(QtWidgets.QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
 
         self.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         self.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
@@ -2840,8 +2840,8 @@ class NexusView(QtWidgets.QGraphicsView):
 
         self.viewport().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
 
-        self.setOptimizationFlags(self.OptimizationFlag.DontSavePainterState |
-                                  self.OptimizationFlag.DontAdjustForAntialiasing)
+        self.setOptimizationFlag(self.OptimizationFlag.DontSavePainterState, False)
+        self.setOptimizationFlag(self.OptimizationFlag.DontAdjustForAntialiasing, False)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
         self.grabGesture(QtCore.Qt.GestureType.PanGesture)
