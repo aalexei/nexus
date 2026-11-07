@@ -105,10 +105,79 @@ class EditorToolsTests(navigation.MapTestCase):
         self.app.processEvents()
         return self.dialog.scene.strokeUndo[-1]
 
+    def test_drawing_undo_removes_latest_stroke_and_preserves_text(self):
+        self.open_text()
+        QtTest.QTest.keyClicks(self.dialog.view, 'keep this')
+        self.press(QtCore.Qt.Key.Key_Escape)
+        self.press(QtCore.Qt.Key.Key_P)
+        first = self.draw_stroke()
+        self.press(QtCore.Qt.Key.Key_H)
+        second = self.draw_stroke()
+        self.press(QtCore.Qt.Key.Key_Z, QtCore.Qt.KeyboardModifier.ControlModifier)
+        content = self.root.node['content']
+        self.assertIn(first, content)
+        self.assertNotIn(second, content)
+        self.assertEqual(sum(isinstance(i, graphics.InkItem)
+                             for i in self.dialog.scene.getItems()), 1)
+        self.dialog.undoAct.trigger()
+        self.assertNotIn(first, content)
+        before = dict(content)
+        self.press(QtCore.Qt.Key.Key_Z, QtCore.Qt.KeyboardModifier.ControlModifier)
+        self.assertEqual(content, before)
+        self.assertTrue(any('keep this' in i.toPlainText()
+                            for i in self.dialog.scene.getItems()
+                            if isinstance(i, graphics.TextItem)))
 
+    def test_text_undo_does_not_remove_drawing(self):
+        self.open_text()
+        self.press(QtCore.Qt.Key.Key_Escape)
+        self.press(QtCore.Qt.Key.Key_P)
+        stroke = self.draw_stroke()
+        self.press(QtCore.Qt.Key.Key_T)
+        text = self.dialog.view.activeTextItem()
+        before = text.toPlainText()
+        QtTest.QTest.keyClicks(self.dialog.view.viewport(), 'new typing')
+        self.press(QtCore.Qt.Key.Key_Z, QtCore.Qt.KeyboardModifier.ControlModifier)
+        self.assertEqual(text.toPlainText(), before)
+        self.assertIn(stroke, self.root.node['content'])
 
+    def test_drawing_undo_skips_erased_strokes_and_stops_on_reopen(self):
+        self.open_text()
+        self.press(QtCore.Qt.Key.Key_Escape)
+        self.press(QtCore.Qt.Key.Key_P)
+        first, second = self.draw_stroke(), self.draw_stroke()
+        item = next(i for i in self.dialog.scene.getItems() if i.uid == second)
+        item.deleteNodeItem()
+        self.dialog.view.undoEditor()
+        self.assertNotIn(first, self.root.node['content'])
+        remaining = self.draw_stroke()
+        self.dialog.saveClose()
+        self.dialog.setDialog(self.root)
+        self.dialog.view.undoEditor()
+        self.assertIn(remaining, self.root.node['content'])
 
+    @unittest.skipUnless(graphics.platform.system() == 'Darwin', 'macOS Control key alias')
+    def test_physical_control_z_undoes_stroke(self):
+        self.open_text()
+        self.press(QtCore.Qt.Key.Key_Escape)
+        self.press(QtCore.Qt.Key.Key_P)
+        stroke = self.draw_stroke()
+        self.press(QtCore.Qt.Key.Key_Z, QtCore.Qt.KeyboardModifier.MetaModifier)
+        self.assertNotIn(stroke, self.root.node['content'])
 
+    def test_failed_stroke_undo_keeps_stroke_and_can_retry(self):
+        self.open_text()
+        self.press(QtCore.Qt.Key.Key_Escape)
+        self.press(QtCore.Qt.Key.Key_P)
+        stroke = self.draw_stroke()
+        with mock.patch.object(self.root.node, 'save', side_effect=RuntimeError('disk error')):
+            with self.assertLogs(level='ERROR'):
+                self.dialog.view.undoEditor()
+        self.assertIn(stroke, self.root.node['content'])
+        self.assertEqual(self.dialog.scene.strokeUndo, [stroke])
+        self.assertTrue(any(i.uid == stroke for i in self.dialog.scene.getItems()))
+        self.dialog.view.undoEditor()
+        self.assertNotIn(stroke, self.root.node['content'])
 
     def test_shift_enter_newline_enter_closes(self):
         text = self.open_text()

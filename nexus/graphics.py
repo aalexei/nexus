@@ -278,8 +278,8 @@ class InputDialog(QtWidgets.QDialog):
         self.sourceAct.setCheckable(True)
 
         editMenu = dialogMenuBar.addMenu(self.tr("&Edit"))
-        # editMenu.addAction(self.undoAct)
-        # editMenu.addSeparator()
+        editMenu.addAction(self.undoAct)
+        editMenu.addSeparator()
         editMenu.addAction(self.cutAct)
         editMenu.addAction(self.copyAct)
         editMenu.addAction(self.pasteAct)
@@ -617,6 +617,15 @@ class InputDialog(QtWidgets.QDialog):
         self.setWindowOpacity(opacity)
 
     def createActions(self):
+
+        self.undoAct = QtGui.QAction(self.tr("Undo text / last drawing stroke"), self)
+        undo_keys = [QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Undo)]
+        # Qt's ControlModifier is Command on macOS; MetaModifier is the
+        # physical Control key. Accept both for drawing/text Undo.
+        if platform.system() == 'Darwin':
+            undo_keys.append(QtGui.QKeySequence('Meta+Z'))
+        self.undoAct.setShortcuts(undo_keys)
+        self.undoAct.triggered.connect(lambda: self.view.undoEditor())
 
         self.closeAct = QtGui.QAction(QtGui.QIcon(":/images/exit.svg"),
                                       self.tr("Close"), self)
@@ -1472,6 +1481,7 @@ class InkScene(QtWidgets.QGraphicsScene):
         self.transformationWidget.hide()
         self.transformationWidget.setZValue(9000)  # make sure it's on top
 
+        self.strokeUndo = []
     def refreshStem(self, reload=True):
         '''
         Refresh the stem on the map
@@ -2357,6 +2367,7 @@ class InkView(QtWidgets.QGraphicsView):
             scene.removeItem(scene.tmpgroup)
 
         InkItem(uid, scene.stem, scene)
+        scene.strokeUndo.append(uid)
 
         self.viewChangeStream.emit(self)
 
@@ -2386,6 +2397,10 @@ class InkView(QtWidgets.QGraphicsView):
 
     def event(self, event):
 
+        if (event.type() == QtCore.QEvent.Type.ShortcutOverride and
+                getattr(self, 'input_dialog', None) is not None and self.isEditorUndo(event)):
+            event.accept()
+            return True
         if event.type() == QtCore.QEvent.Type.ShortcutOverride and self.activeTextItem() is not None:
             # Prevent Delete/Backspace actions from deleting the text object
             # while its text cursor is active. Qt still receives the keypress.
@@ -2610,6 +2625,11 @@ class InkView(QtWidgets.QGraphicsView):
 
     def editorKeyPress(self, event):
         dialog = getattr(self, 'input_dialog', None)
+        if dialog is not None and self.isEditorUndo(event):
+            if not event.isAutoRepeat():
+                self.undoEditor()
+            event.accept()
+            return True
         if dialog is None or event.modifiers() != QtCore.Qt.KeyboardModifier.NoModifier:
             return False
         key = event.key()
@@ -2645,6 +2665,55 @@ class InkView(QtWidgets.QGraphicsView):
     def keyPressEvent(self, event):
         if not self.editorKeyPress(event):
             super().keyPressEvent(event)
+
+
+    def undoEditor(self):
+        scene = self.scene()
+        # Do not remove objects underneath an active pointer gesture.
+        if scene is None or self._eventstate != Free:
+            return
+        text = self.activeTextItem()
+        if text is not None:
+            text.document().undo()
+            return
+        while scene.strokeUndo:
+            uid = scene.strokeUndo[-1]
+            item = next((i for i in scene.getItems()
+                         if isinstance(i, InkItem) and i.uid == uid), None)
+            if item is None:
+                # A stroke already removed by the eraser is not an Undo step.
+                scene.strokeUndo.pop()
+                continue
+            self.resetPointerInteraction()
+            scene.clearSelection()
+            scene.setSelectionWidget()
+            # Save before detaching graphics; a failed write must leave the
+            # stroke visible, in memory and available for another attempt.
+            data = scene.stem.node['content'][uid]
+            try:
+                with scene.graph.connection:
+                    item.deldata()
+                    scene.stem.node.save(setchange=True)
+            except Exception:
+                scene.stem.node['content'][uid] = data
+                scene.stem.node.keyChanged('content')
+                logging.exception('Could not undo drawing stroke')
+                return
+            scene.removeItem(item)
+            scene.strokeUndo.pop()
+            scene.refreshStem(reload=False)
+            self.viewChangeStream.emit(self)
+            self.viewport().update()
+            break
+
+
+    def isEditorUndo(self, event):
+        return (event.matches(QtGui.QKeySequence.StandardKey.Undo) or
+                (platform.system() == 'Darwin' and
+                 event.key() == QtCore.Qt.Key.Key_Z and
+                 event.modifiers() == QtCore.Qt.KeyboardModifier.MetaModifier))
+
+
 
 
 
