@@ -450,7 +450,7 @@ def createViewImage(view, width, height, removebackground=False):
     return image
 
 #----------------------------------------------------------------------
-from . import welcome
+from . import welcome, map_preview
 from .welcome import NewOrOpenDialog
 
 #----------------------------------------------------------------------
@@ -832,6 +832,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setMode()
 
+        self.previewWarmup = map_preview.IdlePreview(self)
         # Initialize file system watcher
         # Not working - see notes in onFileChanged()
         # self.file_watcher = QtCore.QFileSystemWatcher()
@@ -898,6 +899,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
 
+        self.previewWarmup.stop()
         self.writeSettings()
         self.scene.graph.close()
         event.accept()

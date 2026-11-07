@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtSvgWidgets import QSvgWidget
-from . import map_finder
+from . import map_finder, map_preview
 
 
 def settings():
@@ -270,6 +270,7 @@ class NewOrOpenDialog(QtWidgets.QDialog):
         self.clampGeometry()
         self.applyAppearance()
         self.search.setFocus()
+        self.preview = map_preview.HoverPreview(self)
 
     def applyAppearance(self):
         dark = self.palette().color(QtGui.QPalette.ColorRole.Window).lightness() < 128
@@ -700,6 +701,7 @@ class NewOrOpenDialog(QtWidgets.QDialog):
             self.run(lambda: QtWidgets.QApplication.instance().raiseOrOpen(files[0]))
 
     def done(self, result):
+        self.preview.clear()
         for job in self._jobs.values():
             job.cancel()
         self._jobs.clear()
