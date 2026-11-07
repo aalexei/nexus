@@ -27,7 +27,7 @@ from functools import reduce
 import webbrowser, tempfile
 
 import webbrowser, urllib.parse, logging
-from . import graphics, resources, interpreter, graphydb, nexusgraph, config
+from . import graphics, resources, interpreter, graphydb, nexusgraph, config, recovery
 from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi, cos, sin
 import re, subprocess
 import apsw
@@ -909,6 +909,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setMode()
 
+        self.recovery = recovery.RecoveryManager(self)
         # Initialize file system watcher
         # Not working - see notes in onFileChanged()
         # self.file_watcher = QtCore.QFileSystemWatcher()
@@ -975,6 +976,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
 
+        self.recovery.timer.stop()
+        self.recovery.capture()
         self.writeSettings()
         self.scene.graph.close()
         event.accept()
@@ -1506,6 +1509,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.undoAct.triggered.connect(self.undo)
 
         # ----------------------------------------------------------------------------------
+        self.recoveryAct = QtGui.QAction(self.tr('Recovery Snapshots…'), self)
+        self.recoveryAct.triggered.connect(lambda: self.recovery.showSnapshots())
+        self.snapshotAct = QtGui.QAction(self.tr('Create Recovery Snapshot Now'), self)
+        self.snapshotAct.triggered.connect(self.createRecoverySnapshot)
+
         self.setScaleAct = QtGui.QAction(self.tr("Set Scale"), self)
         self.setScaleAct.setStatusTip(self.tr("Set the scale for selected"))
         self.setScaleAct.setShortcut("S")
@@ -1764,6 +1772,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fileMenu.addSeparator()
         # self.fileMenu.addAction(self.saveAct)
         self.fileMenu.addAction(self.saveAsAct)
+        self.fileMenu.addAction(self.snapshotAct)
+        self.fileMenu.addAction(self.recoveryAct)
         self.fileMenu.addSeparator()
         self.fileMenu.addAction(self.printMapAct)
         self.fileMenu.addAction(self.printViewsAct)
@@ -3119,6 +3129,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 item['_rect'].setVisible(vis)
             else:
                 item['_rect'].setVisible(False)
+
+
+    def createRecoverySnapshot(self):
+        inline = getattr(self.view, 'inline', None)
+        if inline is not None and not inline.checkpoint():
+            return
+        if self.recovery.capture(force=True) is not None:
+            self.showMessage('Recovery snapshot created')
+
 
 
 class FilterEdit(QtWidgets.QLineEdit):
