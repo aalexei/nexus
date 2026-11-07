@@ -2526,6 +2526,8 @@ class InkView(QtWidgets.QGraphicsView):
 
 #----------------------------------------------------------------------
 class NexusScene(QtWidgets.QGraphicsScene):
+    mapModified = QtCore.pyqtSignal()
+
 #----------------------------------------------------------------------
 
     statusMessage = QtCore.pyqtSignal(str)
@@ -5765,7 +5767,9 @@ class StemItem(QtWidgets.QGraphicsItem):
             # Set a random color
             newnode['branchcolor'] = self.newstemtail.brush().color().name()
         else:
-            scale = self.transform().m11()
+            from .branch_size import map_ratio
+            ratio = map_ratio(G)
+            scale = ratio if ratio is not None else float(self.node.get('scale', CONFIG['child_scale']))
 
         dp = p-self.tip()
         newnode['scale'] = scale
