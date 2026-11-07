@@ -27,7 +27,7 @@ from functools import reduce
 import webbrowser, tempfile
 
 import webbrowser, urllib.parse, logging
-from . import graphics, resources, interpreter, graphydb, nexusgraph, config
+from . import graphics, resources, interpreter, graphydb, nexusgraph, config, node_search
 from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi, cos, sin
 import re, subprocess
 import apsw
@@ -1506,6 +1506,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.undoAct.triggered.connect(self.undo)
 
         # ----------------------------------------------------------------------------------
+        self.findNodeAct = QtGui.QAction(self.tr('Find a Node…'), self)
+        self.findNodeAct.setShortcut(QtGui.QKeySequence.StandardKey.Find)
+        self.findNodeAct.setAutoRepeat(False)
+        self.findNodeAct.triggered.connect(self.findNode)
         self.setScaleAct = QtGui.QAction(self.tr("Set Scale"), self)
         self.setScaleAct.setStatusTip(self.tr("Set the scale for selected"))
         self.setScaleAct.setShortcut("S")
@@ -1783,6 +1787,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.editMenu = self.menuBar().addMenu(self.tr("&Edit"))
         self.editMenu.addAction(self.undoAct)
+        self.editMenu.addAction(self.findNodeAct)
         self.editMenu.addSeparator()
         self.editMenu.addAction(self.cutAct)
         self.editMenu.addAction(self.copyAct)
@@ -3096,6 +3101,29 @@ class MainWindow(QtWidgets.QMainWindow):
                 item['_rect'].setVisible(vis)
             else:
                 item['_rect'].setVisible(False)
+
+
+    def findNode(self):
+        current = getattr(self, '_nodeSearchDialog', None)
+        if current is not None and current.isVisible():
+            current.reject()
+            return
+        inline = getattr(self.view, 'inline', None)
+        if inline is not None:
+            inline.finish()
+        if (inline is not None and inline.item is not None) or self.scene.mode != 'edit' or self.editDialog.isVisible():
+            return
+        dialog = current
+        if dialog is None:
+            dialog = node_search.NodeSearchDialog(self)
+            self._nodeSearchDialog = dialog
+        else:
+            dialog.refreshIndex()
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
+        dialog.search.setFocus()
+
 
 
 class FilterEdit(QtWidgets.QLineEdit):
