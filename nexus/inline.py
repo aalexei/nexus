@@ -260,6 +260,16 @@ class InlineController(QtCore.QObject):
         from .graphics import shortcutModifiers
         keys = QtCore.Qt.Key
         modifiers = shortcutModifiers(event)
+        if modifiers == QtCore.Qt.KeyboardModifier.ControlModifier and event.key() == keys.Key_D:
+            if not event.isAutoRepeat():
+                self.view.tasks.cycleCurrent()
+            event.accept()
+            return True
+        if modifiers == (QtCore.Qt.KeyboardModifier.ControlModifier | QtCore.Qt.KeyboardModifier.ShiftModifier) and event.key() == keys.Key_T:
+            if not event.isAutoRepeat():
+                self.view.tasks.setMode(not self.view.tasks.enabled)
+            event.accept()
+            return True
         if modifiers == QtCore.Qt.KeyboardModifier.ControlModifier and event.key() in (keys.Key_Return, keys.Key_Enter):
             if not event.isAutoRepeat():
                 uid = self.finish(keep_blank=True)

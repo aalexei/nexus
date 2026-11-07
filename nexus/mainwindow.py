@@ -27,7 +27,7 @@ from functools import reduce
 import webbrowser, tempfile
 
 import webbrowser, urllib.parse, logging
-from . import graphics, resources, interpreter, graphydb, nexusgraph, config
+from . import graphics, resources, interpreter, graphydb, nexusgraph, config, tasks
 from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi, cos, sin
 import re, subprocess
 import apsw
@@ -1140,11 +1140,11 @@ class MainWindow(QtWidgets.QMainWindow):
         fp = open(path, "w")
 
         root = self.scene.root()
-        fp.write(' '.join(root.titles()) + '\n')
+        fp.write(tasks.export_title(root) + '\n')
 
         for child in root.allChildStems():
             if 'hide' not in child.getTags() and child.isVisible():
-                title = ' '.join(child.titles())
+                title = tasks.export_title(child)
                 level = child.depth
                 fp.write("\t"*level+title+"\n")
 
@@ -1518,6 +1518,28 @@ class MainWindow(QtWidgets.QMainWindow):
         self.textModeAct.setToolTip('Text mode (T): edit simple text directly on the map')
         self.textModeAct.triggered.connect(self.view.inline.setMode)
         self.view.inline.modeChanged.connect(self.textModeAct.setChecked)
+        self.todoModeAct = QtGui.QAction(self.tr('Todo mode OFF'), self)
+        self.todoModeAct.setCheckable(True)
+        self.todoModeAct.setShortcut('Ctrl+Shift+T')
+        self.todoModeAct.setAutoRepeat(False)
+        self.todoModeAct.setToolTip('Cmd+Shift+T / Ctrl+Shift+T: create new nodes as tasks. Existing nodes stay unchanged. Cmd+D / Ctrl+D cycles the current node.')
+        self.todoModeAct.triggered.connect(self.view.tasks.setMode)
+        self.cycleTaskAct = QtGui.QAction(self.tr('Cycle Node Task State'), self)
+        self.cycleTaskAct.setShortcut('Ctrl+D')
+        self.cycleTaskAct.setAutoRepeat(False)
+        self.cycleTaskAct.setToolTip('Cmd+D / Ctrl+D: Note → Todo → Doing → Done → Note; does not change Todo creation mode')
+        self.cycleTaskAct.triggered.connect(self.view.tasks.cycleCurrent)
+        def task_mode_changed(enabled):
+            self.todoModeAct.setChecked(enabled)
+            self.todoModeAct.setText('Todo mode ON' if enabled else 'Todo mode OFF')
+            if hasattr(self, 'todoModeButton'):
+                self.todoModeButton.setText('Todo ON' if enabled else 'Todo OFF')
+        self.view.tasks.modeChanged.connect(task_mode_changed)
+        self.doingStateAct = QtGui.QAction(self.tr('Enable Doing state (yellow)'), self)
+        self.doingStateAct.setCheckable(True)
+        self.doingStateAct.setChecked(tasks.doing_enabled())
+        self.doingStateAct.setToolTip('ON: Todo → Doing → Done. OFF: Todo → Done. Existing task progress is preserved.')
+        self.doingStateAct.triggered.connect(self.view.tasks.setDoingEnabled)
         self.fullEditorAct = QtGui.QAction(self.tr('Open Full Node Editor'), self)
         self.fullEditorAct.setShortcuts(['Ctrl+Return', 'Ctrl+Enter'])
         self.fullEditorAct.setAutoRepeat(False)
@@ -1805,6 +1827,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editMenu = self.menuBar().addMenu(self.tr("&Edit"))
         self.editMenu.addAction(self.undoAct)
         self.editMenu.addAction(self.textModeAct)
+        self.editMenu.addAction(self.todoModeAct)
+        self.editMenu.addAction(self.cycleTaskAct)
         self.editMenu.addAction(self.fullEditorAct)
         self.editMenu.addSeparator()
         self.editMenu.addAction(self.cutAct)
@@ -1856,6 +1880,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu.addAction(self.viewsHomeAct)
         self.viewMenu.addAction(self.viewsNextAct)
         self.viewMenu.addAction(self.viewsPreviousAct)
+
+        self.settingsMenu = self.menuBar().addMenu(self.tr('Settings'))
+        self.settingsMenu.addAction(self.doingStateAct)
+        def refresh_task_settings():
+            blocker = QtCore.QSignalBlocker(self.doingStateAct)
+            self.doingStateAct.setChecked(tasks.doing_enabled())
+            del blocker
+        self.settingsMenu.aboutToShow.connect(refresh_task_settings)
 
         self.recMenu = self.menuBar().addMenu(self.tr("&Recording"))
         self.recMenu.addAction(self.recStartAct)

@@ -3158,7 +3158,10 @@ class NexusView(QtWidgets.QGraphicsView):
         self.inline = InlineController(self)
         from .selection import SelectionController
         self.selection = SelectionController(self)
-        # Trying to fix touchpad zoom on linux
+
+        from .tasks import TaskController
+        self.tasks = TaskController(self)
+        self._taskClick = False        # Trying to fix touchpad zoom on linux
         # self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
 
     def scaleView(self, scaleFactor, point=None):
@@ -3314,6 +3317,14 @@ class NexusView(QtWidgets.QGraphicsView):
         self.viewChangeStream.emit(self)
 
     def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.MouseButton.LeftButton and event.modifiers() == QtCore.Qt.KeyboardModifier.NoModifier:
+            uid = self.tasks.hit(event.pos())
+            if uid is not None:
+                self._taskClick = True
+                self.tasks.cycle(uid)
+                self.setFocus()
+                event.accept()
+                return
         if self.inline.item is not None:
             item = self.inline.item
             if not item.sceneBoundingRect().contains(self.mapToScene(event.pos())):
@@ -3345,6 +3356,9 @@ class NexusView(QtWidgets.QGraphicsView):
             QtWidgets.QGraphicsView.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):
+        if self._taskClick:
+            event.accept()
+            return
         # TODO performance
         # movement triggers drag move
 
@@ -3447,7 +3461,10 @@ class NexusView(QtWidgets.QGraphicsView):
             QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
-
+        if self._taskClick:
+            self._taskClick = False
+            event.accept()
+            return
         # if abs(self.pinchtime - time.time())<self._ignoremousetime:
         #    event.accept()
         #    return
@@ -3473,6 +3490,11 @@ class NexusView(QtWidgets.QGraphicsView):
         self.viewChangeStream.emit(self)
 
     def mouseDoubleClickEvent(self, event):
+        if (event.button() == QtCore.Qt.MouseButton.LeftButton and
+                event.modifiers() == QtCore.Qt.KeyboardModifier.NoModifier and self.tasks.hit(event.pos()) is not None):
+            self._taskClick = True
+            event.accept()
+            return
 
         if self.scene().mode in ["presentation", "record"]:
             item = self.itemAt(event.pos())
@@ -5071,6 +5093,21 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
             painter.setPen(QtGui.QPen(QtGui.QColor(0, 0, 0, 0)))
             painter.drawRect(self.boundingRect())
         QtWidgets.QGraphicsTextItem.paint(self, painter, option, widget)
+        from .tasks import done
+        if isinstance(self.parentItem(), Leaf) and done(self.stem.node):
+            painter.save()
+            painter.setPen(QtGui.QPen(QtGui.QColor('#777777'), 1.2))
+            block = self.document().begin()
+            while block.isValid():
+                rect = self.document().documentLayout().blockBoundingRect(block)
+                layout = block.layout()
+                for index in range(layout.lineCount()):
+                    line = layout.lineAt(index)
+                    y = rect.y() + line.y() + line.height() * .5
+                    x = rect.x() + line.x()
+                    painter.drawLine(QtCore.QPointF(x, y), QtCore.QPointF(x + line.naturalTextWidth(), y))
+                block = block.next()
+            painter.restore()
 
 
     def inputMethodEvent(self, event):
@@ -5242,6 +5279,8 @@ class Leaf(QtWidgets.QGraphicsItem):
                 elif k['kind'] == 'Image':
                     item = PixmapItem(uid=u, stem=self.stem, parent=self)
 
+        self.taskbox = None
+        self.updateTaskBox()
         # This is the size of the leaf before adding tags etc
         pad = self.pad
 
@@ -5265,6 +5304,8 @@ class Leaf(QtWidgets.QGraphicsItem):
 
         rect = QtCore.QRectF()
         for child in self.childItems():
+            if getattr(self, 'taskbox', None) is child and not child.isVisible():
+                continue
             rect = rect.united(self.mapRectFromItem(child, child.boundingRect()))
 
             if not isinstance(child, QtWidgets.QGraphicsTextItem):
@@ -5285,6 +5326,22 @@ class Leaf(QtWidgets.QGraphicsItem):
     def boundingRect(self):
         # Return cached bounding rect
         return self.boundingrect
+
+
+    def updateTaskBox(self):
+        from .tasks import is_task, TaskBox
+        if is_task(self.stem.node):
+            rect = QtCore.QRectF()
+            for item in self.childItems():
+                if item is not self.taskbox:
+                    rect = rect.united(self.mapRectFromItem(item, item.boundingRect()))
+            if self.taskbox is None:
+                self.taskbox = TaskBox(self)
+            self.taskbox.setPos(rect.left() - 28, rect.top() + 3)
+            self.taskbox.show()
+        elif self.taskbox is not None:
+            self.taskbox.hide()
+
 
 
 class OpenCloseWidget(QtWidgets.QGraphicsPathItem):
@@ -6350,6 +6407,9 @@ class StemItem(QtWidgets.QGraphicsItem):
         # Add new db items but don't save then yet in case user cancels
         G = self.node.graph
         newnode = G.Node('Stem', content={})
+        task_view = keyboard_view or next((view for view in self.scene().views() if isinstance(view, NexusView)), None)
+        if task_view is not None and task_view.tasks.enabled and self.scene().mode == 'edit':
+            newnode['todo'], newnode['todo_done'], newnode['todo_state'] = True, False, 'todo'
         newedge = G.Edge(self.node, 'Child', newnode)
 
         # settings = QtCore.QSettings("Ectropy", "Nexus")
