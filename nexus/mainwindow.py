@@ -27,7 +27,7 @@ from functools import reduce
 import webbrowser, tempfile
 
 import webbrowser, urllib.parse, logging
-from . import graphics, resources, interpreter, graphydb, nexusgraph, config
+from . import graphics, resources, interpreter, graphydb, nexusgraph, config, shortcuts
 from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi, cos, sin
 import re, subprocess
 import apsw
@@ -1587,6 +1587,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.aboutAct.triggered.connect(self.about)
 
         # ----------------------------------------------------------------------------------
+        self.keyboardShortcutsAct = QtGui.QAction(self.tr("Keyboard Shortcuts…"), self)
+        self.keyboardShortcutsAct.setShortcut("Ctrl+/")
+        self.keyboardShortcutsAct.setStatusTip(self.tr("Show all keyboard shortcuts"))
+        self.keyboardShortcutsAct.triggered.connect(lambda: shortcuts.show_keyboard_shortcuts(self))
+
         self.zoomInAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-in.svg"),
                                        self.tr("Zoom In"), self)
         # QtGui.QKeySequence.StandardKey.ZoomIn not working on Windows?
@@ -1839,6 +1844,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menuBar().addSeparator()
 
         self.helpMenu = self.menuBar().addMenu(self.tr("&Help"))
+        self.helpMenu.addAction(self.keyboardShortcutsAct)
         self.helpMenu.addAction(self.aboutAct)
 
     def updateRecentFilesMenu(self):

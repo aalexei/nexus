@@ -25,7 +25,7 @@ import logging
 from bs4 import BeautifulSoup
 
 import re, time, copy, hashlib, json
-from . import interpreter, tools, graphydb, config, nexusgraph
+from . import interpreter, tools, graphydb, config, nexusgraph, shortcuts
 
 import urllib.parse, os
 from functools import reduce
@@ -282,6 +282,8 @@ class InputDialog(QtWidgets.QDialog):
         editMenu.addAction(self.deleteAct)
         editMenu.addSeparator()
 
+        helpMenu = dialogMenuBar.addMenu(self.tr("&Help"))
+        helpMenu.addAction(self.keyboardShortcutsAct)
         self.view.setFocus()
 
         #
@@ -610,6 +612,10 @@ class InputDialog(QtWidgets.QDialog):
         self.setWindowOpacity(opacity)
 
     def createActions(self):
+
+        self.keyboardShortcutsAct = QtGui.QAction(self.tr("Keyboard Shortcuts…"), self)
+        self.keyboardShortcutsAct.setShortcut("Ctrl+/")
+        self.keyboardShortcutsAct.triggered.connect(lambda: shortcuts.show_keyboard_shortcuts(self))
 
         self.closeAct = QtGui.QAction(QtGui.QIcon(":/images/exit.svg"),
                                       self.tr("Close"), self)
