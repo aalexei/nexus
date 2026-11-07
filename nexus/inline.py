@@ -260,6 +260,13 @@ class InlineController(QtCore.QObject):
         from .graphics import shortcutModifiers
         keys = QtCore.Qt.Key
         modifiers = shortcutModifiers(event)
+        if modifiers == QtCore.Qt.KeyboardModifier.ControlModifier and event.key() == keys.Key_V:
+            mime = QtWidgets.QApplication.clipboard().mimeData()
+            from .image_paste import is_external_image, paste_image
+            if is_external_image(mime):
+                paste_image(self.scene, mime, view=self.view)
+                event.accept()
+                return True
         if modifiers == QtCore.Qt.KeyboardModifier.ControlModifier and event.key() == keys.Key_D:
             if not event.isAutoRepeat():
                 self.view.tasks.cycleCurrent()

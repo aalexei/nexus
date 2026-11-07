@@ -2870,6 +2870,11 @@ class NexusScene(QtWidgets.QGraphicsScene):
             self.recursivePaste(node, childnode, imageshas, batch)
 
     def paste(self, *param, stem=None):
+        from .image_paste import is_external_image, paste_image
+        mime = QtWidgets.QApplication.clipboard().mimeData()
+        if is_external_image(mime):
+            paste_image(self, mime, stem=stem)
+            return
         if stem is None:
             selected = set(self.selectedItems())
         else:
@@ -3159,10 +3164,11 @@ class NexusView(QtWidgets.QGraphicsView):
         from .selection import SelectionController
         self.selection = SelectionController(self)
 
+        InkView._rememberMousePosition(self)        # Trying to fix touchpad zoom on linux
+
         from .tasks import TaskController
         self.tasks = TaskController(self)
-        self._taskClick = False        # Trying to fix touchpad zoom on linux
-        # self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
+        self._taskClick = False        # self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
 
     def scaleView(self, scaleFactor, point=None):
 
