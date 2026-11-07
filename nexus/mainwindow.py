@@ -1615,6 +1615,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.zoomSelectionAct.triggered.connect(self.view.zoomSelection)
 
         # ----------------------------------------------------------------------------------
+        self.zoomParentAct = QtGui.QAction(self.tr("Zoom to Parent Branch"), self)
+        self.zoomParentAct.setShortcut("Shift+Z")
+        self.zoomParentAct.setAutoRepeat(False)
+        self.zoomParentAct.setStatusTip(self.tr("Select the parent and fit its visible branch"))
+        self.zoomParentAct.triggered.connect(self.view.zoomParent)
+
         self.zoomOriginalAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-one.svg"),
                                              self.tr("Reset Zoom"), self)
         self.zoomOriginalAct.setStatusTip(self.tr("Reset Zoom"))
@@ -1806,6 +1812,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu.addAction(self.zoomOutAct)
         self.viewMenu.addAction(self.zoomAllAct)
         self.viewMenu.addAction(self.zoomSelectionAct)
+        self.viewMenu.addAction(self.zoomParentAct)
         self.viewMenu.addSeparator()
 
         self.viewMenu.addAction(self.presentationModeAct)
@@ -1931,37 +1938,7 @@ class MainWindow(QtWidgets.QMainWindow):
         settings.setValue('size', self.size())
 
     def undo(self):
-        changeditems = self.scene.graph.undo()
-        # first pass - refresh the whole lot
-        # TODO more efficient undo by looking at changeditems
-        changedtypes = [t for t, uid in changeditems]
-        if '+' in changedtypes:
-            # Refresh the whole lot as we don't know where it was removed from
-            self.scene.root().renew()
-            return
-
-        changeduids = [uid for t, uid in changeditems]
-
-        allchidren = []
-        parents = []
-        for item in self.scene.allChildStems(includeroot=True):
-            if item.node['uid'] in changeduids:
-                parent = item.parentItem()
-                if parent is None:
-                    parents.append(item)
-                else:
-                    parents.append(parent)
-                    allchidren.append(item)
-                allchidren.extend(item.allChildStems())
-
-        for p in parents:
-            if p not in allchidren:
-                p.renew()
-
-        # TODO sometimes no parents?!
-        # TODO happens when reversing a hide as the stems are no longer in scene!
-        if len(parents) == 0:
-            self.scene.root().renew()
+        self.scene.undo()
 
     def loadOrConvertMap(self, filename):
         '''
