@@ -19,7 +19,7 @@
 from PyQt6 import QtCore, QtGui, QtWidgets, sip
 from PyQt6.QtCore import pyqtSlot
 
-from math import sqrt, atan2, cos, sin, pi, asin, degrees, pow, exp, fmod
+from math import sqrt, atan2, cos, sin, pi, asin, degrees, pow, exp, fmod, hypot
 import logging
 
 from bs4 import BeautifulSoup
@@ -251,6 +251,7 @@ class InputDialog(QtWidgets.QDialog):
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.zoomInAct)
         self.toolbar.addAction(self.zoomOutAct)
+        self.toolbar.addAction(self.fitContentAct)
 
         ## Extra tools for select mode
         self.toolbar.addAction(self.lowerBottomAct)
@@ -691,6 +692,11 @@ class InputDialog(QtWidgets.QDialog):
         self.zoomOutAct.triggered.connect(self.view.zoomOut)
 
         # ----------------------------------------------------------------------------------
+        self.fitContentAct = QtGui.QAction(QtGui.QIcon(':/images/zoom-select.svg'),
+                                           self.tr('Fit content'), self)
+        self.fitContentAct.setToolTip(self.tr('Show all text, images and drawings without changing their layout'))
+        self.fitContentAct.triggered.connect(self.view.zoomFitAll)
+
         self.zoomOriginalAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-one.svg"),
                                              self.tr("Reset Zoom"), self)
         self.zoomOriginalAct.setStatusTip(self.tr("Reset Zoom"))
@@ -1213,10 +1219,11 @@ class InputDialog(QtWidgets.QDialog):
         self.deleteEvent()
 
     def copyEvent(self):
-
-        # TODO create a Copy-As function
-
-        selected = self.scene.selectedItems()
+        contentitems = self.scene.getItems()
+        selected = [item for item in self.scene.selectedItems()
+                    if item in contentitems]
+        if not selected:
+            return
         selected.sort(key=lambda x: x.zValue())
 
         clipboard = QtWidgets.QApplication.clipboard()
@@ -1227,17 +1234,13 @@ class InputDialog(QtWidgets.QDialog):
         #
         rect = QtCore.QRectF()
 
-        # Unselect items so selection marks dont show up
         for item in selected:
             rect = rect.united(item.sceneBoundingRect())
-            item.setSelected(False)
-
-        # Grab all items that will show up in the region
-        # TODO isn't this the same as above?,
-        allregionitems = self.scene.items(rect)
 
         # Build a pixmap at 2x the size for better resolution
-        pixmap = QtGui.QPixmap(rect.size().toSize()*2)
+        from math import ceil
+        pixmap = QtGui.QPixmap(max(1, ceil(rect.width()*2)),
+                              max(1, ceil(rect.height()*2)))
 
         # Make background transparent
         pixmap.fill(QtGui.QColor(0, 0, 0, 0))
@@ -1246,23 +1249,27 @@ class InputDialog(QtWidgets.QDialog):
         painter.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
         painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform)
 
-        # Hide unselected visible items that are in the rect
+        # Export only the content. The editor grid and resize handles belong
+        # to the editing UI, rather than the image placed on the clipboard.
+        background = self.scene.backgroundBrush()
         hiddenitems = []
-        for item in allregionitems:
-            if item not in selected and item.isVisible():
-                item.setVisible(False)
-                hiddenitems.append(item)
-
-        self.scene.render(painter, QtCore.QRectF(), rect)
-        painter.end()
-        mimedata.setImageData(pixmap)
-
-        # Return selection
-        for item in selected:
-            item.setSelected(True)
-        # Return hidden items
-        for item in hiddenitems:
-            item.setVisible(True)
+        try:
+            for item in selected:
+                item.setSelected(False)
+            for item in self.scene.items():
+                if item not in selected and item.isVisible():
+                    item.setVisible(False)
+                    hiddenitems.append(item)
+            self.scene.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush))
+            self.scene.render(painter, QtCore.QRectF(), rect)
+        finally:
+            painter.end()
+            self.scene.setBackgroundBrush(background)
+            for item in hiddenitems:
+                item.setVisible(True)
+            for item in selected:
+                item.setSelected(True)
+        mimedata.setImageData(pixmap.toImage())
 
         #
         # Copy Nexus internal data for pasting elsewhere in a tree
@@ -1288,20 +1295,20 @@ class InputDialog(QtWidgets.QDialog):
             data = graphydb.cleandata(node.data)
             copydata.images[sha] = data
 
-        clipboard = QtWidgets.QApplication.clipboard()
-        mimedata = QtCore.QMimeData()
         copydata.setMimedata(mimedata)
         clipboard.setMimeData(mimedata)
 
     def pasteEvent(self):
         # TODO if text too long ask if it should be a iconified
-        # TODO check for images ... check size and scale appropriately
         # TODO paste to central topics (nothing selected)
-
-        # TODO image from nexus nor taken as item so lose transformations
 
         clipboard = QtWidgets.QApplication.clipboard()
         mimedata = clipboard.mimeData()
+
+        existing = self.scene.contentBounds()
+        external = not mimedata.hasFormat('application/x-nexus') and not mimedata.hasFormat('application/json')
+        source = mimedata.imageData() if external and mimedata.hasImage() else None
+        source_ratio = max(1.0, float(source.devicePixelRatio())) if hasattr(source, 'devicePixelRatio') else 1.0
 
         g = self.scene.graph
         copydata = g.mimedataToCopydata(mimedata)
@@ -1384,8 +1391,17 @@ class InputDialog(QtWidgets.QDialog):
             elif n['kind'] == 'Image':
                 # N.B. PixmapItem expects the data to be in a subnode in the graph
                 item = PixmapItem(uid=uid, stem=self.stem, scene=self.scene)
+                if external and not item.pixmap().isNull():
+                    # Choose a logical display size; retain the original PNG
+                    # and preserve internal Nexus copy/paste transforms.
+                    size = item.pixmap().size()
+                    scale = min(1.0 / source_ratio, 380.0 / size.width(), 280.0 / size.height())
+                    item.setTransform(QtGui.QTransform.fromScale(scale, scale))
             item.setMode(self.scene.mode)
             pastedobjects.append(item)
+
+        if not pastedobjects:
+            return
 
 
         # Translate all the items so that top left of their
@@ -1394,10 +1410,11 @@ class InputDialog(QtWidgets.QDialog):
         for item in pastedobjects:
             itemrect = itemrect.united(item.sceneBoundingRect())
 
-        # dp = targetpos-itemrect.center()
+        target = QtCore.QPointF(existing.left(), existing.bottom() + 24) if not existing.isEmpty() else QtCore.QPointF()
+        delta = target - itemrect.topLeft()
         t = QtGui.QTransform()
         # t.translate(dp.x(),dp.y())
-        t.translate(3, -3)
+        t.translate(delta.x(), delta.y())
         for item in pastedobjects:
             # note QTs backward transforms
             item.setTransform(item.transform()*t)
@@ -1410,8 +1427,12 @@ class InputDialog(QtWidgets.QDialog):
 
         # new_nodes.save(batch=batch, setchange=True)
         # self.scene.refreshStem()
+        self.selectmode.trigger()
+        for item in pastedobjects:
+            item.setSelected(True)
         self.scene.transformationWidget.setSelectedItems(pastedobjects)
         self.scene.transformationWidget.show()
+        self.view.showContent(self.scene.contentBounds(pastedobjects))
 
 
 class MyEvent(QtWidgets.QGraphicsSceneMouseEvent):
@@ -1503,6 +1524,14 @@ class InkScene(QtWidgets.QGraphicsScene):
             items[ii].setZValue(ii)
 
         return ii
+
+
+    def contentBounds(self, items=None):
+        rect = QtCore.QRectF()
+        for item in self.getItems() if items is None else items:
+            rect = rect.united(item.sceneBoundingRect())
+        return rect
+
 
 
 #----------------------------------------------------------------------
@@ -2490,9 +2519,15 @@ class InkView(QtWidgets.QGraphicsView):
         self.setTransform(QtGui.QTransform())
 
     def zoomFitAll(self):
-        rect = self.scene().itemsBoundingRect()
-        # self.fitInView(rect)
-        self.fitInView(rect, QtCore.Qt.KeepAspectRatio)
+        rect = self.scene().contentBounds()
+        if rect.isEmpty():
+            return
+        self.fitInView(rect.adjusted(-16, -16, 16, 16), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+        scale = hypot(self.transform().m11(), self.transform().m12())
+        if scale > 1.5:
+            self.scale(1.5 / scale, 1.5 / scale)
+        self.centerOn(rect.center())
+        self.viewChangeStream.emit(self)
 
     def wheelEvent(self, event):
         # logging.debug('Wheel event')
@@ -2566,6 +2601,17 @@ class InkView(QtWidgets.QGraphicsView):
         self._eventstate = Free
         self._itemUnder = None
         self._event = None
+
+
+    def showContent(self, rect):
+        if rect.isEmpty():
+            return
+        visible = self.mapToScene(self.viewport().rect()).boundingRect()
+        factor = min(1.0, visible.width() / (rect.width() + 32), visible.height() / (rect.height() + 32))
+        if factor < 1.0:
+            self.scaleView(factor)
+        self.ensureVisible(rect, 16, 16)
+
 
 
 
