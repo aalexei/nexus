@@ -26,6 +26,7 @@ from bs4 import BeautifulSoup
 
 import re, time, copy, hashlib, json
 from . import interpreter, tools, graphydb, config, nexusgraph
+from .text_processing import normalize_html
 
 import urllib.parse, os
 from functools import reduce
@@ -4084,28 +4085,7 @@ class TextItem(QtWidgets.QGraphicsTextItem, ContentItem):
         # body tag and ignore it and track the default font and color
         # ourselves
 
-        soup = BeautifulSoup(src, "html.parser")
-
-        body = soup.find('body')
-
-        if body is None:
-            body = soup
-
-        # QT inserts style info into <p> tags
-        # e.g. style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"
-        # This is not useful for us, strip it out. N.B. color is in <span> tags
-
-        for p in body.find_all('p'):
-            del p['style']
-
-        # src = body.renderContents().decode('utf-8').strip()
-        src = body.encode_contents().decode('utf-8').strip()
-
-        # For some weird reason QT seems to insert a <br/> in <p>
-        if src == "<p><br/></p>":
-            src = ""
-
-        return src
+        return normalize_html(src)
 
     def setMode(self, mode):
 
