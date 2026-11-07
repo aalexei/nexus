@@ -27,7 +27,7 @@ from functools import reduce
 import webbrowser, tempfile
 
 import webbrowser, urllib.parse, logging
-from . import graphics, resources, interpreter, graphydb, nexusgraph, config, tasks
+from . import graphics, resources, interpreter, graphydb, nexusgraph, config, tasks, contents
 from math import sqrt, log, sinh, cosh, tanh, atan2, fmod, pi, cos, sin
 import re, subprocess
 import apsw
@@ -824,6 +824,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.view = graphics.NexusView(self.scene)
         self.setCentralWidget(self.view)
 
+        self.contentsDock = QtWidgets.QDockWidget(self.tr('Contents'), self)
+        self.contentsDock.setObjectName('contentsDock')
+        self.contentsPanel = contents.ContentsPanel(self)
+        self.contentsDock.setWidget(self.contentsPanel)
+        self.contentsDock.setMinimumWidth(190)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, self.contentsDock)
+        self.contentsAct = self.contentsDock.toggleViewAction()
+        self.contentsAct.setShortcut('Ctrl+Shift+O')
+        self.contentsAct.setAutoRepeat(False)
+
+
+
         #
         # Views widget
         #
@@ -979,6 +991,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.view.inline.item is not None:
             event.ignore()
             return
+        self.contentsPanel.stop()
         self.writeSettings()
         self.scene.graph.close()
         event.accept()
@@ -1875,6 +1888,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu.addAction(self.runStreamingServerAct)
         self.viewMenu.addSeparator()
         self.viewMenu.addAction(self.viewsAct)
+        self.viewMenu.addAction(self.contentsAct)
         self.viewMenu.addAction(self.typingHintsAct)
         self.viewMenu.addAction(self.viewsFirstAct)
         self.viewMenu.addAction(self.viewsHomeAct)

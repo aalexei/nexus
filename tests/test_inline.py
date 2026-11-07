@@ -316,5 +316,23 @@ class InlineTests(unittest.TestCase):
             self.app.processEvents()
 
 
+    def test_contents_enter_uses_same_inline_editor(self):
+        from nexus import contents
+        owner = QtWidgets.QWidget()
+        owner.scene, owner.view, owner.editDialog = self.scene, self.view, None
+        panel = contents.ContentsPanel(owner)
+        try:
+            panel.tree.setCurrentItem(panel.items[self.root.node['uid']])
+            panel.editNode()
+            self.assertIsNotNone(self.view.inline.item)
+            self.assertEqual(self.view.inline.item.stem, self.root)
+            self.assertEqual(self.opened, [])
+        finally:
+            panel.stop()
+            owner.deleteLater()
+            self.app.processEvents()
+
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -5,6 +5,7 @@ import unittest
 from unittest import mock
 
 import test_inline as inline_tests
+import test_contents as contents_tests
 from PyQt6 import QtCore, QtGui, QtWidgets, QtTest, QtSvg
 from nexus import tasks, graphydb, nexusgraph
 
@@ -612,3 +613,102 @@ class DoingTaskTests(unittest.TestCase):
             self.assertFalse(self.view.tasks.cycle(stem.node['uid']))
         self.assertEqual(tasks.state(stem.node), tasks.TODO)
         self.assertEqual(tasks.state(self.graph.getuid(stem.node['uid'])), tasks.TODO)
+
+
+
+class TaskContentsTests(unittest.TestCase):
+    setUpClass = classmethod(contents_tests.ContentsTests.setUpClass.__func__)
+    tearDownClass = classmethod(contents_tests.ContentsTests.tearDownClass.__func__)
+    tearDown = contents_tests.ContentsTests.tearDown
+    child = contents_tests.ContentsTests.child
+    node = contents_tests.ContentsTests.node
+    item = contents_tests.ContentsTests.item
+
+    def setUp(self):
+        contents_tests.ContentsTests.setUp(self)
+        self.view.tasks.setDoingEnabled(False)
+
+    def test_outline_checkbox_sync_is_incremental_and_undo_restores_it(self):
+        stem = self.child(self.root, 'Task')
+        stem.node['todo'], stem.node['todo_done'] = True, False
+        stem.node.save(); stem.renew()
+        row = self.item(stem)
+        other = self.item(self.root)
+        self.assertEqual(row.checkState(0), QtCore.Qt.CheckState.Unchecked)
+        row.setCheckState(0, QtCore.Qt.CheckState.Checked)
+        self.app.processEvents()
+        self.assertTrue(tasks.done(stem.node))
+        self.assertIs(self.panel.items[stem.node['uid']], row)
+        self.assertIs(self.panel.items[self.root.node['uid']], other)
+        self.assertTrue(row.font(0).strikeOut())
+        self.scene.undo(); self.panel.refresh()
+        self.assertEqual(row.checkState(0), QtCore.Qt.CheckState.Unchecked)
+        self.assertFalse(row.font(0).strikeOut())
+
+    def test_real_outline_checkbox_click_preserves_text_and_regular_rows_have_no_checkbox(self):
+        stem = self.child(self.root, 'Task')
+        stem.node['todo'], stem.node['todo_done'] = True, False
+        stem.node.save(); stem.renew()
+        row = self.item(stem)
+        self.panel.tree.scrollToItem(row)
+        self.app.processEvents()
+        option = QtWidgets.QStyleOptionViewItem()
+        option.initFrom(self.panel.tree)
+        option.rect = self.panel.tree.visualItemRect(row)
+        option.features = QtWidgets.QStyleOptionViewItem.ViewItemFeature.HasCheckIndicator
+        rect = self.panel.tree.style().subElementRect(QtWidgets.QStyle.SubElement.SE_ItemViewItemCheckIndicator,
+                                                       option, self.panel.tree)
+        QtTest.QTest.mouseClick(self.panel.tree.viewport(), QtCore.Qt.MouseButton.LeftButton, pos=rect.center())
+        self.app.processEvents()
+        self.assertTrue(tasks.done(stem.node))
+        self.assertEqual(row.text(0), 'Task')
+        self.assertIsNone(self.item(self.root).data(0, QtCore.Qt.ItemDataRole.CheckStateRole))
+
+
+class DoingContentsTests(unittest.TestCase):
+    setUpClass = classmethod(TaskContentsTests.setUpClass.__func__)
+    tearDownClass = classmethod(TaskContentsTests.tearDownClass.__func__)
+    tearDown = TaskContentsTests.tearDown
+    child, node, item = TaskContentsTests.child, TaskContentsTests.node, TaskContentsTests.item
+
+    def setUp(self):
+        contents_tests.ContentsTests.setUp(self)
+        QtCore.QSettings('Ectropy', 'Nexus').remove('todoDoingEnabled')
+
+    def click_checkbox(self, row):
+        self.panel.tree.scrollToItem(row); self.app.processEvents()
+        option = QtWidgets.QStyleOptionViewItem(); option.initFrom(self.panel.tree)
+        option.rect = self.panel.tree.visualItemRect(row)
+        option.features = QtWidgets.QStyleOptionViewItem.ViewItemFeature.HasCheckIndicator
+        rect = self.panel.tree.style().subElementRect(QtWidgets.QStyle.SubElement.SE_ItemViewItemCheckIndicator,
+                                                     option, self.panel.tree)
+        QtTest.QTest.mouseClick(self.panel.tree.viewport(), QtCore.Qt.MouseButton.LeftButton, pos=rect.center())
+        self.app.processEvents()
+
+    def test_real_three_state_outline_clicks_sync_canvas_and_no_automatic_parent_completion(self):
+        stem = self.child(self.root, 'Task')
+        stem.node['todo'], stem.node['todo_done'] = True, False
+        stem.node.save(); stem.renew(); row = self.item(stem)
+        self.click_checkbox(row)
+        self.assertEqual(tasks.state(stem.node), tasks.DOING)
+        self.assertEqual(row.checkState(0), QtCore.Qt.CheckState.PartiallyChecked)
+        self.assertFalse(row.font(0).strikeOut())
+        self.assertIn('Doing', row.toolTip(0))
+        self.click_checkbox(row)
+        self.assertEqual(tasks.state(stem.node), tasks.DONE)
+        self.assertTrue(row.font(0).strikeOut())
+        self.click_checkbox(row)
+        self.assertEqual(tasks.state(stem.node), tasks.TODO)
+        self.assertFalse(tasks.is_task(self.root.node))
+        self.assertIs(self.panel.items[stem.node['uid']], row)
+
+    def test_global_setting_refreshes_outline_cycle_without_rebuilding_or_erasing_state(self):
+        stem = self.child(self.root, 'Task'); stem.node['todo'] = True
+        stem.node.save(); stem.renew(); row = self.item(stem)
+        self.click_checkbox(row)
+        self.view.tasks.setDoingEnabled(False); self.panel.refresh()
+        self.assertIs(self.panel.items[stem.node['uid']], row)
+        self.assertFalse(row.flags() & QtCore.Qt.ItemFlag.ItemIsUserTristate)
+        self.assertEqual(tasks.state(stem.node), tasks.DOING)
+        self.click_checkbox(row)
+        self.assertEqual(tasks.state(stem.node), tasks.DONE)

@@ -3159,10 +3159,11 @@ class NexusView(QtWidgets.QGraphicsView):
         from .selection import SelectionController
         self.selection = SelectionController(self)
 
+        InkView._rememberMousePosition(self)        # Trying to fix touchpad zoom on linux
+
         from .tasks import TaskController
         self.tasks = TaskController(self)
-        self._taskClick = False        # Trying to fix touchpad zoom on linux
-        # self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
+        self._taskClick = False        # self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
 
     def scaleView(self, scaleFactor, point=None):
 
