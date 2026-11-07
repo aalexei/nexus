@@ -3158,8 +3158,11 @@ class NexusView(QtWidgets.QGraphicsView):
         self.inline = InlineController(self)
         from .selection import SelectionController
         self.selection = SelectionController(self)
-        # Trying to fix touchpad zoom on linux
-        # self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
+
+        InkView._rememberMousePosition(self)        # Trying to fix touchpad zoom on linux
+
+        from .content_resize import ContentResizeController
+        self.contentResize = ContentResizeController(self)        # self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
 
     def scaleView(self, scaleFactor, point=None):
 
@@ -3314,6 +3317,8 @@ class NexusView(QtWidgets.QGraphicsView):
         self.viewChangeStream.emit(self)
 
     def mousePressEvent(self, event):
+        if self.contentResize.press(event):
+            return
         if self.inline.item is not None:
             item = self.inline.item
             if not item.sceneBoundingRect().contains(self.mapToScene(event.pos())):
@@ -3345,6 +3350,8 @@ class NexusView(QtWidgets.QGraphicsView):
             QtWidgets.QGraphicsView.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):
+        if self.contentResize.move(event):
+            return
         # TODO performance
         # movement triggers drag move
 
@@ -3447,6 +3454,8 @@ class NexusView(QtWidgets.QGraphicsView):
             QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
+        if self.contentResize.release(event):
+            return
 
         # if abs(self.pinchtime - time.time())<self._ignoremousetime:
         #    event.accept()
@@ -3523,6 +3532,13 @@ class NexusView(QtWidgets.QGraphicsView):
 
     def event(self, event):
         # logging.debug('Event %s', event)
+        resize = getattr(self, 'contentResize', None)
+        if resize is not None and resize.state is not None:
+            if event.type() in (QtCore.QEvent.Type.WindowDeactivate, QtCore.QEvent.Type.Hide):
+                resize.cancel()
+            elif event.type() == QtCore.QEvent.Type.ShortcutOverride:
+                event.accept()
+                return True
         # Tab must be intercepted before QGraphicsView uses it for focus travel.
         if event.type() == QtCore.QEvent.Type.ShortcutOverride and hasattr(self, 'inline') and self.inline.protectShortcut(event):
             event.accept()
@@ -3851,6 +3867,11 @@ class NexusView(QtWidgets.QGraphicsView):
 
 
     def handleMapKey(self, event):
+        if self.contentResize.state is not None:
+            if event.key() == QtCore.Qt.Key.Key_Escape:
+                self.contentResize.cancel()
+            event.accept()
+            return True
         if self.inline.item is not None and self.scene().focusItem() is not self.inline.item:
             self.inline.item.setFocus()
         if self.inline.handleKey(event):
@@ -3883,6 +3904,13 @@ class NexusView(QtWidgets.QGraphicsView):
                     return True
                 return self.handleMapKey(event)
         return super().eventFilter(watched, event)
+
+
+    def drawForeground(self, painter, rect):
+        super().drawForeground(painter, rect)
+        if hasattr(self, 'contentResize'):
+            self.contentResize.paint(painter)
+
 
 
 
