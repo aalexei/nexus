@@ -975,6 +975,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
 
+        self.view.inline.finish()
+        if self.view.inline.item is not None:
+            event.ignore()
+            return
         self.writeSettings()
         self.scene.graph.close()
         event.accept()
@@ -1463,7 +1467,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cutAct.setShortcut(QtGui.QKeySequence.StandardKey.Cut)
         self.cutAct.setStatusTip(self.tr("Cut the current selection's "
                                          "contents to the clipboard"))
-        self.cutAct.triggered.connect(self.scene.cut)
+        self.cutAct.triggered.connect(lambda: self.editCommand('cut'))
 
         # ----------------------------------------------------------------------------------
         self.copyAct = QtGui.QAction(QtGui.QIcon(":/images/edit-copy.svg"),
@@ -1471,7 +1475,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.copyAct.setShortcut(QtGui.QKeySequence.StandardKey.Copy)
         self.copyAct.setStatusTip(self.tr("Copy the current selection's "
                                           "contents to the clipboard"))
-        self.copyAct.triggered.connect(self.scene.copy)
+        self.copyAct.triggered.connect(lambda: self.editCommand('copy'))
 
         # ----------------------------------------------------------------------------------
         self.copyStemLinkAct = QtGui.QAction(QtGui.QIcon(":/images/edit-copy.svg"),
@@ -1487,7 +1491,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pasteAct.setShortcut(QtGui.QKeySequence.StandardKey.Paste)
         self.pasteAct.setStatusTip(self.tr("Paste the clipboard's contents "
                                            "into the current selection"))
-        self.pasteAct.triggered.connect(self.scene.paste)
+        self.pasteAct.triggered.connect(lambda: self.editCommand('paste'))
 
         # ----------------------------------------------------------------------------------
         self.deleteAct = QtGui.QAction(QtGui.QIcon(":/images/edit-delete.svg"),
@@ -1496,7 +1500,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Backspace is only defined on Apple and mapped to Del (why oh why)
         self.deleteAct.setShortcuts([QtGui.QKeySequence.StandardKey.Delete,QtGui.QKeySequence.StandardKey.Backspace])
         self.deleteAct.setStatusTip(self.tr("Delete selection"))
-        self.deleteAct.triggered.connect(self.scene.delete)
+        self.deleteAct.triggered.connect(lambda: self.editCommand('delete'))
 
         # ----------------------------------------------------------------------------------
         self.undoAct = QtGui.QAction(QtGui.QIcon(":/images/undo.svg"),
@@ -1506,6 +1510,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.undoAct.triggered.connect(self.undo)
 
         # ----------------------------------------------------------------------------------
+        self.textModeAct = QtGui.QAction(self.tr('Text mode'), self)
+        self.textModeAct.setCheckable(True)
+        self.textModeAct.setChecked(self.view.inline.textMode)
+        self.textModeAct.setShortcut('T')
+        self.textModeAct.setAutoRepeat(False)
+        self.textModeAct.setToolTip('Text mode (T): edit simple text directly on the map')
+        self.textModeAct.triggered.connect(self.view.inline.setMode)
+        self.view.inline.modeChanged.connect(self.textModeAct.setChecked)
+        self.fullEditorAct = QtGui.QAction(self.tr('Open Full Node Editor'), self)
+        self.fullEditorAct.setShortcuts(['Ctrl+Return', 'Ctrl+Enter'])
+        self.fullEditorAct.setAutoRepeat(False)
+        self.fullEditorAct.triggered.connect(self.openFullEditor)
+        self.typingHintsAct = QtGui.QAction(self.tr('Typing Hints'), self)
+        self.typingHintsAct.setCheckable(True)
+        self.typingHintsAct.setChecked(self.view.inline.showHints)
+        self.typingHintsAct.triggered.connect(self.view.inline.setHints)
+
         self.setScaleAct = QtGui.QAction(self.tr("Set Scale"), self)
         self.setScaleAct.setStatusTip(self.tr("Set the scale for selected"))
         self.setScaleAct.setShortcut("S")
@@ -1615,6 +1636,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.zoomSelectionAct.triggered.connect(self.view.zoomSelection)
 
         # ----------------------------------------------------------------------------------
+        self.zoomParentAct = QtGui.QAction(self.tr("Zoom to Parent Branch"), self)
+        self.zoomParentAct.setShortcut("Shift+Z")
+        self.zoomParentAct.setAutoRepeat(False)
+        self.zoomParentAct.setStatusTip(self.tr("Select the parent and fit its visible branch"))
+        self.zoomParentAct.triggered.connect(self.view.zoomParent)
+
         self.zoomOriginalAct = QtGui.QAction(QtGui.QIcon(":/images/zoom-one.svg"),
                                              self.tr("Reset Zoom"), self)
         self.zoomOriginalAct.setStatusTip(self.tr("Reset Zoom"))
@@ -1777,6 +1804,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.editMenu = self.menuBar().addMenu(self.tr("&Edit"))
         self.editMenu.addAction(self.undoAct)
+        self.editMenu.addAction(self.textModeAct)
+        self.editMenu.addAction(self.fullEditorAct)
         self.editMenu.addSeparator()
         self.editMenu.addAction(self.cutAct)
         self.editMenu.addAction(self.copyAct)
@@ -1806,6 +1835,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu.addAction(self.zoomOutAct)
         self.viewMenu.addAction(self.zoomAllAct)
         self.viewMenu.addAction(self.zoomSelectionAct)
+        self.viewMenu.addAction(self.zoomParentAct)
         self.viewMenu.addSeparator()
 
         self.viewMenu.addAction(self.presentationModeAct)
@@ -1821,6 +1851,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewMenu.addAction(self.runStreamingServerAct)
         self.viewMenu.addSeparator()
         self.viewMenu.addAction(self.viewsAct)
+        self.viewMenu.addAction(self.typingHintsAct)
         self.viewMenu.addAction(self.viewsFirstAct)
         self.viewMenu.addAction(self.viewsHomeAct)
         self.viewMenu.addAction(self.viewsNextAct)
@@ -1931,37 +1962,10 @@ class MainWindow(QtWidgets.QMainWindow):
         settings.setValue('size', self.size())
 
     def undo(self):
-        changeditems = self.scene.graph.undo()
-        # first pass - refresh the whole lot
-        # TODO more efficient undo by looking at changeditems
-        changedtypes = [t for t, uid in changeditems]
-        if '+' in changedtypes:
-            # Refresh the whole lot as we don't know where it was removed from
-            self.scene.root().renew()
-            return
-
-        changeduids = [uid for t, uid in changeditems]
-
-        allchidren = []
-        parents = []
-        for item in self.scene.allChildStems(includeroot=True):
-            if item.node['uid'] in changeduids:
-                parent = item.parentItem()
-                if parent is None:
-                    parents.append(item)
-                else:
-                    parents.append(parent)
-                    allchidren.append(item)
-                allchidren.extend(item.allChildStems())
-
-        for p in parents:
-            if p not in allchidren:
-                p.renew()
-
-        # TODO sometimes no parents?!
-        # TODO happens when reversing a hide as the stems are no longer in scene!
-        if len(parents) == 0:
-            self.scene.root().renew()
+        if self.view.inline.item is not None:
+            self.view.inline.item.document().undo()
+        else:
+            self.scene.undo()
 
     def loadOrConvertMap(self, filename):
         '''
@@ -2546,6 +2550,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.viewcurrentstep += 1
 
     def setMode(self):
+        self.view.inline.finish()
+        self.view.selection.reset()
 
         # The current checked status of the action is the new state after button presses etc
         if self.presentationModeAct.isChecked():
@@ -3119,6 +3125,41 @@ class MainWindow(QtWidgets.QMainWindow):
                 item['_rect'].setVisible(vis)
             else:
                 item['_rect'].setVisible(False)
+
+
+    def editCommand(self, command):
+        item = self.view.inline.item
+        if item is None:
+            getattr(self.scene, command)()
+            return
+        cursor = item.textCursor()
+        if command in ('copy', 'cut') and cursor.hasSelection():
+            QtWidgets.QApplication.clipboard().setText(cursor.selectedText().replace('\u2029', '\n'))
+        if command == 'cut':
+            cursor.removeSelectedText()
+        elif command == 'delete':
+            if cursor.hasSelection():
+                cursor.removeSelectedText()
+            else:
+                cursor.deleteChar()
+        elif command == 'paste':
+            self.view.inline.handleKey(QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress,
+                QtCore.Qt.Key.Key_V, QtCore.Qt.KeyboardModifier.ControlModifier))
+            return
+        item.setTextCursor(cursor)
+
+
+    def openFullEditor(self):
+        self.view.inline.finish(keep_blank=True)
+        if self.view.inline.item is not None:
+            return
+        selected = [s for s in self.scene.selectedItems() if isinstance(s, graphics.StemItem)]
+        if len(selected) == 1:
+            selected[0].editStem(full=True)
+        elif len(selected) > 1:
+            self.scene.statusMessage.emit('Select one node to open the full editor')
+
+
 
 
 class FilterEdit(QtWidgets.QLineEdit):
