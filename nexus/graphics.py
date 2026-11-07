@@ -4561,16 +4561,19 @@ class PixmapItem(QtWidgets.QGraphicsPixmapItem, ContentItem):
             if n['kind'] == 'Image' and n['sha1'] == sha1:
                 remove_edge = False
 
-        # TODO should we check for multiple edges? or delegate to DB health function?
         if remove_edge:
-            dataedge = self.stem.node.outE('e.kind="With"').one
-            datanode = dataedge.end
+            # A stem can link to several different image sources. Only unlink
+            # the source of the deleted item, including any duplicate links.
+            datanodes = {}
+            for dataedge in self.stem.node.outE('e.kind="With"'):
+                datanode = dataedge.end
+                if datanode['kind'] == 'ImageData' and datanode['sha1'] == sha1:
+                    datanodes[datanode['uid']] = datanode
+                    dataedge.delete(batch=batch)
 
-            dataedge.delete(batch=batch)
-
-            # also remove the data if no refenreces to it
-            if datanode.inE('e.kind="With"', COUNT=True) == 0:
-                datanode.delete(batch=batch)
+            for datanode in datanodes.values():
+                if datanode.inE('e.kind="With"', COUNT=True) == 0:
+                    datanode.delete(batch=batch)
 
         self.scene().removeItem(self)
 
